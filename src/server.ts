@@ -4,6 +4,7 @@ import Hapi from "@hapi/hapi";
 import { Server } from "@hapi/hapi";
 import {getTask} from "./tasks";
 import {createSubmission, SubmissionParameters} from "./submissions";
+import {sendSubmissionToTaskGrader} from "./grader_interface";
 
 export let server: Server;
 
@@ -42,6 +43,8 @@ export const init = async function(): Promise<Server> {
                 try {
                     const submissionId = await createSubmission(request.payload as SubmissionParameters);
                     console.log('submision result', submissionId);
+
+                    sendSubmissionToTaskGrader(submissionId, request.payload as SubmissionParameters);
 
                     return h.response({
                         success: true,

@@ -1,5 +1,5 @@
 import * as Db from "./db";
-import {Platform} from "./models";
+import {Platform, SourceCode, Task} from "./models";
 import {decodePlatformToken, PlatformTokenParameters} from "./tokenization";
 import {getRandomId} from "./util";
 import {RowDataPacket} from "mysql2";
@@ -15,15 +15,22 @@ export interface SubmissionParametersUserTest {
     output: string,
 }
 
+export interface SubmissionParametersTaskParameters {
+    returnUrl: string,
+}
+
 export interface SubmissionParameters {
     token: string,
     platform: string,
     answer: SubmissionParametersAnswer,
+    answerToken?: string,
     taskId: string,
     userTests: SubmissionParametersUserTest[],
+    taskParams: SubmissionParametersTaskParameters,
+    sLocale: string,
 }
 
-async function getPlatformTokenParams(token: string, platform: string, taskId: string): Promise<PlatformTokenParameters> {
+export async function getPlatformTokenParams(token: string, platform: string, taskId: string): Promise<PlatformTokenParameters> {
     if (!platform && process.env.TEST_MODE && process.env.TEST_MODE_PLATFORM_NAME) {
         platform = process.env.TEST_MODE_PLATFORM_NAME;
     }
@@ -76,7 +83,7 @@ async function getLocalIdTask(params: PlatformTokenParameters) {
     return ids[0] as unknown as string;
 }
 
-export async function createSubmission(submissionData: SubmissionParameters) {
+export async function createSubmission(submissionData: SubmissionParameters): Promise<string> {
     if (!process.env.TEST_MODE && (!submissionData.token || !submissionData.platform)) {
         throw "Missing token or platform POST variable";
     }
@@ -130,4 +137,13 @@ export async function createSubmission(submissionData: SubmissionParameters) {
     }
 
     return idSubmission;
+}
+
+export async function findSourceCodeById(sourceCodeId: string): Promise<SourceCode> {
+    const sourceCodes = await Db.execute<SourceCode[]>("SELECT * FROM tm_source_codes WHERE ID = ?", [sourceCodeId]);
+    if (!sourceCodes.length) {
+        throw "not found";
+    }
+
+    return {...sourceCodes[0]} as SourceCode;
 }

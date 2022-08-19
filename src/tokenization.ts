@@ -3,13 +3,17 @@ import {Platform} from "./models";
 
 export interface PlatformTokenParameters {
     idUser: string|null,
-    bSubmissionPossible: boolean,
+    bSubmissionPossible?: boolean,
+    bAllowGrading?: boolean,
     idTaskLocal: string,
     itemUrl: string|null,
     bAccessSolutions: boolean,
     nbHintsGiven: number,
     idPlatform?: string,
     idItem?: string,
+    idUserAnswer?: string,
+    sAnswer?: string,
+    returnUrl?: string,
 }
 
 function getTestTokenParameters(taskId: string) {

@@ -65,13 +65,17 @@ function normalizeTaskTest(taskTest: TaskTest) {
     }
 }
 
-export async function getTask(taskId: string) {
+export async function findTaskById(taskId: string): Promise<Task> {
     const tasks = await Db.execute<Task[]>("SELECT * FROM tm_tasks WHERE ID = ?", [taskId]);
     if (!tasks.length) {
         throw "not found";
     }
 
-    const task = {...tasks[0]} as Task;
+    return {...tasks[0]} as Task;
+}
+
+export async function getTask(taskId: string) {
+    const task = await findTaskById(taskId);
 
     const taskLimits = await Db.execute<TaskLimit[]>("SELECT * FROM tm_tasks_limits WHERE idTask = ?", [taskId]);
     const taskStrings = await Db.execute<TaskString[]>("SELECT * FROM tm_tasks_strings WHERE idTask = ?", [taskId]);

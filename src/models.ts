@@ -28,12 +28,12 @@ export interface Task extends RowDataPacket {
 }
 
 export interface TaskLimit extends RowDataPacket {
-    ID: string,
-    idTask: string,
-    sLangProg: string,
+    ID?: string,
+    idTask?: string,
+    sLangProg?: string,
     iMaxTime: number,
     iMaxMemory: number,
-    iVersion: number,
+    iVersion?: number,
 }
 
 export interface TaskString extends RowDataPacket {
@@ -78,4 +78,48 @@ export interface Platform extends RowDataPacket {
     ID: string,
     name: string,
     public_key: string,
+}
+
+export interface Submission extends RowDataPacket {
+    ID: string,
+    idUser: string,
+    idPlatform: string,
+    idTask: string,
+    sDate: string,
+    idSourceCode: string,
+    bManualCorrection: boolean,
+    bSuccess: boolean,
+    nbTestsTotal: number,
+    nbTestsPassed: number,
+    iScore: number,
+    bCompilError: boolean,
+    sCompilMsg: string,
+    sErrorMsg: string,
+    sFirstUserOutput: string,
+    sFirstExpectedOutput: string,
+    sManualScoreDiffComment: string,
+    bEvaluated: boolean,
+    bConfirmed: boolean,
+    sMode: string,
+    sReturnUrl: string,
+    idUserAnswer: string,
+    iChecksum: number,
+    iVersion: number,
+}
+
+export interface SourceCode extends RowDataPacket {
+    ID: string,
+    idUser: string,
+    idPlatform: string,
+    idTask: string,
+    sDate: string,
+    sParams: string,
+    sName: string,
+    sSource: string,
+    bEditable: boolean,
+    bSubmission: boolean,
+    sType: string,
+    bActive: boolean,
+    iRank: number,
+    iVersion: number,
 }
