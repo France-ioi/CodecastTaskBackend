@@ -3,6 +3,7 @@
 import Hapi from "@hapi/hapi";
 import { Server } from "@hapi/hapi";
 import {getTask} from "./tasks";
+import {createSubmission, SubmissionParameters} from "./submissions";
 
 export let server: Server;
 
@@ -20,7 +21,6 @@ export const init = async function(): Promise<Server> {
         path: '/tasks/{taskId}',
         options: {
             handler: async (request, h) => {
-                console.log('arrive here', request.params.taskId);
                 try {
                     const taskData = await getTask(request.params.taskId);
 
@@ -33,7 +33,27 @@ export const init = async function(): Promise<Server> {
         }
     });
 
-    // Routes will go here
+    server.route({
+        method: 'POST',
+        path: '/submissions',
+        options: {
+            handler: async (request, h) => {
+                console.log('post new submission', request.payload);
+                try {
+                    const submissionId = await createSubmission(request.payload as SubmissionParameters);
+                    console.log('submision result', submissionId);
+
+                    return h.response({
+                        success: true,
+                        submissionId,
+                    });
+                } catch (e) {
+                    console.error(e);
+                    return h.response({error: "Impossible to process"}).code(500);
+                }
+            }
+        }
+    });
 
     return server;
 };

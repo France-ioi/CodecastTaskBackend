@@ -1,4 +1,4 @@
-import { createPool, Pool} from 'mysql';
+import {createPool, OkPacket, Pool, ResultSetHeader, RowDataPacket} from 'mysql2';
 
 let pool: Pool;
 
@@ -14,6 +14,7 @@ export const init = () => {
             password: process.env.MYSQL_DB_PASSWORD,
             database: process.env.MYSQL_DB_DATABASE,
             charset: 'utf8',
+            namedPlaceholders: true,
         });
 
         // TODO: set timezone
@@ -25,12 +26,12 @@ export const init = () => {
     }
 };
 
-export const execute = <T>(query: string, params: string[] | Object): Promise<T> => {
+export const execute = <T extends RowDataPacket[][] | RowDataPacket[] | OkPacket | OkPacket[] | ResultSetHeader>(query: string, params: string[] | Object): Promise<T> => {
     try {
         if (!pool) throw new Error('Pool was not created. Ensure pool is created when running the app.');
 
         return new Promise<T>((resolve, reject) => {
-            pool.query(query, params, (error, results) => {
+            pool.query<T>(query, params, (error, results) => {
                 if (error) reject(error);
                 else resolve(results);
             });

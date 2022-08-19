@@ -1,4 +1,6 @@
-export interface Task {
+import {RowDataPacket} from "mysql2";
+
+export interface Task extends RowDataPacket {
     ID: string,
     sTextId: string,
     sSupportedLangProg: string,
@@ -25,7 +27,7 @@ export interface Task {
     bHasSubtasks: boolean
 }
 
-export interface TaskLimit {
+export interface TaskLimit extends RowDataPacket {
     ID: string,
     idTask: string,
     sLangProg: string,
@@ -34,7 +36,7 @@ export interface TaskLimit {
     iVersion: number,
 }
 
-export interface TaskString {
+export interface TaskString extends RowDataPacket {
     ID: string,
     idTask: string,
     sLanguage: string,
@@ -45,7 +47,7 @@ export interface TaskString {
     iVersion: number,
 }
 
-export interface TaskSubtask {
+export interface TaskSubtask extends RowDataPacket {
     ID: string,
     idTask: string,
     iRank: number,
@@ -56,7 +58,7 @@ export interface TaskSubtask {
     iVersion: number,
 }
 
-export interface TaskTest {
+export interface TaskTest extends RowDataPacket {
     ID: string,
     idTask: string,
     idSubtask: string|null,
@@ -70,4 +72,10 @@ export interface TaskTest {
     sInput: string,
     sOutput: string,
     iVersion: number,
+}
+
+export interface Platform extends RowDataPacket {
+    ID: string,
+    name: string,
+    public_key: string,
 }

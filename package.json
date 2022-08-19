@@ -5,7 +5,8 @@
   "license": "MIT",
   "dependencies": {
     "@hapi/hapi": "^20.2.2",
-    "mysql": "^2.18.1"
+    "jose": "^4.9.0",
+    "mysql2": "^2.3.3"
   },
   "scripts": {
     "dev": "ts-node-dev --respawn src/main.ts"
