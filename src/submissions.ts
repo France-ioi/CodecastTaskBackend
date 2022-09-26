@@ -1,48 +1,44 @@
 import * as Db from './db';
 import {Platform, SourceCode} from './models';
 import {decodePlatformToken, PlatformTokenParameters} from './tokenization';
-import {getRandomId} from './util';
+import {decode, getRandomId} from './util';
+import * as D from 'io-ts/Decoder';
 
-export interface SubmissionParametersAnswer {
-    sourceCode?: string,
-    language?: string,
-}
+export const submissionDataDecoder = D.struct({
+  token: D.nullable(D.string),
+  platform: D.nullable(D.string),
+  answer: D.nullable(D.struct({
+    sourceCode: D.nullable(D.string),
+    language: D.nullable(D.string),
+  })),
+  answerToken: D.nullable(D.string),
+  taskId: D.string,
+  userTests: D.nullable(D.array(D.struct({
+    name: D.string,
+    input: D.string,
+    output: D.string,
+  }))),
+  taskParams: D.struct({
+    returnUrl: D.string,
+  }),
+  sLocale: D.string,
+});
+export type SubmissionParameters = D.TypeOf<typeof submissionDataDecoder>;
 
-export interface SubmissionParametersUserTest {
-    name: string,
-    input: string,
-    output: string,
-}
-
-export interface SubmissionParametersTaskParameters {
-    returnUrl: string,
-}
-
-export interface SubmissionParameters {
-    token: string,
-    platform: string,
-    answer?: SubmissionParametersAnswer,
-    answerToken?: string,
-    taskId: string,
-    userTests?: SubmissionParametersUserTest[],
-    taskParams: SubmissionParametersTaskParameters,
-    sLocale: string,
-}
-
-export async function getPlatformTokenParams(token: string, platform: string, taskId: string): Promise<PlatformTokenParameters> {
+export async function getPlatformTokenParams(token: string|null, platform: string|null, taskId: string): Promise<PlatformTokenParameters> {
   if (!platform && process.env.TEST_MODE && process.env.TEST_MODE_PLATFORM_NAME) {
     platform = process.env.TEST_MODE_PLATFORM_NAME;
   }
 
   const platforms = await Db.execute<Platform[]>('SELECT ID, public_key FROM tm_platforms WHERE name = ?', [platform]);
   if (!platforms.length) {
-    throw 'Cannot find platform ' + platform;
+    throw new Error(`Cannot find platform ${platform || ''}`);
   }
 
   const platformEntity = platforms[0];
   const platformKey = platformEntity.public_key;
 
-  const params = decodePlatformToken(token, platformKey, platform, taskId, platformEntity);
+  const params = decodePlatformToken(token, platformKey, platform as string, taskId, platformEntity);
 
   if (!params.idUser || (!params.idItem && !params.itemUrl)) {
     // console.error('Missing idUser or idItem in token', params);
@@ -82,7 +78,9 @@ async function getLocalIdTask(params: PlatformTokenParameters): Promise<string> 
   return ids[0].ID;
 }
 
-export async function createSubmission(submissionData: SubmissionParameters): Promise<string> {
+export async function createSubmission(submissionDataPayload: unknown): Promise<string> {
+  const submissionData: SubmissionParameters = decode(submissionDataDecoder)(submissionDataPayload);
+
   if (!process.env.TEST_MODE && (!submissionData.token || !submissionData.platform)) {
     throw 'Missing token or platform POST variable';
   }

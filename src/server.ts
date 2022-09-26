@@ -1,7 +1,7 @@
 import Hapi from '@hapi/hapi';
 import {Server} from '@hapi/hapi';
 import {getTask} from './tasks';
-import {createSubmission, SubmissionParameters} from './submissions';
+import {createSubmission} from './submissions';
 
 export let server: Server;
 
@@ -19,6 +19,7 @@ export const init = function(): Server {
     path: '/tasks/{taskId}',
     options: {
       handler: async (request, h) => {
+        //TODO: check parameter and handle errors
         try {
           // eslint-disable-next-line
           const taskData = await getTask(request.params.taskId);
@@ -39,7 +40,7 @@ export const init = function(): Server {
       handler: async (request, h) => {
         // console.log('post new submission', request.payload);
         try {
-          const submissionId = await createSubmission(request.payload as SubmissionParameters);
+          const submissionId = await createSubmission(request.payload);
           // console.log('submision result', submissionId);
 
           // await sendSubmissionToTaskGrader(submissionId, request.payload as SubmissionParameters);

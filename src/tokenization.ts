@@ -27,7 +27,7 @@ function getTestTokenParameters(taskId: string): PlatformTokenParameters {
 }
 
 // eslint-disable-next-line
-export function decodePlatformToken(token: string, platformKey: string, keyName: string, askedTaskId: string, platform: Platform): PlatformTokenParameters {
+export function decodePlatformToken(token: string|null, platformKey: string, keyName: string, askedTaskId: string, platform: Platform): PlatformTokenParameters {
   // const JWKS = jose.createLocalJWKSet({
   //     keys: [
   //         {
