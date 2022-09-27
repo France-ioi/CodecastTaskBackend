@@ -2,6 +2,7 @@ import Hapi from '@hapi/hapi';
 import {Server} from '@hapi/hapi';
 import {getTask} from './tasks';
 import {createSubmission} from './submissions';
+import {DecodingError} from './util';
 
 export let server: Server;
 
@@ -50,8 +51,11 @@ export const init = function(): Server {
             submissionId,
           });
         } catch (e) {
-          // console.error(e);
-          return h.response({error: 'Impossible to process'}).code(500);
+          if (e instanceof DecodingError) {
+            return h.response({error: 'Invalid input: ' + e.message}).code(400);
+          } else {
+            return h.response({error: 'Impossible to process'}).code(500);
+          }
         }
       }
     }

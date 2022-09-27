@@ -3,29 +3,34 @@ import {Platform, SourceCode} from './models';
 import {decodePlatformToken, PlatformTokenParameters} from './tokenization';
 import {decode, getRandomId} from './util';
 import * as D from 'io-ts/Decoder';
+import {pipe} from 'fp-ts/function';
 
-export const submissionDataDecoder = D.struct({
-  token: D.nullable(D.string),
-  platform: D.nullable(D.string),
-  answer: D.nullable(D.struct({
-    sourceCode: D.nullable(D.string),
-    language: D.nullable(D.string),
-  })),
-  answerToken: D.nullable(D.string),
-  taskId: D.string,
-  userTests: D.nullable(D.array(D.struct({
-    name: D.string,
-    input: D.string,
-    output: D.string,
-  }))),
-  taskParams: D.struct({
-    returnUrl: D.string,
+export const submissionDataDecoder = pipe(
+  D.struct({
+    taskId: D.string,
+    taskParams: D.struct({
+      returnUrl: D.string,
+    }),
+    answer: D.struct({
+      sourceCode: D.string,
+      language: D.string,
+    }),
+    sLocale: D.string,
   }),
-  sLocale: D.string,
-});
+  D.intersect(D.partial({
+    token: D.nullable(D.string),
+    platform: D.nullable(D.string),
+    answerToken: D.nullable(D.string),
+    userTests: D.array(D.struct({
+      name: D.string,
+      input: D.string,
+      output: D.string,
+    })),
+  }))
+);
 export type SubmissionParameters = D.TypeOf<typeof submissionDataDecoder>;
 
-export async function getPlatformTokenParams(token: string|null, platform: string|null, taskId: string): Promise<PlatformTokenParameters> {
+export async function getPlatformTokenParams(taskId: string, token?: string|null, platform?: string|null): Promise<PlatformTokenParameters> {
   if (!platform && process.env.TEST_MODE && process.env.TEST_MODE_PLATFORM_NAME) {
     platform = process.env.TEST_MODE_PLATFORM_NAME;
   }
@@ -85,11 +90,7 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
     throw 'Missing token or platform POST variable';
   }
 
-  if (!submissionData.answer || !submissionData.answer.sourceCode || !submissionData.answer.language) {
-    throw 'Invalid answer object';
-  }
-
-  const params = await getPlatformTokenParams(submissionData.token, submissionData.platform, submissionData.taskId);
+  const params = await getPlatformTokenParams(submissionData.taskId, submissionData.token, submissionData.platform);
   const mode = submissionData.userTests && submissionData.userTests.length ? 'UserTest' : 'Submitted';
 
   // save source code (with bSubmission = 1)
