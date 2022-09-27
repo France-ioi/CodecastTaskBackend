@@ -1,92 +1,153 @@
-import * as Db from "./db";
-import {TaskLimit, Task, TaskString, TaskSubtask, TaskTest} from "./models";
+import * as Db from './db';
+import {TaskLimit, Task, TaskString, TaskSubtask, TaskTest} from './models';
 
-function normalizeTask(task: Task) {
-    return {
-        id: task.ID,
-        textId: task.sTextId,
-        supportedLanguages: task.sSupportedLangProg,
-        author: task.sAuthor,
-        showLimits: task.bShowLimits,
-        userTests: task.bUserTests,
-        isEvaluable: task.bIsEvaluable,
-        scriptAnimation: task.sScriptAnimation,
-        hasSubtasks: task.bHasSubtasks,
-    }
+export interface TaskNormalized {
+  id: string,
+  textId: string,
+  supportedLanguages: string,
+  author: string,
+  showLimits: boolean,
+  userTests: boolean,
+  isEvaluable: boolean,
+  scriptAnimation: string,
+  hasSubtasks: boolean,
 }
 
-function normalizeTaskLimit(taskLimit: TaskLimit) {
-    return {
-        id: taskLimit.ID,
-        taskId: taskLimit.idTask,
-        language: taskLimit.sLangProg,
-        maxTime: taskLimit.iMaxTime,
-        maxMemory: taskLimit.iMaxMemory,
-    }
+export interface TaskLimitNormalized {
+  id: string,
+  taskId: string,
+  language: string,
+  maxTime: number,
+  maxMemory: number,
 }
 
-function normalizeTaskString(taskString: TaskString) {
-    return {
-        id: taskString.ID,
-        taskId: taskString.idTask,
-        language: taskString.sLanguage,
-        title: taskString.sTitle,
-        statement: taskString.sStatement,
-        solution: taskString.sSolution,
-    }
+export interface TaskStringNormalized {
+  id: string,
+  taskId: string,
+  language: string,
+  title: string,
+  statement: string,
+  solution: string|null,
 }
 
-function normalizeTaskSubtask(taskSubtask: TaskSubtask) {
-    return {
-        id: taskSubtask.ID,
-        taskId: taskSubtask.idTask,
-        rank: taskSubtask.iRank,
-        name: taskSubtask.name,
-        comments: taskSubtask.comments,
-        pointsMax: taskSubtask.iPointsMax,
-        active: taskSubtask.bActive,
-    }
+export interface TaskSubtaskNormalized {
+  id: string,
+  taskId: string,
+  rank: number,
+  name: string,
+  comments: string|null,
+  pointsMax: number,
+  active: boolean,
 }
 
-function normalizeTaskTest(taskTest: TaskTest) {
-    return {
-        id: taskTest.ID,
-        taskId: taskTest.idTask,
-        subtaskId: taskTest.idSubtask,
-        submissionId: taskTest.idSubmission,
-        groupType: taskTest.sGroupType,
-        userId: taskTest.idUser,
-        platformId: taskTest.idPlatform,
-        rank: taskTest.iRank,
-        active: taskTest.bActive,
-        name: taskTest.sName,
-        input: taskTest.sInput,
-        output: taskTest.sOutput,
-    }
+export interface TaskTestNormalized {
+  id: string,
+  taskId: string,
+  subtaskId: string|null,
+  submissionId: string|null,
+  groupType: string,
+  userId: string,
+  platformId: string,
+  rank: number,
+  active: boolean,
+  name: string,
+  input: string,
+  output: string,
+}
+
+export interface TaskOutput extends TaskNormalized {
+  limits: TaskLimitNormalized[],
+  strings: TaskStringNormalized[],
+  subTasks: TaskSubtaskNormalized[],
+  tests: TaskTestNormalized[],
+}
+
+function normalizeTask(task: Task): TaskNormalized {
+  return {
+    id: task.ID,
+    textId: task.sTextId,
+    supportedLanguages: task.sSupportedLangProg,
+    author: task.sAuthor,
+    showLimits: task.bShowLimits,
+    userTests: task.bUserTests,
+    isEvaluable: task.bIsEvaluable,
+    scriptAnimation: task.sScriptAnimation,
+    hasSubtasks: task.bHasSubtasks,
+  };
+}
+
+function normalizeTaskLimit(taskLimit: TaskLimit): TaskLimitNormalized {
+  return {
+    id: taskLimit.ID,
+    taskId: taskLimit.idTask,
+    language: taskLimit.sLangProg,
+    maxTime: taskLimit.iMaxTime,
+    maxMemory: taskLimit.iMaxMemory,
+  };
+}
+
+function normalizeTaskString(taskString: TaskString): TaskStringNormalized {
+  return {
+    id: taskString.ID,
+    taskId: taskString.idTask,
+    language: taskString.sLanguage,
+    title: taskString.sTitle,
+    statement: taskString.sStatement,
+    solution: taskString.sSolution,
+  };
+}
+
+function normalizeTaskSubtask(taskSubtask: TaskSubtask): TaskSubtaskNormalized {
+  return {
+    id: taskSubtask.ID,
+    taskId: taskSubtask.idTask,
+    rank: taskSubtask.iRank,
+    name: taskSubtask.name,
+    comments: taskSubtask.comments,
+    pointsMax: taskSubtask.iPointsMax,
+    active: taskSubtask.bActive,
+  };
+}
+
+function normalizeTaskTest(taskTest: TaskTest): TaskTestNormalized {
+  return {
+    id: taskTest.ID,
+    taskId: taskTest.idTask,
+    subtaskId: taskTest.idSubtask,
+    submissionId: taskTest.idSubmission,
+    groupType: taskTest.sGroupType,
+    userId: taskTest.idUser,
+    platformId: taskTest.idPlatform,
+    rank: taskTest.iRank,
+    active: taskTest.bActive,
+    name: taskTest.sName,
+    input: taskTest.sInput,
+    output: taskTest.sOutput,
+  };
 }
 
 export async function findTaskById(taskId: string): Promise<Task> {
-    const tasks = await Db.execute<Task[]>("SELECT * FROM tm_tasks WHERE ID = ?", [taskId]);
-    if (!tasks.length) {
-        throw "not found";
-    }
+  const tasks = await Db.execute<Task[]>('SELECT * FROM tm_tasks WHERE ID = ?', [taskId]);
+  if (!tasks.length) {
+    throw 'not found';
+  }
 
-    return {...tasks[0]} as Task;
+  return {...tasks[0]} as Task;
 }
 
-export async function getTask(taskId: string) {
-    const task = await findTaskById(taskId);
+export async function getTask(taskId: string): Promise<TaskOutput> {
+  const task = await findTaskById(taskId);
 
-    const taskLimits = await Db.execute<TaskLimit[]>("SELECT * FROM tm_tasks_limits WHERE idTask = ?", [taskId]);
-    const taskStrings = await Db.execute<TaskString[]>("SELECT * FROM tm_tasks_strings WHERE idTask = ?", [taskId]);
-    const taskSubtasks = await Db.execute<TaskSubtask[]>("SELECT * FROM tm_tasks_subtasks WHERE idTask = ?", [taskId]);
-    const tasksTests = await Db.execute<TaskTest[]>("SELECT * FROM tm_tasks_tests WHERE idTask = ?", [taskId]);
+  const taskLimits = await Db.execute<TaskLimit[]>('SELECT * FROM tm_tasks_limits WHERE idTask = ?', [taskId]);
+  const taskStrings = await Db.execute<TaskString[]>('SELECT * FROM tm_tasks_strings WHERE idTask = ?', [taskId]);
+  const taskSubtasks = await Db.execute<TaskSubtask[]>('SELECT * FROM tm_tasks_subtasks WHERE idTask = ?', [taskId]);
+  const tasksTests = await Db.execute<TaskTest[]>('SELECT * FROM tm_tasks_tests WHERE idTask = ?', [taskId]);
 
-    return {
-        ...normalizeTask(task),
-        limits: taskLimits.map(normalizeTaskLimit),
-        strings: taskStrings.map(normalizeTaskString),
-        subTasks: taskSubtasks.map(normalizeTaskSubtask),
-        tests: tasksTests.map(normalizeTaskTest),
-    }
+  return {
+    ...normalizeTask(task),
+    limits: taskLimits.map(normalizeTaskLimit),
+    strings: taskStrings.map(normalizeTaskString),
+    subTasks: taskSubtasks.map(normalizeTaskSubtask),
+    tests: tasksTests.map(normalizeTaskTest),
+  };
 }

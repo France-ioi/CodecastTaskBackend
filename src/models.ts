@@ -1,4 +1,4 @@
-import {RowDataPacket} from "mysql2";
+import {RowDataPacket} from 'mysql2';
 
 export interface Task extends RowDataPacket {
     ID: string,
@@ -24,16 +24,16 @@ export interface Task extends RowDataPacket {
     sRevision: string,
     sAssetsBaseUrl: string|null,
     iVersion: number,
-    bHasSubtasks: boolean
+    bHasSubtasks: boolean,
 }
 
 export interface TaskLimit extends RowDataPacket {
-    ID?: string,
-    idTask?: string,
-    sLangProg?: string,
+    ID: string,
+    idTask: string,
+    sLangProg: string,
     iMaxTime: number,
     iMaxMemory: number,
-    iVersion?: number,
+    iVersion: number,
 }
 
 export interface TaskString extends RowDataPacket {
