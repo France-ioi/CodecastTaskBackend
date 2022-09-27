@@ -1,7 +1,8 @@
 import Hapi from '@hapi/hapi';
 import {Server} from '@hapi/hapi';
 import {getTask} from './tasks';
-import {createSubmission, SubmissionParameters} from './submissions';
+import {createSubmission} from './submissions';
+import {DecodingError} from './util';
 
 export let server: Server;
 
@@ -19,6 +20,7 @@ export const init = function(): Server {
     path: '/tasks/{taskId}',
     options: {
       handler: async (request, h) => {
+        //TODO: check parameter and handle errors
         try {
           // eslint-disable-next-line
           const taskData = await getTask(request.params.taskId);
@@ -39,7 +41,7 @@ export const init = function(): Server {
       handler: async (request, h) => {
         // console.log('post new submission', request.payload);
         try {
-          const submissionId = await createSubmission(request.payload as SubmissionParameters);
+          const submissionId = await createSubmission(request.payload);
           // console.log('submision result', submissionId);
 
           // await sendSubmissionToTaskGrader(submissionId, request.payload as SubmissionParameters);
@@ -49,8 +51,11 @@ export const init = function(): Server {
             submissionId,
           });
         } catch (e) {
-          // console.error(e);
-          return h.response({error: 'Impossible to process'}).code(500);
+          if (e instanceof DecodingError) {
+            return h.response({error: 'Invalid input: ' + e.message}).code(400);
+          } else {
+            return h.response({error: 'Impossible to process'}).code(500);
+          }
         }
       }
     }
