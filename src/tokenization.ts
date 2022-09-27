@@ -69,4 +69,3 @@ export function decodePlatformToken(token: string, platformKey: string, keyName:
     }
   }
 }
-
