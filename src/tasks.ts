@@ -126,17 +126,17 @@ function normalizeTaskTest(taskTest: TaskTest): TaskTestNormalized {
   };
 }
 
-export async function findTaskById(taskId: string): Promise<Task> {
+export async function findTaskById(taskId: string): Promise<Task|null> {
   const tasks = await Db.execute<Task[]>('SELECT * FROM tm_tasks WHERE ID = ?', [taskId]);
-  if (!tasks.length) {
-    throw 'not found';
-  }
 
-  return {...tasks[0]} as Task;
+  return tasks.length ? {...tasks[0]} as Task : null;
 }
 
-export async function getTask(taskId: string): Promise<TaskOutput> {
+export async function getTask(taskId: string): Promise<TaskOutput|null> {
   const task = await findTaskById(taskId);
+  if (null === task) {
+    return null;
+  }
 
   const taskLimits = await Db.execute<TaskLimit[]>('SELECT * FROM tm_tasks_limits WHERE idTask = ?', [taskId]);
   const taskStrings = await Db.execute<TaskString[]>('SELECT * FROM tm_tasks_strings WHERE idTask = ?', [taskId]);

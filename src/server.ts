@@ -1,8 +1,9 @@
-import Hapi from '@hapi/hapi';
+import Hapi, {Lifecycle} from '@hapi/hapi';
 import {Server} from '@hapi/hapi';
 import {getTask} from './tasks';
 import {createSubmission} from './submissions';
-import {DecodingError} from './util';
+import ReturnValue = Lifecycle.ReturnValue;
+import {ErrorHandler, isResponseBoom, NotFoundError} from './error_handler';
 
 export let server: Server;
 
@@ -20,16 +21,12 @@ export const init = function(): Server {
     path: '/tasks/{taskId}',
     options: {
       handler: async (request, h) => {
-        //TODO: check parameter and handle errors
-        try {
-          // eslint-disable-next-line
-          const taskData = await getTask(request.params.taskId);
-
-          return h.response(taskData);
-        } catch (e) {
-          // console.error(e);
-          return h.response({error: 'Not found'}).code(404);
+        const taskData = await getTask(String(request.params.taskId));
+        if (null === taskData) {
+          throw new NotFoundError(`Task not found with this id: ${String(request.params.taskId)}`);
         }
+
+        return h.response(taskData);
       }
     }
   });
@@ -39,25 +36,27 @@ export const init = function(): Server {
     path: '/submissions',
     options: {
       handler: async (request, h) => {
-        // console.log('post new submission', request.payload);
-        try {
-          const submissionId = await createSubmission(request.payload);
-          // console.log('submision result', submissionId);
+        const submissionId = await createSubmission(request.payload);
+        // console.log('submision result', submissionId);
+        // await sendSubmissionToTaskGrader(submissionId, request.payload as SubmissionParameters);
 
-          // await sendSubmissionToTaskGrader(submissionId, request.payload as SubmissionParameters);
-
-          return h.response({
-            success: true,
-            submissionId,
-          });
-        } catch (e) {
-          if (e instanceof DecodingError) {
-            return h.response({error: 'Invalid input: ' + e.message}).code(400);
-          } else {
-            return h.response({error: 'Impossible to process'}).code(500);
-          }
-        }
+        return h.response({
+          success: true,
+          submissionId,
+        });
       }
+    }
+  });
+
+  const errorHandler = new ErrorHandler();
+
+  server.ext('onPreResponse', (request, h): ReturnValue => {
+    if (isResponseBoom(request.response)) {
+      const formattedResponse = errorHandler.handleError(request.response, h);
+
+      return h.response(formattedResponse);
+    } else {
+      return h.continue;
     }
   });
 
