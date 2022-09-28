@@ -122,8 +122,9 @@
 //     fileName = 'source-' + submissionId.replace(/[0-9]/g, number => String.fromCharCode(97+Number(number))).substring(0, 5) + '.adb';
 //   }
 //
-//   const limits = await Db.execute<TaskLimit[]>('SELECT * FROM tm_tasks_limits WHERE idTask = :idTask;', {
+//   const limits = await Db.execute<TaskLimit[]>("SELECT * FROM tm_tasks_limits WHERE idTask = :idTask AND (sLangProg = :baseLang OR sLangProg = '*')", {
 //     idTask: submission.idTask,
+//     baseLang,
 //   });
 //   let limit = limits.find(limit => limit.sLangProg === baseLang);
 //   if (!limit) {
@@ -131,7 +132,6 @@
 //   }
 //   if (!limit) {
 //     limit = {
-//       constructor: {name: 'RowDataPacket'},
 //       iMaxTime: 1000,
 //       iMaxMemory: 20000
 //     };

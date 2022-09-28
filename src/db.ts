@@ -60,12 +60,18 @@ export async function executeInConnection<T>(connection: PoolConnection, query: 
 }
 
 export async function querySingleResult<T>(query: string, params: string[] | Object): Promise<T|null> {
+  if (-1 === query.indexOf('LIMIT')) {
+    query = `${query} LIMIT 1`;
+  }
   const results = await execute<T[]>(query, params);
 
   return results.length ? results[0] : null;
 }
 
 export async function querySingleScalarResult<T>(query: string, params: string[] | Object): Promise<T|null> {
+  if (-1 === query.indexOf('LIMIT')) {
+    query = `${query} LIMIT 1`;
+  }
   const result = await querySingleResult<RowDataPacket>(query, params);
 
   return null !== result ? result[Object.keys(result)[0]] as T : null;
