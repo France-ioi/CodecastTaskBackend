@@ -60,7 +60,7 @@ export function decodePlatformToken(token: string|null|undefined, platformKey: s
     //         checkLongToken($params, $sPlatform['ID']);
     //     }
 
-    throw 'Reading token is not implemented yet';
+    throw new Error('Reading token is not implemented yet');
   } catch (e) {
     if (process.env.TEST_MODE) {
       return getTestTokenParameters(askedTaskId);
