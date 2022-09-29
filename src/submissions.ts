@@ -78,7 +78,7 @@ async function getLocalIdTask(params: PlatformTokenParameters): Promise<string> 
 
   const id = await Db.querySingleScalarResult<string>('SELECT ID FROM tm_tasks WHERE sTextId = ?', [idItem]);
   if (!id) {
-    throw new InvalidInputError(`Cannot find ID for item ${idItem || ''}`);
+    throw new InvalidInputError(`Cannot find task ${idItem || ''}`);
   }
 
   return id;
@@ -135,6 +135,7 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
           idSubmission,
         });
       }
+
       await Db.executeInConnection(connection, 'insert into tm_tasks_tests (idUser, idPlatform, idTask, sGroupType, sInput, sOutput, sName, iRank, idSubmission) values ?', valuesToInsert);
     }
   });
