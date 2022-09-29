@@ -1,5 +1,5 @@
 import * as Db from './db';
-import {Platform, SourceCode} from './models';
+import {Platform, SourceCode} from './db_models';
 import {decodePlatformToken, PlatformTokenParameters} from './tokenization';
 import {decode, getRandomId} from './util';
 import * as D from 'io-ts/Decoder';
@@ -121,21 +121,21 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
       sMode: mode,
     });
 
-    if ('UserTest' === mode && submissionData.userTests) {
+    if ('UserTest' === mode && submissionData.userTests && submissionData.userTests.length) {
+      const valuesToInsert = [];
       for (const [index, test] of submissionData.userTests.entries()) {
-        await Db.executeInConnection(connection, 'insert into tm_tasks_tests (idUser, idPlatform, idTask, sGroupType, sInput, sOutput, sName, iRank, idSubmission) values ?', [
-          {
-            idUser: params.idUser,
-            idPlatform: params.idPlatform,
-            idTask: params.idTaskLocal,
-            sInput: test.input,
-            sOutput: test.output,
-            name: test.name,
-            iRank: index,
-            idSubmission,
-          }
-        ]);
+        valuesToInsert.push({
+          idUser: params.idUser,
+          idPlatform: params.idPlatform,
+          idTask: params.idTaskLocal,
+          sInput: test.input,
+          sOutput: test.output,
+          name: test.name,
+          iRank: index,
+          idSubmission,
+        });
       }
+      await Db.executeInConnection(connection, 'insert into tm_tasks_tests (idUser, idPlatform, idTask, sGroupType, sInput, sOutput, sName, iRank, idSubmission) values ?', valuesToInsert);
     }
   });
 

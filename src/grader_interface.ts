@@ -2,7 +2,7 @@
 // import {findSourceCodeById, getPlatformTokenParams, SubmissionParameters} from './submissions';
 // import * as Db from './db';
 // import {findTaskById} from './tasks';
-// import {Submission, TaskLimit, TaskTest} from './models';
+// import {Submission, TaskLimit, TaskTest} from './db_models';
 
 // function baseLangToJSONLang(baseLang: string): string {
 //   baseLang = baseLang.toLocaleLowerCase();

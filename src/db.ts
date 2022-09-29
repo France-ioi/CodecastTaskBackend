@@ -28,12 +28,9 @@ export function init(): void {
       namedPlaceholders: true,
     });
 
-    // TODO: set timezone
-
-    // console.debug('MySql Adapter Pool generated successfully');
+    // TODO: set timezone?
   } catch (error) {
-    // console.error('[mysql.connector][init][Error]: ', error);
-    throw new DatabaseError('Failed to initialized pool');
+    throw new DatabaseError('Failed to initialized pool', undefined, error);
   }
 }
 

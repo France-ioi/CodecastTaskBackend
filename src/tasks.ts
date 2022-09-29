@@ -1,5 +1,5 @@
 import * as Db from './db';
-import {TaskLimit, Task, TaskString, TaskSubtask, TaskTest} from './models';
+import {TaskLimit, Task, TaskString, TaskSubtask, TaskTest} from './db_models';
 
 export interface TaskNormalized {
   id: string,
