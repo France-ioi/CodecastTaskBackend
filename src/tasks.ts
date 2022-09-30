@@ -1,5 +1,5 @@
 import * as Db from './db';
-import {TaskLimit, Task, TaskString, TaskSubtask, TaskTest} from './models';
+import {TaskLimit, Task, TaskString, TaskSubtask, TaskTest} from './db_models';
 
 export interface TaskNormalized {
   id: string,
@@ -127,9 +127,7 @@ function normalizeTaskTest(taskTest: TaskTest): TaskTestNormalized {
 }
 
 export async function findTaskById(taskId: string): Promise<Task|null> {
-  const tasks = await Db.execute<Task[]>('SELECT * FROM tm_tasks WHERE ID = ?', [taskId]);
-
-  return tasks.length ? {...tasks[0]} as Task : null;
+  return await Db.querySingleResult<Task>('SELECT * FROM tm_tasks WHERE ID = ?', [taskId]);
 }
 
 export async function getTask(taskId: string): Promise<TaskOutput|null> {

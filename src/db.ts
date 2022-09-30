@@ -1,6 +1,6 @@
-import {createPool, Pool} from 'mysql2';
+import {createPool, Pool, PoolConnection, RowDataPacket} from 'mysql2/promise';
 
-let pool: Pool|null;
+let pool: Pool|null = null;
 
 export class DatabaseError extends Error {
   public query;
@@ -13,11 +13,10 @@ export class DatabaseError extends Error {
   }
 }
 
-
 /**
  * generates pool connection to be used throughout the app
  */
-export const init: () => void = () => {
+export function init(): void {
   try {
     pool = createPool({
       host: process.env.MYSQL_DB_HOST,
@@ -29,27 +28,62 @@ export const init: () => void = () => {
       namedPlaceholders: true,
     });
 
-    // TODO: set timezone
-
-    // console.debug('MySql Adapter Pool generated successfully');
+    // TODO: set timezone?
   } catch (error) {
-    // console.error('[mysql.connector][init][Error]: ', error);
-    throw new DatabaseError('Failed to initialized pool');
+    throw new DatabaseError('Failed to initialized pool', undefined, error);
   }
-};
+}
 
-export const execute = <T>(query: string, params: string[] | Object): Promise<T> => {
+export async function execute<T>(query: string, params: string[] | Object): Promise<T> {
   if (null === pool) throw new DatabaseError('Pool was not created. Ensure pool is created when running the app.');
 
   try {
-    return new Promise<T>((resolve, reject) => {
-      pool!.query(query, params, (error, results) => {
-        if (error) reject(error);
-        else resolve(results as unknown as T);
-      });
-    });
+    const [rows] = await pool.query<RowDataPacket[]>(query, params);
 
+    return rows as unknown as T;
   } catch (error) {
     throw new DatabaseError('Failed to execute MySQL query', query, error);
   }
-};
+}
+
+export async function executeInConnection<T>(connection: PoolConnection, query: string, params: string[] | Object): Promise<T> {
+  try {
+    const [rows] = await connection.query<RowDataPacket[]>(query, params);
+
+    return rows as unknown as T;
+  } catch (error) {
+    throw new DatabaseError('Failed to execute MySQL query', query, error);
+  }
+}
+
+export async function querySingleResult<T>(query: string, params: string[] | Object): Promise<T|null> {
+  if (-1 === query.indexOf('LIMIT')) {
+    query = `${query} LIMIT 1`;
+  }
+  const results = await execute<T[]>(query, params);
+
+  return results.length ? results[0] : null;
+}
+
+export async function querySingleScalarResult<T>(query: string, params: string[] | Object): Promise<T|null> {
+  const result = await querySingleResult<RowDataPacket>(query, params);
+
+  return null !== result ? result[Object.keys(result)[0]] as T : null;
+}
+
+export async function transactional(callback: (connection: PoolConnection) => Promise<void>): Promise<void> {
+  if (null === pool) throw new DatabaseError('Pool was not created. Ensure pool is created when running the app.');
+
+  const connection = await pool.getConnection();
+  await connection.beginTransaction();
+
+  try {
+    await callback(connection);
+    await connection.commit();
+  } catch (e) {
+    await connection.rollback();
+    throw e;
+  } finally {
+    connection.release();
+  }
+}

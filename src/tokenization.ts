@@ -1,4 +1,4 @@
-import {Platform} from './models';
+import {Platform} from './db_models';
 
 export interface PlatformTokenParameters {
     idUser: string|null,

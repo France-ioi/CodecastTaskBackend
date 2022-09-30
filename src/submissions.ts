@@ -1,5 +1,5 @@
 import * as Db from './db';
-import {Platform, SourceCode} from './models';
+import {Platform, SourceCode} from './db_models';
 import {decodePlatformToken, PlatformTokenParameters} from './tokenization';
 import {decode, getRandomId} from './util';
 import * as D from 'io-ts/Decoder';
@@ -76,12 +76,12 @@ async function getLocalIdTask(params: PlatformTokenParameters): Promise<string> 
     return id;
   }
 
-  const ids = await Db.execute<{ID: string}[]>('SELECT ID FROM tm_tasks WHERE sTextId = ?', [idItem]);
-  if (!ids.length) {
+  const id = await Db.querySingleScalarResult<string>('SELECT ID FROM tm_tasks WHERE sTextId = ?', [idItem]);
+  if (!id) {
     throw new InvalidInputError(`Cannot find task ${idItem || ''}`);
   }
 
-  return ids[0].ID;
+  return id;
 }
 
 export async function createSubmission(submissionDataPayload: unknown): Promise<string> {
@@ -101,28 +101,28 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
     sLangProg: submissionData.answer.language,
   });
 
-  await Db.execute("insert into tm_source_codes (ID, idUser, idPlatform, idTask, sDate, sParams, sName, sSource, bSubmission) values(:idNewSC, :idUser, :idPlatform, :idTask, NOW(), :sParams, :idSubmission, :sSource, '1');", {
-    idNewSC: idNewSourceCode,
-    idUser: params.idUser,
-    idPlatform: params.idPlatform,
-    idTask: params.idTaskLocal,
-    sParams: sourceCodeParams,
-    idSubmission,
-    sSource: submissionData.answer.sourceCode
-  });
+  await Db.transactional(async connection => {
+    await Db.executeInConnection(connection, "insert into tm_source_codes (ID, idUser, idPlatform, idTask, sDate, sParams, sName, sSource, bSubmission) values(:idNewSC, :idUser, :idPlatform, :idTask, NOW(), :sParams, :idSubmission, :sSource, '1');", {
+      idNewSC: idNewSourceCode,
+      idUser: params.idUser,
+      idPlatform: params.idPlatform,
+      idTask: params.idTaskLocal,
+      sParams: sourceCodeParams,
+      idSubmission,
+      sSource: submissionData.answer.sourceCode
+    });
 
-  await Db.execute('insert into tm_submissions (ID, idUser, idPlatform, idTask, sDate, idSourceCode, sMode) values(:idSubmission, :idUser, :idPlatform, :idTask, NOW(), :idSourceCode, :sMode);', {
-    idSubmission,
-    idUser: params.idUser,
-    idPlatform: params.idPlatform,
-    idTask: params.idTaskLocal,
-    idSourceCode: idNewSourceCode,
-    sMode: mode,
-  });
+    await Db.executeInConnection(connection, 'insert into tm_submissions (ID, idUser, idPlatform, idTask, sDate, idSourceCode, sMode) values(:idSubmission, :idUser, :idPlatform, :idTask, NOW(), :idSourceCode, :sMode);', {
+      idSubmission,
+      idUser: params.idUser,
+      idPlatform: params.idPlatform,
+      idTask: params.idTaskLocal,
+      idSourceCode: idNewSourceCode,
+      sMode: mode,
+    });
 
-  if ('UserTest' === mode && submissionData.userTests) {
-    for (const [index, test] of submissionData.userTests.entries()) {
-      await Db.execute("insert into tm_tasks_tests (idUser, idPlatform, idTask, sGroupType, sInput, sOutput, sName, iRank, idSubmission) values(:idUser, :idPlatform, :idTask, 'Submission', :sInput, :sOutput, :sName, :iRank, :idSubmission);", {
+    if ('UserTest' === mode && submissionData.userTests && submissionData.userTests.length) {
+      const valuesToInsert = submissionData.userTests.map((test, index) => ({
         idUser: params.idUser,
         idPlatform: params.idPlatform,
         idTask: params.idTaskLocal,
@@ -131,15 +131,15 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
         name: test.name,
         iRank: index,
         idSubmission,
-      });
+      }));
+
+      await Db.executeInConnection(connection, 'insert into tm_tasks_tests (idUser, idPlatform, idTask, sGroupType, sInput, sOutput, sName, iRank, idSubmission) values ?', valuesToInsert);
     }
-  }
+  });
 
   return idSubmission;
 }
 
 export async function findSourceCodeById(sourceCodeId: string): Promise<SourceCode|null> {
-  const sourceCodes = await Db.execute<SourceCode[]>('SELECT * FROM tm_source_codes WHERE ID = ?', [sourceCodeId]);
-
-  return sourceCodes.length ? {...sourceCodes[0]} as SourceCode : null;
+  return await Db.querySingleResult<SourceCode>('SELECT * FROM tm_source_codes WHERE ID = ?', [sourceCodeId]);
 }
