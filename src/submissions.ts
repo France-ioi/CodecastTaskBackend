@@ -122,19 +122,16 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
     });
 
     if ('UserTest' === mode && submissionData.userTests && submissionData.userTests.length) {
-      const valuesToInsert = [];
-      for (const [index, test] of submissionData.userTests.entries()) {
-        valuesToInsert.push({
-          idUser: params.idUser,
-          idPlatform: params.idPlatform,
-          idTask: params.idTaskLocal,
-          sInput: test.input,
-          sOutput: test.output,
-          name: test.name,
-          iRank: index,
-          idSubmission,
-        });
-      }
+      const valuesToInsert = submissionData.userTests.map((test, index) => ({
+        idUser: params.idUser,
+        idPlatform: params.idPlatform,
+        idTask: params.idTaskLocal,
+        sInput: test.input,
+        sOutput: test.output,
+        name: test.name,
+        iRank: index,
+        idSubmission,
+      }));
 
       await Db.executeInConnection(connection, 'insert into tm_tasks_tests (idUser, idPlatform, idTask, sGroupType, sInput, sOutput, sName, iRank, idSubmission) values ?', valuesToInsert);
     }

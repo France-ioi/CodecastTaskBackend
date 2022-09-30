@@ -1,6 +1,6 @@
 import {createPool, Pool, PoolConnection, RowDataPacket} from 'mysql2/promise';
 
-let pool: Pool;
+let pool: Pool|null = null;
 
 export class DatabaseError extends Error {
   public query;
@@ -66,15 +66,14 @@ export async function querySingleResult<T>(query: string, params: string[] | Obj
 }
 
 export async function querySingleScalarResult<T>(query: string, params: string[] | Object): Promise<T|null> {
-  if (-1 === query.indexOf('LIMIT')) {
-    query = `${query} LIMIT 1`;
-  }
   const result = await querySingleResult<RowDataPacket>(query, params);
 
   return null !== result ? result[Object.keys(result)[0]] as T : null;
 }
 
 export async function transactional(callback: (connection: PoolConnection) => Promise<void>): Promise<void> {
+  if (null === pool) throw new DatabaseError('Pool was not created. Ensure pool is created when running the app.');
+
   const connection = await pool.getConnection();
   await connection.beginTransaction();
 
