@@ -1,263 +1,291 @@
-// import {PlatformTokenParameters} from './tokenization';
-// import {findSourceCodeById, getPlatformTokenParams, SubmissionParameters} from './submissions';
-// import * as Db from './db';
-// import {findTaskById} from './tasks';
-// import {Submission, TaskLimit, TaskTest} from './db_models';
+import {PlatformTokenParameters, TokenGenerator} from './tokenization';
+import {findSourceCodeById, getPlatformTokenParams, SubmissionParameters} from './submissions';
+import * as Db from './db';
+import {findTaskById} from './tasks';
+import {Submission, TaskLimit, TaskLimitModel, TaskTest} from './db_models';
+import {InvalidInputError} from './error_handler';
+import got from 'got';
 
-// function baseLangToJSONLang(baseLang: string): string {
-//   baseLang = baseLang.toLocaleLowerCase();
-//   if (baseLang == 'c++') {
-//     return 'cpp';
-//   }
-//   if (baseLang == 'python') {
-//     return 'python3';
-//   }
-//
-//   return baseLang;
-// }
-//
-// const JSON_LANG_TO_EXT: {[key: string]: string} = {
-//   'python': 'py',
-//   'text': 'txt',
-//   'python3': 'py',
-//   'ocaml': 'ml',
-//   'pascal': 'pas',
-//   'java': 'java',
-//   'java8': 'java',
-//   'javascool': 'jvs',
-//   'ada': 'adb',
-//   'cpp': 'cpp',
-//   'cpp11': 'cpp',
-//   'c': 'c',
-//   'cplex': 'mod',
-//   'shell': 'sh',
-// };
+function baseLangToJSONLang(baseLang: string): string {
+  baseLang = baseLang.toLocaleLowerCase();
+  if (baseLang == 'c++') {
+    return 'cpp';
+  }
+  if (baseLang == 'python') {
+    return 'python3';
+  }
 
-// export async function sendSubmissionToTaskGrader(submissionId: string, submissionData: SubmissionParameters): Promise<void> {
-//   const params = await getPlatformTokenParams(submissionData.token, submissionData.platform, submissionData.taskId);
-//   let idUserAnswer = null;
-//   let answerTokenParams: PlatformTokenParameters|null = null;
-//   if (submissionData.answerToken) {
-//     answerTokenParams = await getPlatformTokenParams(submissionData.answerToken, submissionData.platform, submissionData.taskId);
-//     if (answerTokenParams.idUserAnswer) {
-//       idUserAnswer = answerTokenParams.idUserAnswer;
-//     }
-//   }
-//
-//   if (answerTokenParams && !process.env.TEST_MODE) {
-//     if (answerTokenParams.idUser !== params.idUser || answerTokenParams.itemUrl !== params.itemUrl) {
-//       throw `Mismatching tokens idUser or itemUrl, token = ${JSON.stringify(params)}, answerToken = ${JSON.stringify(answerTokenParams)}`;
-//     }
-//     if (!answerTokenParams.sAnswer) {
-//       throw 'Missing answer in answerToken';
-//     }
-//     const decodedAnswer: unknown = JSON.parse(answerTokenParams.sAnswer);
-//     if (!decodedAnswer['idSubmission'] || decodedAnswer['idSubmission'] !== submissionId) {
-//       throw 'Impossible to read submission associated with answer token or submission ID mismatching';
-//     }
-//     if (false === params.bSubmissionPossible || false === params.bAllowGrading) {
-//       throw 'Token indicates read-only task';
-//     }
-//   }
-//
-//   let returnUrl = null;
-//   if (submissionData?.taskParams?.returnUrl) {
-//     returnUrl = submissionData.taskParams.returnUrl;
-//   } else if (params.returnUrl) {
-//     returnUrl = params.returnUrl;
-//   }
-//
-//   if (returnUrl || idUserAnswer) {
-//     await Db.execute('update tm_submissions set sReturnUrl = :returnUrl, idUserAnswer = :idUserAnswer WHERE tm_submissions.`ID` = :idSubmission and tm_submissions.idUser = :idUser and tm_submissions.idPlatform = :idPlatform and tm_submissions.idTask = :idTask;', {
-//       idUser: params.idUser,
-//       idTask: params.idTaskLocal,
-//       idPlatform: params.idPlatform,
-//       idSubmission: submissionId,
-//       returnUrl,
-//       idUserAnswer,
-//     });
-//   }
-//
-//   const result = await Db.execute<Submission[]>(`SELECT tm_submissions.*
-// FROM tm_submissions
-//     JOIN tm_tasks on tm_tasks.ID = tm_submissions.idTask
-//     JOIN tm_source_codes on tm_source_codes.ID = tm_submissions.idSourceCode
-// WHERE tm_submissions.ID = :idSubmission
-//   and tm_submissions.idUser = :idUser
-//   and tm_submissions.idPlatform = :idPlatform
-//   and tm_submissions.idTask = :idTask;`, {
-//     idUser: params.idUserAnswer,
-//     idTask: params.idTaskLocal,
-//     idPlatform: params.idPlatform,
-//     idSubmission: submissionId,
-//   });
-//   if (!result.length) {
-//     throw 'Cannot find submission ' + submissionId;
-//   }
-//
-//   const submission = {...result[0]};
-//   const task = await findTaskById(params.idTaskLocal);
-//   const sourceCode = await findSourceCodeById(submission.idSourceCode);
-//
-//   if (!submissionData.answerToken && !process.env.TEST_MODE && 'UserTest' !== submission.sMode) {
-//     throw 'Missing answerToken, required for this type of submission';
-//   }
-//
-//   let tests: TaskTest[] = [];
-//   if ('UserTest' === submission.sMode) {
-//     tests = await Db.execute<TaskTest[]>('SELECT tm_tasks_tests.* FROM tm_tasks_tests WHERE idUser = :idUser and idPlatform = :idPlatform and idTask = :idTask and idSubmission = :idSubmission', {
-//       idUser: params.idUser,
-//       idTask: params.idTaskLocal,
-//       idPlatform: params.idPlatform,
-//       idSubmission: submissionId,
-//     });
-//   }
-//
-//   const baseLang = JSON.parse(sourceCode.sParams)['sLangProg'];
-//   const lang = baseLangToJSONLang(baseLang);
-//
-//   let fileName = submissionId + '.' + JSON_LANG_TO_EXT[lang];
-//   if ('ada' === baseLang) {
-//     // ADA needs letters for the file name
-//     fileName = 'source-' + submissionId.replace(/[0-9]/g, number => String.fromCharCode(97+Number(number))).substring(0, 5) + '.adb';
-//   }
-//
-//   const limits = await Db.execute<TaskLimit[]>("SELECT * FROM tm_tasks_limits WHERE idTask = :idTask AND (sLangProg = :baseLang OR sLangProg = '*')", {
-//     idTask: submission.idTask,
-//     baseLang,
-//   });
-//   let limit = limits.find(limit => limit.sLangProg === baseLang);
-//   if (!limit) {
-//     limit = limits.find(limit => limit.sLangProg === '*');
-//   }
-//   if (!limit) {
-//     limit = {
-//       iMaxTime: 1000,
-//       iMaxMemory: 20000
-//     };
-//   }
-//
-//   let jobData: {extraTests: any[], extraParams: any, executions: any[]};
-//   if (task.bTestMode) {
-//     tests = JSON.parse(sourceCode.sSource);
-//
-//     jobData = JSON.parse('{"taskPath": "","extraParams": {"defaultFilterTests": ["user-*.in"]},"extraTests": [],"solutions": "@testEvaluationSolutions","executions": "@testEvaluationExecutions"}');
-//     if (tests.length) {
-//       jobData['extraTests'] = [];
-//       for (const test of tests) {
-//         jobData['extraTests'].push({
-//           name: `user-${test.sName}.in`,
-//           content: test.sInput,
-//         });
-//       }
-//     }
-//   } else {
-//     let depLang = lang;
-//     if (depLang === 'cpp11') {
-//       depLang = 'cpp';
-//     }
-//
-//     jobData = JSON.parse(`{"taskPath":"","extraParams": {"solutionFilename": "${fileName}","solutionContent": "","solutionLanguage": "${lang}","solutionDependencies": "@defaultDependencies-${depLang}","solutionFilterTests":"@defaultFilterTests-${depLang}","solutionId": "sol0-${fileName}","solutionExecId": "exec0-${fileName}","defaultSolutionCompParams": {"memoryLimitKb":"","timeLimitMs":"","stdoutTruncateKb":-1,"stderrTruncateKb":-1,"useCache":true,"getFiles":[]},"defaultSolutionExecParams": {"memoryLimitKb":"","timeLimitMs":"","stdoutTruncateKb":-1,"stderrTruncateKb":-1,"useCache":true,"getFiles":[]}}}`);
-//     jobData['extraParams']['solutionContent'] = sourceCode.sSource;
-//     // Compilation time/memory limits (fixed)
-//     jobData['extraParams']['defaultSolutionCompParams']['memoryLimitKb'] = 131072;
-//     jobData['extraParams']['defaultSolutionCompParams']['timeLimitMs'] = 10000;
-//     // Execution time/memory limits (configured by the task)
-//     jobData['extraParams']['defaultSolutionExecParams']['memoryLimitKb'] = Number(limit.iMaxMemory);
-//     jobData['extraParams']['defaultSolutionExecParams']['timeLimitMs'] = Number(limit.iMaxTime);
-//
-//     if (tests.length) {
-//       jobData['extraTests'] = [];
-//       jobData['extraParams']['solutionFilterTests'] = ['id-*.in'];
-//       jobData['executions'] = [{
-//         id: 'testExecution',
-//         idSolution: '@solutionId',
-//         filterTests: ['id-*.in'],
-//         runExecution: '@defaultSolutionExecParams',
-//       }];
-//       for (const test of tests) {
-//         jobData['extraTests'].push({
-//           name: `id-${test.ID}.in`,
-//           content: test.sInput,
-//         });
-//         jobData['extraTests'].push({
-//           name: `id-${test.ID}.out`,
-//           content: test.sOutput,
-//         });
-//       }
-//     }
-//   }
-//
-//   jobData['taskPath'] = task.sTaskPath;
-//   jobData['options'] = {
-//     locale: submissionData.sLocale,
-//   };
-//
-//   const jobUserTaskId = `${submission.idTask}-${submission.idUser}-${submission.idPlatform}`;
-//
-//   let evalTags = task.sEvalTags;
-//   if (!evalTags && process.env.GRADER_QUEUE_DEFAULT_TAGS) {
-//     evalTags = process.env.GRADER_QUEUE_DEFAULT_TAGS;
-//   }
-//
-//   const queueRequest = {
-//     request: 'sendjob',
-//     priority: 1,
-//     taskrevision: task.sRevision,
-//     tags: evalTags,
-//     jobname: submissionId,
-//     jobdata: JSON.stringify(jobData),
-//     jobusertaskid: jobUserTaskId,
-//   };
-// }
+  return baseLang;
+}
 
-// if($config->graderqueue->debug == '') {
-//     // Generate encrypted and signed token for the request
-//     $tokenGenerator = new TokenGenerator($config->graderqueue->own_private_key,
-//         $config->graderqueue->own_name,
-//         'private',
-//         $config->graderqueue->public_key,
-//         $config->graderqueue->name,
-//         'public'
-//     );
-//
-//     $jwe = $tokenGenerator->encodeJWES($queueRequest);
-//
-//     $queueRequest = array(
-//         'sToken' => $jwe,
-//         'sPlatform' => $config->graderqueue->own_name
-// );
-// } else {
-//     // Use debug password to send plain request
-//     $queueRequest['debugPassword'] = $config->graderqueue->debug;
-// }
-//
-// // Send request
-// $ch = curl_init();
-//
-// curl_setopt($ch, CURLOPT_URL,$config->graderqueue->url);
-// curl_setopt($ch, CURLOPT_POST, 1);
-// curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-// curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($queueRequest));
-//
-// $queueAnswer = curl_exec ($ch);
-//
-// curl_close ($ch);
-//
-// // Read answer
-// try {
-//     $queueAnswerData = json_decode($queueAnswer, true);
-//     if ($queueAnswerData['errorcode'] == 0) {
-//         $result = ['bSuccess' => true];
-//     } else {
-//         $result = ['bSuccess' => false, 'sError' => 'Received error from graderqueue: ' . $queueAnswerData['errormsg']];
-//     }
-// } catch(Exception $e) {
-//     $result = ['bSuccess' => false, 'sError' => 'Cannot read graderqueue json return: ' . $e->getMessage()];
-// }
-//
-// if($config->graderqueue->debug != '') {
-//     $result['queueAnswer'] = $queueAnswer;
-// }
-//
-// echo json_encode($result);
+const JSON_LANG_TO_EXT: {[key: string]: string} = {
+  'python': 'py',
+  'text': 'txt',
+  'python3': 'py',
+  'ocaml': 'ml',
+  'pascal': 'pas',
+  'java': 'java',
+  'java8': 'java',
+  'javascool': 'jvs',
+  'ada': 'adb',
+  'cpp': 'cpp',
+  'cpp11': 'cpp',
+  'c': 'c',
+  'cplex': 'mod',
+  'shell': 'sh',
+};
+
+export interface JobData {
+  extraTests: any[],
+  extraParams: {
+    solutionContent: string,
+    solutionDependencies: string,
+    solutionExecId: string,
+    solutionFilename: string,
+    solutionFilterTests: string[],
+    solutionId: string,
+    solutionLanguage: string,
+    defaultSolutionCompParams: {
+      memoryLimitKb: number,
+      timeLimitMs: number,
+    },
+    defaultSolutionExecParams: {
+      memoryLimitKb: number,
+      timeLimitMs: number,
+    },
+  },
+  executions: any[],
+  taskPath: string,
+  options: {
+    locale?: string,
+  },
+}
+
+export async function sendSubmissionToTaskGrader(submissionId: string, submissionData: SubmissionParameters): Promise<void> {
+  const params = await getPlatformTokenParams(submissionData.taskId, submissionData.token, submissionData.platform);
+  let idUserAnswer = null;
+  let answerTokenParams: PlatformTokenParameters|null = null;
+  if (submissionData.answerToken) {
+    answerTokenParams = await getPlatformTokenParams(submissionData.taskId, submissionData.answerToken, submissionData.platform);
+    if (answerTokenParams.idUserAnswer) {
+      idUserAnswer = answerTokenParams.idUserAnswer;
+    }
+  }
+
+  if (answerTokenParams && !process.env.TEST_MODE) {
+    if (answerTokenParams.idUser !== params.idUser || answerTokenParams.itemUrl !== params.itemUrl) {
+      throw new InvalidInputError(`Mismatching tokens idUser or itemUrl, token = ${JSON.stringify(params)}, answerToken = ${JSON.stringify(answerTokenParams)}`);
+    }
+    if (!answerTokenParams.sAnswer) {
+      throw new InvalidInputError('Missing answer in answerToken');
+    }
+    const decodedAnswer = JSON.parse(answerTokenParams.sAnswer) as {idSubmission?: string};
+    if (!('idSubmission' in decodedAnswer) || decodedAnswer['idSubmission'] !== submissionId) {
+      throw new InvalidInputError('Impossible to read submission associated with answer token or submission ID mismatching');
+    }
+    if (false === params.bSubmissionPossible || false === params.bAllowGrading) {
+      throw new InvalidInputError('Token indicates read-only task');
+    }
+  }
+
+  let returnUrl = null;
+  if (submissionData?.taskParams?.returnUrl) {
+    returnUrl = submissionData.taskParams.returnUrl;
+  } else if (params.returnUrl) {
+    returnUrl = params.returnUrl;
+  }
+
+  if (returnUrl || idUserAnswer) {
+    await Db.execute('update tm_submissions set sReturnUrl = :returnUrl, idUserAnswer = :idUserAnswer WHERE tm_submissions.`ID` = :idSubmission and tm_submissions.idUser = :idUser and tm_submissions.idPlatform = :idPlatform and tm_submissions.idTask = :idTask;', {
+      idUser: params.idUser,
+      idTask: params.idTaskLocal,
+      idPlatform: params.idPlatform,
+      idSubmission: submissionId,
+      returnUrl,
+      idUserAnswer,
+    });
+  }
+
+  const submission = await Db.querySingleResult<Submission>(`SELECT tm_submissions.*
+FROM tm_submissions
+    JOIN tm_tasks on tm_tasks.ID = tm_submissions.idTask
+    JOIN tm_source_codes on tm_source_codes.ID = tm_submissions.idSourceCode
+WHERE tm_submissions.ID = :idSubmission
+  and tm_submissions.idUser = :idUser
+  and tm_submissions.idPlatform = :idPlatform
+  and tm_submissions.idTask = :idTask;`, {
+    idUser: params.idUser,
+    idTask: params.idTaskLocal,
+    idPlatform: params.idPlatform,
+    idSubmission: submissionId,
+  });
+  if (null === submission) {
+    throw new InvalidInputError('Cannot find submission ' + submissionId);
+  }
+
+  const task = await findTaskById(params.idTaskLocal);
+  if (null === task) {
+    throw new InvalidInputError(`Cannot find task with id ${params.idTaskLocal}`);
+  }
+  const sourceCode = await findSourceCodeById(submission.idSourceCode);
+  if (null === sourceCode) {
+    throw new InvalidInputError('Cannot find source code associated with this submission');
+  }
+
+  if (!submissionData.answerToken && !process.env.TEST_MODE && 'UserTest' !== submission.sMode) {
+    throw new InvalidInputError('Missing answerToken, required for this type of submission');
+  }
+
+  let tests: TaskTest[] = [];
+  if ('UserTest' === submission.sMode) {
+    tests = await Db.execute<TaskTest[]>('SELECT tm_tasks_tests.* FROM tm_tasks_tests WHERE idUser = :idUser and idPlatform = :idPlatform and idTask = :idTask and idSubmission = :idSubmission', {
+      idUser: params.idUser,
+      idTask: params.idTaskLocal,
+      idPlatform: params.idPlatform,
+      idSubmission: submissionId,
+    });
+  }
+
+  const sourceCodeParams = JSON.parse(sourceCode.sParams) as {sLangProg: string};
+  const baseLang = sourceCodeParams['sLangProg'];
+  const lang = baseLangToJSONLang(baseLang);
+
+  let fileName = submissionId + '.' + JSON_LANG_TO_EXT[lang];
+  if ('ada' === baseLang) {
+    // ADA needs letters for the file name
+    fileName = 'source-' + submissionId.replace(/[0-9]/g, number => String.fromCharCode(97+Number(number))).substring(0, 5) + '.adb';
+  }
+
+  const limits = await Db.execute<TaskLimitModel[]>("SELECT * FROM tm_tasks_limits WHERE idTask = :idTask AND (sLangProg = :baseLang OR sLangProg = '*')", {
+    idTask: submission.idTask,
+    baseLang,
+  });
+  let limit: TaskLimit|undefined = limits.find(limit => limit.sLangProg === baseLang);
+  if (!limit) {
+    limit = limits.find(limit => limit.sLangProg === '*');
+  }
+  if (!limit) {
+    limit = {
+      iMaxTime: 1000,
+      iMaxMemory: 20000
+    };
+  }
+
+  let jobData: JobData;
+  if (task.bTestMode) {
+    tests = JSON.parse(sourceCode.sSource) as TaskTest[];
+
+    jobData = JSON.parse('{"taskPath": "","extraParams": {"defaultFilterTests": ["user-*.in"]},"extraTests": [],"solutions": "@testEvaluationSolutions","executions": "@testEvaluationExecutions"}') as JobData;
+    if (tests.length) {
+      jobData['extraTests'] = [];
+      for (const test of tests) {
+        jobData['extraTests'].push({
+          name: `user-${test.sName}.in`,
+          content: test.sInput,
+        });
+      }
+    }
+  } else {
+    let depLang = lang;
+    if (depLang === 'cpp11') {
+      depLang = 'cpp';
+    }
+
+    jobData = JSON.parse(`{"taskPath":"","extraParams": {"solutionFilename": "${fileName}","solutionContent": "","solutionLanguage": "${lang}","solutionDependencies": "@defaultDependencies-${depLang}","solutionFilterTests":"@defaultFilterTests-${depLang}","solutionId": "sol0-${fileName}","solutionExecId": "exec0-${fileName}","defaultSolutionCompParams": {"memoryLimitKb":"","timeLimitMs":"","stdoutTruncateKb":-1,"stderrTruncateKb":-1,"useCache":true,"getFiles":[]},"defaultSolutionExecParams": {"memoryLimitKb":"","timeLimitMs":"","stdoutTruncateKb":-1,"stderrTruncateKb":-1,"useCache":true,"getFiles":[]}}}`) as JobData;
+    jobData['extraParams']['solutionContent'] = sourceCode.sSource;
+    // Compilation time/memory limits (fixed)
+    jobData['extraParams']['defaultSolutionCompParams']['memoryLimitKb'] = 131072;
+    jobData['extraParams']['defaultSolutionCompParams']['timeLimitMs'] = 10000;
+    // Execution time/memory limits (configured by the task)
+    jobData['extraParams']['defaultSolutionExecParams']['memoryLimitKb'] = Number(limit.iMaxMemory);
+    jobData['extraParams']['defaultSolutionExecParams']['timeLimitMs'] = Number(limit.iMaxTime);
+
+    if (tests.length) {
+      jobData['extraTests'] = [];
+      jobData['extraParams']['solutionFilterTests'] = ['id-*.in'];
+      jobData['executions'] = [{
+        id: 'testExecution',
+        idSolution: '@solutionId',
+        filterTests: ['id-*.in'],
+        runExecution: '@defaultSolutionExecParams',
+      }];
+      for (const test of tests) {
+        jobData['extraTests'].push({
+          name: `id-${test.ID}.in`,
+          content: test.sInput,
+        });
+        jobData['extraTests'].push({
+          name: `id-${test.ID}.out`,
+          content: test.sOutput,
+        });
+      }
+    }
+  }
+
+  jobData['taskPath'] = task.sTaskPath;
+  jobData['options'] = {
+    locale: submissionData.sLocale,
+  };
+
+  const jobUserTaskId = `${submission.idTask}-${submission.idUser}-${submission.idPlatform}`;
+
+  let evalTags = task.sEvalTags;
+  if (!evalTags && process.env.GRADER_QUEUE_DEFAULT_TAGS) {
+    evalTags = process.env.GRADER_QUEUE_DEFAULT_TAGS;
+  }
+
+  const queueRequestParams = {
+    request: 'sendjob',
+    priority: 1,
+    taskrevision: task.sRevision,
+    tags: evalTags,
+    jobname: submissionId,
+    jobdata: JSON.stringify(jobData),
+    jobusertaskid: jobUserTaskId,
+  };
+
+  // console.log('queue request', queueRequestParams);
+
+  let queueRequest;
+
+  if (process.env.GRADER_QUEUE_DEBUG_PASSWORD) {
+    // Use debug password to send plain request
+    queueRequest = {
+      ...queueRequestParams,
+      debugPassword: process.env.GRADER_QUEUE_DEBUG_PASSWORD
+    };
+  } else {
+    // Generate encrypted and signed token for the request
+    const tokenGenerator = new TokenGenerator();
+    await tokenGenerator.setKeys(process.env.GRADER_QUEUE_OWN_PRIVATE_KEY, process.env.GRADER_QUEUE_PUBLIC_KEY);
+    const jwe = await tokenGenerator.encodeJwes(queueRequestParams);
+
+    queueRequest = {
+      sToken: jwe,
+      sPlatform: process.env.GRADER_QUEUE_OWN_NAME,
+    };
+  }
+
+  if (!process.env.GRADER_QUEUE_URL) {
+    throw new Error('Missing grader queue URL');
+  }
+
+  let queueAnswer: string;
+
+  try {
+    const response = await got.post(process.env.GRADER_QUEUE_URL, {
+      form: queueRequest,
+    });
+
+    queueAnswer = response.body;
+    // console.log('queue answer', queueAnswer);
+    // console.log(response.body);
+  } catch (error) {
+    throw new Error(`Cannot read graderqueue json return: ${String(error)}`);
+  }
+
+  const queueAnswerData = JSON.parse(queueAnswer) as {errorCode: number, errormsg?: string};
+  if (queueAnswerData.errorCode !== 0) {
+    throw new Error(`Received error from graderqueue: ${queueAnswerData['errormsg'] || ''}`);
+  }
+}

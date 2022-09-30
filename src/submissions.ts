@@ -5,6 +5,8 @@ import {decode, getRandomId} from './util';
 import * as D from 'io-ts/Decoder';
 import {pipe} from 'fp-ts/function';
 import {InvalidInputError} from './error_handler';
+import {sendSubmissionToTaskGrader} from './grader_interface';
+import {findTaskById} from './tasks';
 
 export const submissionDataDecoder = pipe(
   D.struct({
@@ -91,7 +93,14 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
     throw new InvalidInputError('Missing token or platform POST variable');
   }
 
+
   const params = await getPlatformTokenParams(submissionData.taskId, submissionData.token, submissionData.platform);
+  const task = await findTaskById(params.idTaskLocal);
+  if (null === task) {
+    throw new InvalidInputError(`Invalid task id: ${params.idTaskLocal}`);
+  }
+
+
   const mode = submissionData.userTests && submissionData.userTests.length ? 'UserTest' : 'Submitted';
 
   // save source code (with bSubmission = 1)
@@ -100,6 +109,8 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
   const sourceCodeParams = JSON.stringify({
     sLangProg: submissionData.answer.language,
   });
+
+  // TODO: Check task exists
 
   await Db.transactional(async connection => {
     await Db.executeInConnection(connection, "insert into tm_source_codes (ID, idUser, idPlatform, idTask, sDate, sParams, sName, sSource, bSubmission) values(:idNewSC, :idUser, :idPlatform, :idTask, NOW(), :sParams, :idSubmission, :sSource, '1');", {
@@ -136,6 +147,8 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
       await Db.executeInConnection(connection, 'insert into tm_tasks_tests (idUser, idPlatform, idTask, sGroupType, sInput, sOutput, sName, iRank, idSubmission) values ?', valuesToInsert);
     }
   });
+
+  await sendSubmissionToTaskGrader(idSubmission, submissionData);
 
   return idSubmission;
 }

@@ -26,6 +26,8 @@ export function init(): void {
       database: process.env.MYSQL_DB_DATABASE,
       charset: 'utf8',
       namedPlaceholders: true,
+      supportBigNumbers: true,
+      bigNumberStrings: true,
     });
 
     // TODO: set timezone?
@@ -57,9 +59,7 @@ export async function executeInConnection<T>(connection: PoolConnection, query: 
 }
 
 export async function querySingleResult<T>(query: string, params: string[] | Object): Promise<T|null> {
-  if (-1 === query.indexOf('LIMIT')) {
-    query = `${query} LIMIT 1`;
-  }
+  query = addLimitOne(query);
   const results = await execute<T[]>(query, params);
 
   return results.length ? results[0] : null;
@@ -69,6 +69,19 @@ export async function querySingleScalarResult<T>(query: string, params: string[]
   const result = await querySingleResult<RowDataPacket>(query, params);
 
   return null !== result ? result[Object.keys(result)[0]] as T : null;
+}
+
+function addLimitOne(query: string): string {
+  if (-1 !== query.indexOf('LIMIT')) {
+    return query;
+  }
+
+  query = query.trim();
+  if (query.slice(-1) === ';') {
+    query = query.substring(0, query.length - 1);
+  }
+
+  return `${query} LIMIT 1`;
 }
 
 export async function transactional(callback: (connection: PoolConnection) => Promise<void>): Promise<void> {

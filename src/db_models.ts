@@ -26,11 +26,14 @@ export interface Task {
 }
 
 export interface TaskLimit {
+  iMaxTime: number,
+  iMaxMemory: number,
+}
+
+export interface TaskLimitModel extends TaskLimit {
     ID: string,
     idTask: string,
     sLangProg: string,
-    iMaxTime: number,
-    iMaxMemory: number,
     iVersion: number,
 }
 
