@@ -4,6 +4,7 @@ import {getTask} from './tasks';
 import {createSubmission} from './submissions';
 import ReturnValue = Lifecycle.ReturnValue;
 import {ErrorHandler, isResponseBoom, NotFoundError} from './error_handler';
+import {receiveSubmissionResultsFromTaskGrader} from './grader_webhook';
 
 export let server: Server;
 
@@ -41,6 +42,20 @@ export const init = function(): Server {
         return h.response({
           success: true,
           submissionId,
+        });
+      }
+    }
+  });
+
+  server.route({
+    method: 'POST',
+    path: '/task-grader-webhook',
+    options: {
+      handler: async (request, h) => {
+        await receiveSubmissionResultsFromTaskGrader(request.payload);
+
+        return h.response({
+          success: true,
         });
       }
     }

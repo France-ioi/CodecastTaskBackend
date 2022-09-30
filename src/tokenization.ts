@@ -73,6 +73,10 @@ export function decodePlatformToken(token: string|null|undefined, platformKey: s
   }
 }
 
+/**
+ * JWE key is the recipient public key used for encryption
+ * JWS Key is our private key used for signing
+ */
 export class TokenGenerator {
   public jwsKey: KeyLike|null = null;
   public jweKey: KeyLike|null = null;

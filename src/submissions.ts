@@ -1,5 +1,5 @@
 import * as Db from './db';
-import {Platform, SourceCode} from './db_models';
+import {Platform, SourceCode, Submission} from './db_models';
 import {decodePlatformToken, PlatformTokenParameters} from './tokenization';
 import {decode, getRandomId} from './util';
 import * as D from 'io-ts/Decoder';
@@ -155,4 +155,8 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
 
 export async function findSourceCodeById(sourceCodeId: string): Promise<SourceCode|null> {
   return await Db.querySingleResult<SourceCode>('SELECT * FROM tm_source_codes WHERE ID = ?', [sourceCodeId]);
+}
+
+export async function findSubmissionById(submissionId: string): Promise<Submission|null> {
+  return await Db.querySingleResult<Submission>('SELECT * FROM tm_submissions WHERE ID = ?', [submissionId]);
 }
