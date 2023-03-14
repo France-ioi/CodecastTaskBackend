@@ -6,6 +6,7 @@ import {JwesDecoder} from './crypto/jwes_decoder';
 import * as Db from './db';
 import {TaskSubtask, TaskTest} from './db_models';
 import {findTaskById} from './tasks';
+import {longPollingHandler} from './long_polling';
 
 export const taskGraderWebhookPayloadDecoder = pipe(
   D.struct({
@@ -33,7 +34,7 @@ export interface ProgramExecutionResult {
 export interface GraderResultExecution {
   id: number,
   name: string,
-  testReports: {
+  testsReports: {
     name: string,
     execution?: ProgramExecutionResult,
     checker?: ProgramExecutionResult,
@@ -83,7 +84,7 @@ async function createNewTest(idSubmission: string, idTask: string, testName: str
     idSubtask: null,
     idUser: null,
     idPlatform: null,
-    bActive: true,
+    bActive: 1,
     sInput: '',
     iVersion: 0,
   };
@@ -146,7 +147,7 @@ export async function receiveSubmissionResultsFromTaskGrader(taskGraderWebhookPa
 
       const test = testsByName[execution.name];
       let nbTestFailed = 0;
-      for (const testReport of execution.testReports) {
+      for (const testReport of execution.testsReports) {
         const testName = testReport.name.substring(5);
         if (!testReport.checker) {
           if (!(testName in invalidTests)) {
@@ -240,7 +241,10 @@ ${thisCompilMsg}`;
             }
             const idSubtask = curSubtask.ID;
 
-            const submSubtaskId: string = await Db.execute('INSERT INTO tm_submissions_subtasks (bSuccess, iScore, idSubtask, idSubmission) VALUES(0, 0, :idSubtask, :idSubmission);', {
+            const submSubtaskId = getRandomId();
+
+            await Db.execute('INSERT INTO tm_submissions_subtasks (ID, bSuccess, iScore, idSubtask, idSubmission) VALUES(:submissionSubtaskId, 0, 0, :idSubtask, :idSubmission);', {
+              submissionSubtaskId: submSubtaskId,
               idSubtask,
               idSubmission: submission.ID,
             });
@@ -248,7 +252,7 @@ ${thisCompilMsg}`;
             minPointsSubtask[submSubtaskId] = curSubtask.iPointsMax;
             maxPointsSubtask[submSubtaskId] = curSubtask.iPointsMax;
 
-            for (const testReport of execution.testReports) {
+            for (const testReport of execution.testsReports) {
               testsReports[nbTestsReports] = testReport;
               testReportToSubtask.push({
                 id: submSubtaskId,
@@ -263,7 +267,7 @@ ${thisCompilMsg}`;
         } else {
           // ignore subtasks, we have more executions than subtasks
           for (const execution of graderResults.executions) {
-            for (const testReport of execution.testReports) {
+            for (const testReport of execution.testsReports) {
               testReport.name = `${execution.id}-${testReport.name}`;
               testsReports.push(testReport);
             }
@@ -272,7 +276,7 @@ ${thisCompilMsg}`;
       } else {
         // there are as many executions as there are sources to evaluate, so here
         // we use only one:
-        testsReports = graderResults.executions[0].testReports;
+        testsReports = graderResults.executions[0].testsReports;
       }
 
       for (const [index, testReport] of testsReports.entries()) {
@@ -296,7 +300,7 @@ ${thisCompilMsg}`;
 
         const test = testsByName[testReportName];
         let iErrorCode = testReport?.execution?.exitSig;
-        if (iErrorCode) {
+        if (!iErrorCode) {
           iErrorCode = 1;
         }
 
@@ -406,6 +410,8 @@ ${thisCompilMsg}`;
       bSuccess,
     });
   }
+
+  longPollingHandler.fireEvent('evaluation-' + submission.ID);
 }
 
 // $itemUrl = $config->baseUrl.'task.html?taskId='.$task['ID'];

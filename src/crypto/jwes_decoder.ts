@@ -11,14 +11,15 @@ export class JwesDecoder {
   public jweKey: KeyLike|null = null;
   public algorithm = 'ES256';
 
+  // Recipient public key to check signature for JWS, own private key to decrypt for JWE
   public async setKeys(jwsKey: string|undefined, jweKey: string|undefined): Promise<void> {
     if (!jwsKey || !jweKey) {
       throw new Error('A valid JWS key and a valid JWE key must be fulfilled');
     }
     // console.log({jwsKey, jweKey});
 
-    this.jwsKey = await jose.importPKCS8(jwsKey, this.algorithm);
-    this.jweKey = await jose.importSPKI(jweKey, this.algorithm);
+    this.jwsKey = await jose.importSPKI(jwsKey, this.algorithm);
+    this.jweKey = await jose.importPKCS8(jweKey, this.algorithm);
   }
 
   async decodeJwes(payload: string): Promise<unknown> {
@@ -46,9 +47,9 @@ export class JwesDecoder {
       throw new Error(`Invalid Task token, unable to decrypt: ${result}`);
     }
 
-    const yesterdayDate = moment().subtract(1, 'day').format('dd-mm-YYYY');
-    const todayDate = moment().format('dd-mm-YYYY');
-    const tomorrowDate = moment().add(1, 'day').format('dd-mm-YYYY');
+    const yesterdayDate = moment().subtract(1, 'day').format('DD-MM-YYYY');
+    const todayDate = moment().format('DD-MM-YYYY');
+    const tomorrowDate = moment().add(1, 'day').format('DD-MM-YYYY');
 
     if ((!params['type'] || params['type'] !== 'long') && params['date'] !== yesterdayDate && params['date'] !== todayDate && params['date'] !== tomorrowDate) {
       throw new Error(`API token expired: ${params['date']}`);

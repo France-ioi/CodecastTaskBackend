@@ -278,14 +278,14 @@ WHERE tm_submissions.ID = :idSubmission
     });
 
     queueAnswer = response.body;
-    // console.log('queue answer', queueAnswer);
+    console.log('queue answer', queueAnswer);
     // console.log(response.body);
   } catch (error) {
     throw new Error(`Cannot read graderqueue json return: ${String(error)}`);
   }
 
-  const queueAnswerData = JSON.parse(queueAnswer) as {errorCode: number, errormsg?: string};
-  if (queueAnswerData.errorCode !== 0) {
+  const queueAnswerData = JSON.parse(queueAnswer) as {errorcode: number, errormsg?: string};
+  if (queueAnswerData.errorcode !== 0) {
     throw new Error(`Received error from graderqueue: ${queueAnswerData['errormsg'] || ''}`);
   }
 }

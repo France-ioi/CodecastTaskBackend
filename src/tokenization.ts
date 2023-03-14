@@ -82,6 +82,7 @@ export class TokenGenerator {
   public jweKey: KeyLike|null = null;
   public algorithm = 'ES256';
 
+  // Own private key to sign for JWS, recipient public key to encrypt for JWE
   public async setKeys(jwsKey: string|undefined, jweKey: string|undefined): Promise<void> {
     if (!jwsKey || !jweKey) {
       throw new Error('A valid JWS key and a valid JWE key must be fulfilled');

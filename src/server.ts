@@ -1,10 +1,11 @@
 import Hapi, {Lifecycle} from '@hapi/hapi';
 import {Server} from '@hapi/hapi';
 import {getTask} from './tasks';
-import {createSubmission} from './submissions';
+import {createSubmission, getSubmission} from './submissions';
 import ReturnValue = Lifecycle.ReturnValue;
 import {ErrorHandler, isResponseBoom, NotFoundError} from './error_handler';
 import {receiveSubmissionResultsFromTaskGrader} from './grader_webhook';
+import {longPollingHandler} from './long_polling';
 
 export let server: Server;
 
@@ -52,11 +53,39 @@ export const init = function(): Server {
     path: '/task-grader-webhook',
     options: {
       handler: async (request, h) => {
+        console.log('receive results');
         await receiveSubmissionResultsFromTaskGrader(request.payload);
 
         return h.response({
           success: true,
         });
+      }
+    }
+  });
+
+  server.route({
+    method: 'GET',
+    path: '/submissions/{submissionId}',
+    options: {
+      handler: async (request, h) => {
+        let submissionData = await getSubmission(String(request.params.submissionId));
+        if (null === submissionData) {
+          throw new NotFoundError(`Submission not found with this id: ${String(request.params.submissionId)}`);
+        }
+        if (!('longPolling' in request.query) || submissionData.evaluated) {
+          return h.response(submissionData);
+        }
+
+        const longPollingResult = await longPollingHandler.waitForEvent('evaluation-' + submissionData.id, 10 * 1000);
+        if ('event' === longPollingResult) {
+          // Re-fetch submission
+          submissionData = await getSubmission(String(request.params.submissionId));
+          if (null === submissionData) {
+            throw new NotFoundError(`Submission not found with this id: ${String(request.params.submissionId)}`);
+          }
+        }
+
+        return h.response(submissionData);
       }
     }
   });
