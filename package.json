@@ -9,13 +9,14 @@
     "got": "^11",
     "io-ts": "^2.2.18",
     "jose": "^4.9.0",
+    "loglevel": "^1.8.1",
     "moment": "^2.29.4",
     "mysql2": "^2.3.3"
   },
   "scripts": {
-    "dev": "ts-node-dev --respawn src/main.ts",
+    "dev": "NODE_ENV=development ts-node-dev --respawn src/main.ts",
     "lint": "eslint 'src/**/*.ts'",
-    "start": "ts-node dist/main.js",
+    "start": "NODE_ENV=production ts-node dist/main.js",
     "build": "tsc -p ."
   },
   "devDependencies": {

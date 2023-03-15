@@ -16,7 +16,6 @@ export class JwesDecoder {
     if (!jwsKey || !jweKey) {
       throw new Error('A valid JWS key and a valid JWE key must be fulfilled');
     }
-    // console.log({jwsKey, jweKey});
 
     this.jwsKey = await jose.importSPKI(jwsKey, this.algorithm);
     this.jweKey = await jose.importPKCS8(jweKey, this.algorithm);

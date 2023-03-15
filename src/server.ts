@@ -6,6 +6,7 @@ import ReturnValue = Lifecycle.ReturnValue;
 import {ErrorHandler, isResponseBoom, NotFoundError} from './error_handler';
 import {receiveSubmissionResultsFromTaskGrader} from './grader_webhook';
 import {longPollingHandler} from './long_polling';
+import log from 'loglevel';
 
 export let server: Server;
 
@@ -53,7 +54,7 @@ export const init = function(): Server {
     path: '/task-grader-webhook',
     options: {
       handler: async (request, h) => {
-        console.log('receive results');
+        log.debug('Receive results from grader queue');
         await receiveSubmissionResultsFromTaskGrader(request.payload);
 
         return h.response({
@@ -106,8 +107,7 @@ export const init = function(): Server {
 };
 
 export const start = function (): void {
-  // eslint-disable-next-line
-  console.log(`Listening on ${server.settings.host}:${server.settings.port}`);
+  log.info(`Listening on ${String(server.settings.host)}:${String(server.settings.port)}`);
 
   void server.start();
 };
