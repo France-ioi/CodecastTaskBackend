@@ -7,7 +7,7 @@ the [Codecast front-end](https://github.com/France-ioi/codecast). The main
 functionalities provided by this back-end are:
 
 - fetch information about a specific task
-- grade an user submission on a task
+- grade a user submission on a task
 - save user source code and avancement on a task
 
 It is a complete rewriting in NodeJS/TypeScript of [TaskPlatform](https://github.com/France-ioi/TaskPlatform)
@@ -19,7 +19,7 @@ The Codecast front-end can interact with this backend through a JSON API with
 GET or POST methods (see the available routes in `src/server.ts`).
 
 This back-end can then interact with other back-end servers. In particular,
-to grade an user submission, this back-end calls the API of the 
+to grade a user submission, this back-end calls the API of the 
 [grader queue](https://github.com/France-ioi/graderqueue)
 to run tests on the user submission.
 
