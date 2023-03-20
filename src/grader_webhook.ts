@@ -131,7 +131,7 @@ export async function receiveSubmissionResultsFromTaskGrader(taskGraderWebhookPa
   let iScoreTotal = 0;
   let nbTestsTotal = 0;
   let bCompilError = false;
-  let sCompilMsg = graderResults?.solutions[0]?.compilationExecution?.stderr?.data ? graderResults?.solutions[0]?.compilationExecution?.stderr.data : '';
+  let sCompilMsg = graderResults?.solutions[0]?.compilationExecution?.stderr?.data ?? '';
   let sErrorMsg = '';
   let iScore = 0;
 
