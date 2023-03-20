@@ -88,7 +88,7 @@ export async function sendSubmissionToTaskGrader(submissionId: string, submissio
     }
   }
 
-  const returnUrl = submissionData?.taskParams?.returnUrl : params.returnUrl;
+  const returnUrl = submissionData?.taskParams?.returnUrl ?? params.returnUrl;
 
   if (returnUrl || idUserAnswer) {
     await Db.execute('update tm_submissions set sReturnUrl = :returnUrl, idUserAnswer = :idUserAnswer WHERE tm_submissions.`ID` = :idSubmission and tm_submissions.idUser = :idUser and tm_submissions.idPlatform = :idPlatform and tm_submissions.idTask = :idTask;', {
