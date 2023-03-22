@@ -53,7 +53,7 @@ export interface TokenParams {
   },
 }
 
-async function createNewTest(idSubmission: string, idTask: string, testName: string): Promise<TaskTest> {
+async function createNewTest(idSubmission: string, idTask: string, testName: string, idSubtask: string|null): Promise<TaskTest> {
   let maxRank = await Db.querySingleScalarResult<number>(`SELECT MAX(tm_tasks_tests.iRank) from tm_tasks_tests
   JOIN tm_submissions ON tm_submissions.idTask = tm_tasks_tests.idTask
   WHERE tm_submissions.ID = :idSubmission and tm_tasks_tests.sGroupType = 'Evaluation';`, {
@@ -66,9 +66,10 @@ async function createNewTest(idSubmission: string, idTask: string, testName: str
 
   const ID = getRandomId();
 
-  await Db.execute('INSERT INTO tm_tasks_tests (ID, idTask, sGroupType, iRank, bActive, sName) values (:ID, :idTask, \'Evaluation\', :iRank, 1, :sName)', {
+  await Db.execute('INSERT INTO tm_tasks_tests (ID, idTask, idSubtask, sGroupType, iRank, bActive, sName) values (:ID, :idTask, :idSubtask, \'Evaluation\', :iRank, 1, :sName)', {
     ID,
     idTask,
+    idSubtask,
     iRank: maxRank + 1,
     sName: testName,
   });
@@ -81,7 +82,7 @@ async function createNewTest(idSubmission: string, idTask: string, testName: str
     sGroupType: 'Evaluation',
     iRank: maxRank + 1,
     sOutput: '',
-    idSubtask: null,
+    idSubtask,
     idUser: null,
     idPlatform: null,
     bActive: 1,
@@ -142,7 +143,7 @@ export async function receiveSubmissionResultsFromTaskGrader(taskGraderWebhookPa
     for (const execution of graderResults.executions) {
       nbTestsTotal++;
       if (!(execution.name in testsByName)) {
-        testsByName[execution.name] = await createNewTest(tokenParams.sTaskName, task.ID, execution.name);
+        testsByName[execution.name] = await createNewTest(tokenParams.sTaskName, task.ID, execution.name, null);
       }
 
       const test = testsByName[execution.name];
@@ -213,6 +214,7 @@ ${thisCompilMsg}`;
       const testReportToSubtask: {id: string, iPointsMax: number, name: string}[] = [];
       const minPointsSubtask: {[key: string]: number} = {};
       const maxPointsSubtask: {[key: string]: number} = {};
+      const subTaskIdBySubmissionSubTaskId: {[key: string]: string} = {};
 
       if (graderResults.executions.length > 1) {
         // get task subtasks
@@ -242,6 +244,7 @@ ${thisCompilMsg}`;
             const idSubtask = curSubtask.ID;
 
             const submSubtaskId = getRandomId();
+            subTaskIdBySubmissionSubTaskId[submSubtaskId] = idSubtask;
 
             await Db.execute('INSERT INTO tm_submissions_subtasks (ID, bSuccess, iScore, idSubtask, idSubmission) VALUES(:submissionSubtaskId, 0, 0, :idSubtask, :idSubmission);', {
               submissionSubtaskId: submSubtaskId,
@@ -283,10 +286,10 @@ ${thisCompilMsg}`;
         nbTestsTotal++;
 
         // Read submission subtask ID
-        let subtaskId: string|null = null;
+        let submissionSubtaskId: string|null = null;
         let testReportName = testReport.name;
         if (testReportToSubtask.length) {
-          subtaskId = testReportToSubtask[index].id;
+          submissionSubtaskId = testReportToSubtask[index].id;
           testReportName = testReportToSubtask[index].name + '-' + testReportName;
         }
 
@@ -295,7 +298,8 @@ ${thisCompilMsg}`;
             throw new Error(`cannot find test ${testReportName} for submission ${submission.ID}`);
           }
 
-          testsByName[testReportName] = await createNewTest(tokenParams.sTaskName, task.ID, testReportName);
+          const subtaskId = submissionSubtaskId && submissionSubtaskId in subTaskIdBySubmissionSubTaskId ? subTaskIdBySubmissionSubTaskId[submissionSubtaskId] : null;
+          testsByName[testReportName] = await createNewTest(tokenParams.sTaskName, task.ID, testReportName, subtaskId);
         }
 
         const test = testsByName[testReportName];
@@ -325,7 +329,7 @@ ${thisCompilMsg}`;
               iErrorCode,
               sExpectedOutput: test.sOutput,
               sErrorMsg,
-              idSubmissionSubtask: subtaskId,
+              idSubmissionSubtask: submissionSubtaskId,
               bNoFeedback,
             });
           } else {
@@ -364,13 +368,13 @@ ${thisCompilMsg}`;
             sErrorMsg: testReport.execution?.stderr.data,
             sLog: testLog,
             jFiles: files,
-            idSubmissionSubtask: subtaskId,
+            idSubmissionSubtask: submissionSubtaskId,
             bNoFeedback,
           });
         }
 
-        if (index in testReportToSubtask && null !== subtaskId) {
-          minPointsSubtask[subtaskId] = Math.min(minPointsSubtask[subtaskId], Math.round(iScore * testReportToSubtask[index].iPointsMax / 100));
+        if (index in testReportToSubtask && null !== submissionSubtaskId) {
+          minPointsSubtask[submissionSubtaskId] = Math.min(minPointsSubtask[submissionSubtaskId], Math.round(iScore * testReportToSubtask[index].iPointsMax / 100));
         }
       }
 
