@@ -155,7 +155,7 @@ export async function receiveSubmissionResultsFromTaskGrader(taskGraderWebhookPa
             bCompilError = true;
             const thisCompilMsg = testReport.sanitizer.stdout.data;
             sCompilMsg += `
-Erreur dans le test : ${testName}
+Error executing this test: ${testName}
 ${thisCompilMsg}`;
           }
         } else {
@@ -173,11 +173,11 @@ ${thisCompilMsg}`;
         nbTestsFailedTotal++;
         iScore = 100;
         iErrorCode = 0;
-        sLog = `${nbTestFailed} de vos tests permet${nbTestFailed > 1 ? 'tent' : ''} de détecter l'erreur de cette solution.`;
+        sLog = `${nbTestFailed} of your tests allow finding the error in this solution.`;
       } else {
         iScore = 0;
         iErrorCode = 1;
-        sLog = 'Aucun de vos tests ne permet de détecter l\'erreur de cette solution.';
+        sLog = 'None of your tests allow finding the error in this solution.';
       }
 
       await Db.execute('insert ignore into tm_submissions_tests (idSubmission, iErrorCode, idTest, iScore, sLog) values (:idSubmission, :iErrorCode, :idTest, :iScore, :sLog);', {
