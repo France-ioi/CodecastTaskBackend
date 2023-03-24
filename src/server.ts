@@ -1,9 +1,12 @@
 import Hapi, {Lifecycle} from '@hapi/hapi';
 import {Server} from '@hapi/hapi';
 import {getTask} from './tasks';
-import {createSubmission} from './submissions';
+import {createSubmission, getSubmission} from './submissions';
 import ReturnValue = Lifecycle.ReturnValue;
 import {ErrorHandler, isResponseBoom, NotFoundError} from './error_handler';
+import {receiveSubmissionResultsFromTaskGrader} from './grader_webhook';
+import {longPollingHandler} from './long_polling';
+import log from 'loglevel';
 
 export let server: Server;
 
@@ -46,6 +49,48 @@ export const init = function(): Server {
     }
   });
 
+  server.route({
+    method: 'POST',
+    path: '/task-grader-webhook',
+    options: {
+      handler: async (request, h) => {
+        log.debug('Receive results from grader queue');
+        await receiveSubmissionResultsFromTaskGrader(request.payload);
+
+        return h.response({
+          success: true,
+        });
+      }
+    }
+  });
+
+  server.route({
+    method: 'GET',
+    path: '/submissions/{submissionId}',
+    options: {
+      handler: async (request, h) => {
+        let submissionData = await getSubmission(String(request.params.submissionId));
+        if (null === submissionData) {
+          throw new NotFoundError(`Submission not found with this id: ${String(request.params.submissionId)}`);
+        }
+        if (!('longPolling' in request.query) || submissionData.evaluated) {
+          return h.response(submissionData);
+        }
+
+        const longPollingResult = await longPollingHandler.waitForEvent('evaluation-' + submissionData.id, 10 * 1000);
+        if ('event' === longPollingResult) {
+          // Re-fetch submission
+          submissionData = await getSubmission(String(request.params.submissionId));
+          if (null === submissionData) {
+            throw new NotFoundError(`Submission not found with this id: ${String(request.params.submissionId)}`);
+          }
+        }
+
+        return h.response(submissionData);
+      }
+    }
+  });
+
   const errorHandler = new ErrorHandler();
 
   server.ext('onPreResponse', (request, h): ReturnValue => {
@@ -62,8 +107,7 @@ export const init = function(): Server {
 };
 
 export const start = function (): void {
-  // eslint-disable-next-line
-  console.log(`Listening on ${server.settings.host}:${server.settings.port}`);
+  log.info(`Listening on ${String(server.settings.host)}:${String(server.settings.port)}`);
 
   void server.start();
 };

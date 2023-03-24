@@ -1,12 +1,18 @@
 import * as Db from './db';
-import {Platform, SourceCode} from './db_models';
+import {
+  Platform,
+  SourceCode,
+  Submission,
+  SubmissionSubtask,
+  SubmissionTest,
+} from './db_models';
 import {decodePlatformToken, PlatformTokenParameters} from './tokenization';
 import {decode, getRandomId} from './util';
 import * as D from 'io-ts/Decoder';
 import {pipe} from 'fp-ts/function';
 import {InvalidInputError} from './error_handler';
 import {sendSubmissionToTaskGrader} from './grader_interface';
-import {findTaskById} from './tasks';
+import {findTaskById,} from './tasks';
 
 export const submissionDataDecoder = pipe(
   D.struct({
@@ -32,6 +38,52 @@ export const submissionDataDecoder = pipe(
   }))
 );
 export type SubmissionParameters = D.TypeOf<typeof submissionDataDecoder>;
+
+export interface SubmissionNormalized {
+  id: string,
+  success: boolean,
+  totalTestsCount: number,
+  passedTestsCount: number,
+  score: number,
+  compilationError: boolean,
+  compilationMessage: string|null,
+  errorMessage: string|null,
+  firstUserOutput: string|null,
+  firstExpectedOutput: string|null,
+  evaluated: boolean,
+  confirmed: boolean,
+  manualCorrection: boolean,
+  manualScoreDiffComment: string|null,
+  mode: string,
+}
+
+export interface SubmissionSubtaskNormalized {
+  id: string,
+  success: boolean,
+  score: number,
+  subtaskId: string,
+}
+
+export interface SubmissionTestNormalized {
+  id: string,
+  testId: string,
+  score: number,
+  timeMs: number,
+  memoryKb: number,
+  errorCode: number,
+  output: string|null,
+  expectedOutput: string|null,
+  errorMessage: string|null,
+  log: string|null,
+  noFeedback: boolean,
+  files: string[]|null,
+  submissionSubtaskId: string|null,
+}
+
+export interface SubmissionOutput extends SubmissionNormalized {
+  subTasks?: SubmissionSubtaskNormalized[],
+  tests?: SubmissionTestNormalized[],
+}
 
 export async function getPlatformTokenParams(taskId: string, token?: string|null, platform?: string|null): Promise<PlatformTokenParameters> {
   if (!platform && process.env.TEST_MODE && process.env.TEST_MODE_PLATFORM_NAME) {
@@ -100,7 +152,6 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
     throw new InvalidInputError(`Invalid task id: ${params.idTaskLocal}`);
   }
 
-
   const mode = submissionData.userTests && submissionData.userTests.length ? 'UserTest' : 'Submitted';
 
   // save source code (with bSubmission = 1)
@@ -109,8 +160,6 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
   const sourceCodeParams = JSON.stringify({
     sLangProg: submissionData.answer.language,
   });
-
-  // TODO: Check task exists
 
   await Db.transactional(async connection => {
     await Db.executeInConnection(connection, "insert into tm_source_codes (ID, idUser, idPlatform, idTask, sDate, sParams, sName, sSource, bSubmission) values(:idNewSC, :idUser, :idPlatform, :idTask, NOW(), :sParams, :idSubmission, :sSource, '1');", {
@@ -155,4 +204,75 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
 
 export async function findSourceCodeById(sourceCodeId: string): Promise<SourceCode|null> {
   return await Db.querySingleResult<SourceCode>('SELECT * FROM tm_source_codes WHERE ID = ?', [sourceCodeId]);
+}
+
+export async function findSubmissionById(submissionId: string): Promise<Submission|null> {
+  return await Db.querySingleResult<Submission>('SELECT * FROM tm_submissions WHERE ID = ?', [submissionId]);
+}
+
+function normalizeSubmission(submission: Submission): SubmissionNormalized {
+  return {
+    id: submission.ID,
+    success: !!submission.bSuccess,
+    totalTestsCount: submission.nbTestsTotal,
+    passedTestsCount: submission.nbTestsPassed,
+    score: submission.iScore,
+    compilationError: !!submission.bCompilError,
+    compilationMessage: submission.sCompilMsg,
+    errorMessage: submission.sErrorMsg,
+    firstUserOutput: submission.sFirstUserOutput,
+    firstExpectedOutput: submission.sFirstExpectedOutput,
+    evaluated: !!submission.bEvaluated,
+    confirmed: !!submission.bConfirmed,
+    manualCorrection: !!submission.bManualCorrection,
+    manualScoreDiffComment: submission.sManualScoreDiffComment,
+    mode: submission.sMode,
+  };
+}
+
+function normalizeSubmissionSubtask(submissionSubtask: SubmissionSubtask): SubmissionSubtaskNormalized {
+  return {
+    id: submissionSubtask.ID,
+    success: !!submissionSubtask.bSuccess,
+    score: submissionSubtask.iScore,
+    subtaskId: submissionSubtask.idSubtask,
+  };
+}
+
+function normalizeSubmissionTest(submissionTest: SubmissionTest): SubmissionTestNormalized {
+  return {
+    id: submissionTest.ID,
+    testId: submissionTest.idTest,
+    score: submissionTest.iScore,
+    timeMs: submissionTest.iTimeMs,
+    memoryKb: submissionTest.iMemoryKb,
+    errorCode: submissionTest.iErrorCode,
+    output: submissionTest.sOutput,
+    expectedOutput: submissionTest.sExpectedOutput,
+    errorMessage: submissionTest.sErrorMsg,
+    log: submissionTest.sLog,
+    noFeedback: !!submissionTest.bNoFeedback,
+    files: null !== submissionTest.jFiles ? JSON.parse(submissionTest.jFiles) as string[] : null,
+    submissionSubtaskId: submissionTest.idSubmissionSubtask,
+  };
+}
+
+export async function getSubmission(submissionId: string): Promise<SubmissionOutput|null> {
+  const submission = await findSubmissionById(submissionId);
+  if (null === submission) {
+    return null;
+  }
+
+  if (!submission.bEvaluated) {
+    return normalizeSubmission(submission);
+  }
+
+  const submissionSubtasks = await Db.execute<SubmissionSubtask[]>('SELECT * FROM tm_submissions_subtasks WHERE idSubmission = ?', [submissionId]);
+  const submissionTests = await Db.execute<SubmissionTest[]>('SELECT * FROM tm_submissions_tests WHERE idSubmission = ?', [submissionId]);
+
+  return {
+    ...normalizeSubmission(submission),
+    subTasks: submissionSubtasks.map(normalizeSubmissionSubtask),
+    tests: submissionTests.map(normalizeSubmissionTest),
+  };
 }

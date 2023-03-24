@@ -46,8 +46,8 @@ export interface TaskTestNormalized {
   subtaskId: string|null,
   submissionId: string|null,
   groupType: string,
-  userId: string,
-  platformId: string,
+  userId: string|null,
+  platformId: string|null,
   rank: number,
   active: boolean,
   name: string,
@@ -68,11 +68,11 @@ function normalizeTask(task: Task): TaskNormalized {
     textId: task.sTextId,
     supportedLanguages: task.sSupportedLangProg,
     author: task.sAuthor,
-    showLimits: task.bShowLimits,
-    userTests: task.bUserTests,
-    isEvaluable: task.bIsEvaluable,
+    showLimits: !!task.bShowLimits,
+    userTests: !!task.bUserTests,
+    isEvaluable: !!task.bIsEvaluable,
     scriptAnimation: task.sScriptAnimation,
-    hasSubtasks: task.bHasSubtasks,
+    hasSubtasks: !!task.bHasSubtasks,
   };
 }
 
@@ -105,7 +105,7 @@ function normalizeTaskSubtask(taskSubtask: TaskSubtask): TaskSubtaskNormalized {
     name: taskSubtask.name,
     comments: taskSubtask.comments,
     pointsMax: taskSubtask.iPointsMax,
-    active: taskSubtask.bActive,
+    active: !!taskSubtask.bActive,
   };
 }
 
@@ -119,7 +119,7 @@ function normalizeTaskTest(taskTest: TaskTest): TaskTestNormalized {
     userId: taskTest.idUser,
     platformId: taskTest.idPlatform,
     rank: taskTest.iRank,
-    active: taskTest.bActive,
+    active: !!taskTest.bActive,
     name: taskTest.sName,
     input: taskTest.sInput,
     output: taskTest.sOutput,

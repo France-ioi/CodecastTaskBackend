@@ -73,11 +73,16 @@ export function decodePlatformToken(token: string|null|undefined, platformKey: s
   }
 }
 
+/**
+ * JWE key is the recipient public key used for encryption
+ * JWS Key is our private key used for signing
+ */
 export class TokenGenerator {
   public jwsKey: KeyLike|null = null;
   public jweKey: KeyLike|null = null;
   public algorithm = 'ES256';
 
+  // Own private key to sign for JWS, recipient public key to encrypt for JWE
   public async setKeys(jwsKey: string|undefined, jweKey: string|undefined): Promise<void> {
     if (!jwsKey || !jweKey) {
       throw new Error('A valid JWS key and a valid JWE key must be fulfilled');
