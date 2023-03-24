@@ -37,8 +37,6 @@ export const init = function(): Server {
     options: {
       handler: async (request, h) => {
         const submissionId = await createSubmission(request.payload);
-        // console.log('submision result', submissionId);
-        // await sendSubmissionToTaskGrader(submissionId, request.payload as SubmissionParameters);
 
         return h.response({
           success: true,

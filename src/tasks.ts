@@ -1,5 +1,5 @@
 import * as Db from './db';
-import {TaskLimit, Task, TaskString, TaskSubtask, TaskTest} from './db_models';
+import {Task, TaskString, TaskSubtask, TaskTest, TaskLimitModel} from './db_models';
 
 export interface TaskNormalized {
   id: string,
@@ -76,7 +76,7 @@ function normalizeTask(task: Task): TaskNormalized {
   };
 }
 
-function normalizeTaskLimit(taskLimit: TaskLimit): TaskLimitNormalized {
+function normalizeTaskLimit(taskLimit: TaskLimitModel): TaskLimitNormalized {
   return {
     id: taskLimit.ID,
     taskId: taskLimit.idTask,
@@ -136,7 +136,7 @@ export async function getTask(taskId: string): Promise<TaskOutput|null> {
     return null;
   }
 
-  const taskLimits = await Db.execute<TaskLimit[]>('SELECT * FROM tm_tasks_limits WHERE idTask = ?', [taskId]);
+  const taskLimits = await Db.execute<TaskLimitModel[]>('SELECT * FROM tm_tasks_limits WHERE idTask = ?', [taskId]);
   const taskStrings = await Db.execute<TaskString[]>('SELECT * FROM tm_tasks_strings WHERE idTask = ?', [taskId]);
   const taskSubtasks = await Db.execute<TaskSubtask[]>('SELECT * FROM tm_tasks_subtasks WHERE idTask = ?', [taskId]);
   const tasksTests = await Db.execute<TaskTest[]>('SELECT * FROM tm_tasks_tests WHERE idTask = ?', [taskId]);

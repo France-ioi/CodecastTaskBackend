@@ -1,4 +1,7 @@
 import {Platform} from './db_models';
+import * as jose from 'jose';
+import {KeyLike} from 'jose/dist/types/types';
+import moment from 'moment';
 
 export interface PlatformTokenParameters {
     idUser: string|null,
@@ -67,5 +70,61 @@ export function decodePlatformToken(token: string|null|undefined, platformKey: s
     } else {
       throw e;
     }
+  }
+}
+
+export class TokenGenerator {
+  public jwsKey: KeyLike|null = null;
+  public jweKey: KeyLike|null = null;
+  public algorithm = 'ES256';
+
+  public async setKeys(jwsKey: string|undefined, jweKey: string|undefined): Promise<void> {
+    if (!jwsKey || !jweKey) {
+      throw new Error('A valid JWS key and a valid JWE key must be fulfilled');
+    }
+    // console.log({jwsKey, jweKey});
+
+    this.jwsKey = await jose.importPKCS8(jwsKey, this.algorithm);
+    this.jweKey = await jose.importSPKI(jweKey, this.algorithm);
+  }
+
+  async encodeJwes(payload: {[key: string]: any}): Promise<string> {
+    const jwsPayload = await this.jwsSignPayload(payload);
+
+    return await this.encodeJwe(jwsPayload);
+  }
+
+  async jwsSignPayload(payload: {[key: string]: any}): Promise<string> {
+    if (null === this.jwsKey) {
+      throw new Error('JWS key must be fulfilled to do encryption');
+    }
+
+    payload['date'] = moment().format('DD-MM-YYYY');
+
+    const jws = await new jose.CompactSign(
+      new TextEncoder().encode(JSON.stringify(payload)),
+    )
+      .setProtectedHeader({alg: 'RS512'})
+      .sign(this.jwsKey);
+
+    // console.log(jws);
+
+    return jws;
+  }
+
+  async encodeJwe(payload: string): Promise<string> {
+    if (null === this.jweKey) {
+      throw new Error('JWE key must be fulfilled to do encryption');
+    }
+
+    const jwe = await new jose.CompactEncrypt(
+      new TextEncoder().encode(payload),
+    )
+      .setProtectedHeader({alg: 'RSA-OAEP-256', enc: 'A256CBC-HS512', zip: 'DEF'})
+      .encrypt(this.jweKey);
+
+    // console.log(jwe);
+
+    return jwe;
   }
 }
