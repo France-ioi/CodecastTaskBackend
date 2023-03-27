@@ -10,10 +10,29 @@ jobs:
     # A list of available CircleCI docker Convenience Images are available here: https://circleci.com/developer/images/image/cimg/node
     docker:
       - image: cimg/node:16.16
+      - image: cimg/mysql:8.0
+        environment:
+          MYSQL_ROOT_PASSWORD: rootpw
+          MYSQL_DATABASE: task_platform
+          MYSQL_USER: codecast
+          MYSQL_PASSWORD: codecast
+    environment:
+      MYSQL_DB_HOST: 127.0.0.1
+      MYSQL_DB_USER: codecast
+      MYSQL_DB_PASSWORD: codecast
+      MYSQL_DB_DATABASE: task_platform
     steps:
       - checkout
       - node/install-packages:
           pkg-manager: "yarn"
+      - run:
+        name: Wait for MySQL
+        command: dockerize -wait tcp://127.0.0.1:3306 -timeout 30s
+      - run:
+          name: Import DB schema
+          command: |
+            sudo apt-get install mysql-client
+            mysql -h 127.0.0.1 -u codecase -pcodecase task_platform < schema.sql
       - run:
           name: Run tests
           command: yarn run test
