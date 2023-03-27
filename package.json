@@ -17,7 +17,8 @@
     "dev": "NODE_ENV=development ts-node-dev --respawn src/main.ts",
     "lint": "eslint 'src/**/*.ts'",
     "start": "NODE_ENV=production ts-node dist/main.js",
-    "build": "tsc -p ."
+    "build": "tsc -p .",
+    "test": "cucumber-js"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^9.0.1",

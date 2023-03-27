@@ -100,3 +100,9 @@ export async function transactional(callback: (connection: PoolConnection) => Pr
     connection.release();
   }
 }
+
+export async function closePool(): Promise<void> {
+  if (null !== pool) {
+    await pool.end();
+  }
+}

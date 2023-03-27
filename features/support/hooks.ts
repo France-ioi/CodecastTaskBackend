@@ -30,7 +30,8 @@ BeforeAll(async function () {
 });
 
 AfterAll(async function () {
-    await testServer.stop();
+    await testServer.stop({timeout: 0});
+    await Db.closePool();
 });
 
 async function cleanDatabase() {
