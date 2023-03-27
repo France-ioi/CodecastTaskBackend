@@ -1,0 +1,76 @@
+{
+  "textId": "FranceIOI/Contests/2018/Algorea_finale/plateau",
+  "supportedLanguages": "python",
+  "author": "",
+  "showLimits": true,
+  "userTests": false,
+  "isEvaluable": true,
+  "scriptAnimation": null,
+  "hasSubtasks": true,
+  "limits": [
+    {
+      "language": "python",
+      "maxTime": 200,
+      "maxMemory": 64000
+    }
+  ],
+  "strings": [
+    {
+      "language": "fr",
+      "title": "Plateau",
+      "statement": "<p>Instructions</p>",
+      "solution": null
+    }
+  ],
+  "subTasks": [
+    {
+      "rank": 0,
+      "name": "subtask0",
+      "comments": "Exemples",
+      "pointsMax": 0,
+      "active": true
+    },
+    {
+      "rank": 0,
+      "name": "subtask1",
+      "comments": "N <= 25",
+      "pointsMax": 20,
+      "active": true
+    }
+  ],
+  "tests": [
+    {
+      "submissionId": null,
+      "groupType": "Evaluation",
+      "userId": null,
+      "platformId": null,
+      "rank": 1,
+      "active": true,
+      "name": "s1-t2",
+      "input": "16",
+      "output": "20"
+    },
+    {
+      "submissionId": null,
+      "groupType": "Evaluation",
+      "userId": null,
+      "platformId": null,
+      "rank": 2,
+      "active": true,
+      "name": "s2-t1",
+      "input": "10",
+      "output": "15"
+    },
+    {
+      "submissionId": null,
+      "groupType": "Evaluation",
+      "userId": null,
+      "platformId": null,
+      "rank": 0,
+      "active": true,
+      "name": "s1-t1",
+      "input": "15",
+      "output": "10"
+    }
+  ]
+}
