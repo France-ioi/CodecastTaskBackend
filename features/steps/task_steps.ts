@@ -18,11 +18,11 @@ Given(/^there is a default task in the database$/, async function (this: TaskSte
 
     await Db.execute(`
         INSERT INTO tm_tasks
-            (ID, sTextId, sSupportedLangProg,  bShowLimits, bEditorInStatement,
+            (ID, sTextId, sSupportedLangProg, sAuthor, sAuthorSolution, bShowLimits, bEditorInStatement,
              bUserTests, bChecked, iEvalMode, bUsesLibrary, bUseLatex, iTestsMinSuccessScore, bIsEvaluable,
             sDefaultEditorMode, bTestMode,
              sTaskPath, sRevision, iVersion, bHasSubtasks)
-        values (:ID, "FranceIOI/Contests/2018/Algorea_finale/plateau", "python", 1, 0, 0, 0, 0, 0, 0, 100, 1,
+        values (:ID, "FranceIOI/Contests/2018/Algorea_finale/plateau", "python", '', '', 1, 0, 0, 0, 0, 0, 0, 100, 1,
                 "normal", 0, "$ROOT_PATH/FranceIOI/Contests/2018/Algorea_finale/plateau", "7156", 2147483647, 1)`, {
         ID: taskId,
     });
@@ -37,8 +37,8 @@ Given(/^there is a default task in the database$/, async function (this: TaskSte
 
     await Db.execute(`
         INSERT INTO tm_tasks_strings
-            (ID, idTask, sLanguage, sTitle, sStatement, iVersion)
-        values (:ID, :idTask, "fr", "Plateau", "<p>Instructions</p>", 2147483647)`, {
+            (ID, idTask, sLanguage, sTitle, sTranslator, sStatement, iVersion)
+        values (:ID, :idTask, "fr", "Plateau", '', "<p>Instructions</p>", 2147483647)`, {
         ID: getRandomId(),
         idTask: taskId,
     });

@@ -12,7 +12,7 @@ jobs:
       - image: cimg/node:16.16
       - image: cimg/mysql:8.0
         environment:
-          MYSQL_ROOT_PASSWORD: rootpw
+          MYSQL_ROOT_PASSWORD: codecast
           MYSQL_DATABASE: task_platform
           MYSQL_USER: codecast
           MYSQL_PASSWORD: codecast
@@ -26,13 +26,14 @@ jobs:
       - node/install-packages:
           pkg-manager: "yarn"
       - run:
-        name: Wait for MySQL
-        command: dockerize -wait tcp://127.0.0.1:3306 -timeout 30s
+          name: Wait for MySQL
+          command: dockerize -wait tcp://127.0.0.1:3306 -timeout 30s
       - run:
           name: Import DB schema
           command: |
-            sudo apt-get install mysql-client
-            mysql -h 127.0.0.1 -u codecase -pcodecase task_platform < schema.sql
+            sudo apt update
+            sudo apt install -y mysql-client
+            mysql -h 127.0.0.1 -u root -pcodecast task_platform < schema.sql
       - run:
           name: Run tests
           command: yarn run test
