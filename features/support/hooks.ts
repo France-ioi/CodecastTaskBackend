@@ -12,38 +12,38 @@ chai.use(chaiSubset);
 let testServer: Server;
 
 const tablesToClear = [
-    'tm_tasks',
-    'tm_tasks_limits',
-    'tm_tasks_strings',
-    'tm_tasks_subtasks',
-    'tm_tasks_tests',
+  'tm_tasks',
+  'tm_tasks_limits',
+  'tm_tasks_strings',
+  'tm_tasks_subtasks',
+  'tm_tasks_tests',
 ];
 
 BeforeAll(async function () {
-    dotenv.config({path: path.resolve(__dirname, '../../.env.test')});
-    dotenv.config({path: path.resolve(__dirname, '../../.env')});
+  dotenv.config({path: path.resolve(__dirname, '../../.env.test')});
+  dotenv.config({path: path.resolve(__dirname, '../../.env')});
 
-    Db.init();
-    await cleanDatabase();
+  Db.init();
+  await cleanDatabase();
 
-    testServer = await init();
+  testServer = init();
 });
 
 AfterAll(async function () {
-    await testServer.stop({timeout: 0});
-    await Db.closePool();
+  await testServer.stop({timeout: 0});
+  await Db.closePool();
 });
 
-async function cleanDatabase() {
-    if ('test' !== process.env['NODE_ENVIRONMENT']) {
-        throw new Error("Database cannot be cleaned while not in test environment.");
-    }
+async function cleanDatabase(): Promise<void> {
+  if ('test' !== process.env['NODE_ENVIRONMENT']) {
+    throw new Error('Database cannot be cleaned while not in test environment.');
+  }
 
-    for (let table of tablesToClear) {
-        await Db.execute(`DELETE FROM ${table} WHERE 1`, {});
-    }
+  for (const table of tablesToClear) {
+    await Db.execute(`DELETE FROM ${table} WHERE 1`, {});
+  }
 }
 
 export {
-    testServer,
+  testServer,
 };

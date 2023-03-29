@@ -15,7 +15,7 @@
   },
   "scripts": {
     "dev": "NODE_ENV=development ts-node-dev --respawn src/main.ts",
-    "lint": "eslint 'src/**/*.ts'",
+    "lint": "eslint '{src,features}/**/*.ts'",
     "start": "NODE_ENV=production ts-node dist/main.js",
     "build": "tsc -p .",
     "test": "cucumber-js"

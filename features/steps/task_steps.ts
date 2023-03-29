@@ -10,19 +10,18 @@ interface TaskStepsContext {
 }
 
 When(/^I send a (GET|POST) request to "([^"]*)"$/, async function (this: TaskStepsContext, method: string, url: string) {
-    this.response = await testServer.inject({
-        method,
-        url,
-    });
+  this.response = await testServer.inject({
+    method,
+    url,
+  });
 });
 
 Then(/^the response body should be the content of this file: "([^"]*)"$/, async function (this: TaskStepsContext, fileName: string) {
-    const expectedResponse = JSON.parse(await readFile(path.join(__dirname, '..', fileName), "utf8"));
-    const payload = JSON.parse(this.response.payload);
-    console.log(payload);
-    expect(payload).to.deep.equal(expectedResponse);
+  const expectedResponse: unknown = JSON.parse(await readFile(path.join(__dirname, '..', fileName), 'utf8'));
+  const payload: unknown = JSON.parse(this.response.payload);
+  expect(payload).to.deep.equal(expectedResponse);
 });
 
-Then(/^the response status code should be (\d+)$/, async function (this: TaskStepsContext, errorCode) {
-    expect(this.response.statusCode).to.equal(errorCode);
+Then(/^the response status code should be (\d+)$/, function (this: TaskStepsContext, errorCode) {
+  expect(this.response.statusCode).to.equal(errorCode);
 });
