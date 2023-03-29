@@ -16,7 +16,7 @@ When(/^I send a (GET|POST) request to "([^"]*)"$/, async function (this: TaskSte
     });
 });
 
-Then(/^the response body should be: "([^"]*)"$/, async function (this: TaskStepsContext, fileName: string) {
+Then(/^the response body should be the content of this file: "([^"]*)"$/, async function (this: TaskStepsContext, fileName: string) {
     const expectedResponse = JSON.parse(await readFile(path.join(__dirname, '..', fileName), "utf8"));
     const payload = JSON.parse(this.response.payload);
     console.log(payload);

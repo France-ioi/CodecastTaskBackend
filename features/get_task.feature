@@ -21,7 +21,7 @@ Feature: Get task
       | 5002 | 1000      | 4001       | Evaluation     | 2     | 1       | s2-t1 | 15     | 10      | 2147483647 |
     When I send a GET request to "/tasks/1000"
     Then the response status code should be 200
-    And the response body should be: "get_task_response.json"
+    And the response body should be the content of this file: "get_task_response.json"
 
   Scenario: Get unknown task
     When I send a GET request to "/tasks/999999"
