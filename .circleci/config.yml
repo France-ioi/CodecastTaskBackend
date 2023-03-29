@@ -1,0 +1,45 @@
+version: 2.1
+
+orbs:
+  node: circleci/node@5
+
+jobs:
+  test:
+    # These next lines define a docker executor: https://circleci.com/docs/2.0/executor-types/
+    # You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
+    # A list of available CircleCI docker Convenience Images are available here: https://circleci.com/developer/images/image/cimg/node
+    docker:
+      - image: cimg/node:16.16
+      - image: cimg/mysql:8.0
+        environment:
+          MYSQL_ROOT_PASSWORD: codecast
+          MYSQL_DATABASE: task_platform
+          MYSQL_USER: codecast
+          MYSQL_PASSWORD: codecast
+    environment:
+      MYSQL_DB_HOST: 127.0.0.1
+      MYSQL_DB_USER: codecast
+      MYSQL_DB_PASSWORD: codecast
+      MYSQL_DB_DATABASE: task_platform
+      NODE_ENVIRONMENT: test
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: "yarn"
+      - run:
+          name: Wait for MySQL
+          command: dockerize -wait tcp://127.0.0.1:3306 -timeout 30s
+      - run:
+          name: Import DB schema
+          command: |
+            sudo apt update
+            sudo apt install -y mysql-client
+            mysql -h 127.0.0.1 -u root -pcodecast task_platform < schema.sql
+      - run:
+          name: Run tests
+          command: yarn run test
+
+workflows:
+  testing:
+    jobs:
+      - test

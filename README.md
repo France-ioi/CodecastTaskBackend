@@ -46,6 +46,19 @@ yarn
 yarn dev
 ```
 
+### Testing
+
+To run the Cucumber tests, prepare the testing environment: 
+1. Create a database `task_platform_test`
+2. Import `schema.sql` into this database
+3. Copy `.env` to a `.env.test` file and fill in your database credentials
+
+Then, run:
+
+```
+yarn test
+```
+
 ### Building
 
 To build a new version of the back-end, use:
@@ -53,3 +66,5 @@ To build a new version of the back-end, use:
 ```
 yarn build
 ```
+
+

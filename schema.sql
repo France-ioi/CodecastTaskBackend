@@ -1,3 +1,7 @@
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET time_zone = "+00:00";
+
 --
 -- Table structure for table `error_log`
 --
@@ -8,6 +12,55 @@ CREATE TABLE `error_log` (
   `message` longtext NOT NULL,
   `browser` text NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `history_test_sync_main`
+--
+
+CREATE TABLE `history_test_sync_main` (
+  `historyID` bigint NOT NULL,
+  `ID` bigint NOT NULL,
+  `secondID` bigint NOT NULL,
+  `sFieldA` varchar(30) NOT NULL,
+  `iFieldB` int NOT NULL,
+  `iVersion` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `iNextVersion` timestamp NULL DEFAULT NULL,
+  `bDeleted` tinyint NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `history_test_sync_second`
+--
+
+CREATE TABLE `history_test_sync_second` (
+  `historyID` bigint NOT NULL,
+  `ID` bigint NOT NULL,
+  `thirdID` bigint NOT NULL,
+  `sFieldA` varchar(30) NOT NULL,
+  `iVersion` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `iNextVersion` timestamp NULL DEFAULT NULL,
+  `bDeleted` tinyint NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `history_test_sync_third`
+--
+
+CREATE TABLE `history_test_sync_third` (
+  `historyID` bigint NOT NULL,
+  `ID` bigint NOT NULL,
+  `mainID` bigint NOT NULL,
+  `iFieldB` int NOT NULL,
+  `iVersion` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `iNextVersion` timestamp NULL DEFAULT NULL,
+  `bDeleted` tinyint NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -23,7 +76,7 @@ CREATE TABLE `history_tm_hints` (
   `iVersion` int NOT NULL DEFAULT '0',
   `iNextVersion` int DEFAULT NULL,
   `bDeleted` tinyint(1) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -41,7 +94,7 @@ CREATE TABLE `history_tm_hints_strings` (
   `iVersion` int NOT NULL DEFAULT '0',
   `iNextVersion` int DEFAULT NULL,
   `bDeleted` tinyint(1) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -60,7 +113,7 @@ CREATE TABLE `history_tm_recordings` (
   `iVersion` int NOT NULL,
   `iNextVersion` int DEFAULT NULL,
   `bDeleted` tinyint(1) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -79,7 +132,7 @@ CREATE TABLE `history_tm_solutions` (
   `iVersion` int NOT NULL,
   `iNextVersion` int DEFAULT NULL,
   `bDeleted` tinyint(1) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -97,7 +150,7 @@ CREATE TABLE `history_tm_solutions_strings` (
   `iVersion` int NOT NULL,
   `iNextVersion` int DEFAULT NULL,
   `bDeleted` tinyint(1) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -123,7 +176,7 @@ CREATE TABLE `history_tm_source_codes` (
   `iVersion` int NOT NULL,
   `iNextVersion` int DEFAULT NULL,
   `bDeleted` tinyint(1) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -159,7 +212,7 @@ CREATE TABLE `history_tm_submissions` (
   `iVersion` int NOT NULL,
   `iNextVersion` int DEFAULT NULL,
   `bDeleted` tinyint(1) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -177,7 +230,7 @@ CREATE TABLE `history_tm_submissions_subtasks` (
   `iVersion` int NOT NULL,
   `iNextVersion` int DEFAULT NULL,
   `bDeleted` tinyint(1) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -204,7 +257,7 @@ CREATE TABLE `history_tm_submissions_tests` (
   `iVersion` int NOT NULL,
   `iNextVersion` int DEFAULT NULL,
   `bDeleted` tinyint(1) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -241,7 +294,7 @@ CREATE TABLE `history_tm_tasks` (
   `iNextVersion` int DEFAULT NULL,
   `bDeleted` tinyint(1) NOT NULL,
   `bHasSubtasks` tinyint(1) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -259,7 +312,7 @@ CREATE TABLE `history_tm_tasks_limits` (
   `iVersion` int NOT NULL,
   `iNextVersion` int DEFAULT NULL,
   `bDeleted` tinyint(1) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -279,7 +332,7 @@ CREATE TABLE `history_tm_tasks_strings` (
   `iVersion` int NOT NULL DEFAULT '0',
   `iNextVersion` int DEFAULT NULL,
   `bDeleted` tinyint(1) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -299,7 +352,7 @@ CREATE TABLE `history_tm_tasks_subtasks` (
   `iVersion` int NOT NULL,
   `iNextVersion` int DEFAULT NULL,
   `bDeleted` tinyint(1) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -324,7 +377,7 @@ CREATE TABLE `history_tm_tasks_tests` (
   `iVersion` int NOT NULL DEFAULT '0',
   `iNextVersion` int DEFAULT NULL,
   `bDeleted` tinyint(1) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -336,7 +389,7 @@ CREATE TABLE `schema_revision` (
   `id` int UNSIGNED NOT NULL,
   `executed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `file` varchar(255) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -348,7 +401,107 @@ CREATE TABLE `synchro_version` (
   `iVersion` int NOT NULL,
   `iLastServerVersion` int NOT NULL,
   `iLastClientVersion` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `test_sync_main`
+--
+
+CREATE TABLE `test_sync_main` (
+  `ID` bigint NOT NULL,
+  `secondID` bigint NOT NULL,
+  `sFieldA` varchar(30) NOT NULL,
+  `iFieldB` int NOT NULL,
+  `iVersion` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Triggers `test_sync_main`
+--
+DELIMITER $$
+CREATE TRIGGER `after_insert_test_sync_main` AFTER INSERT ON `test_sync_main` FOR EACH ROW BEGIN INSERT INTO `history_test_sync_main` (`ID`,`iVersion`,`sFieldA`,`iFieldB`,`secondID`) VALUES (NEW.`ID`,@curVersion,NEW.`sFieldA`,NEW.`iFieldB`,NEW.`secondID`); END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `before_delete_test_sync_main` BEFORE DELETE ON `test_sync_main` FOR EACH ROW BEGIN SELECT (UNIX_TIMESTAMP() * 10) INTO @curVersion; UPDATE `history_test_sync_main` SET `iNextVersion` = @curVersion WHERE `ID` = OLD.`ID` AND `iNextVersion` IS NULL; INSERT INTO `history_test_sync_main` (`ID`,`iVersion`,`sFieldA`,`iFieldB`,`secondID`, `bDeleted`) VALUES (OLD.`ID`,@curVersion,OLD.`sFieldA`,OLD.`iFieldB`,OLD.`secondID`, 1); END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `before_insert_test_sync_main` BEFORE INSERT ON `test_sync_main` FOR EACH ROW BEGIN IF (NEW.ID IS NULL OR NEW.ID = 0) THEN SET NEW.ID = FLOOR(RAND() * 1000000000) + FLOOR(RAND() * 1000000000) * 1000000000; END IF ; SELECT (UNIX_TIMESTAMP() * 10) INTO @curVersion;SET NEW.iVersion = @curVersion; END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `before_update_test_sync_main` BEFORE UPDATE ON `test_sync_main` FOR EACH ROW BEGIN IF NEW.iVersion <> OLD.iVersion THEN SET @curVersion = NEW.iVersion; ELSE SELECT (UNIX_TIMESTAMP() * 10) INTO @curVersion; END IF; IF NOT (OLD.`ID` = NEW.`ID` AND OLD.`sFieldA` <=> NEW.`sFieldA` AND OLD.`iFieldB` <=> NEW.`iFieldB` AND OLD.`secondID` <=> NEW.`secondID`) THEN   SET NEW.iVersion = @curVersion;   UPDATE `history_test_sync_main` SET `iNextVersion` = @curVersion WHERE `ID` = OLD.`ID` AND `iNextVersion` IS NULL;   INSERT INTO `history_test_sync_main` (`ID`,`iVersion`,`sFieldA`,`iFieldB`,`secondID`)       VALUES (NEW.`ID`,@curVersion,NEW.`sFieldA`,NEW.`iFieldB`,NEW.`secondID`) ; END IF; END
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `test_sync_second`
+--
+
+CREATE TABLE `test_sync_second` (
+  `ID` bigint NOT NULL,
+  `thirdID` bigint NOT NULL,
+  `sFieldA` varchar(30) NOT NULL,
+  `iVersion` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Triggers `test_sync_second`
+--
+DELIMITER $$
+CREATE TRIGGER `after_insert_test_sync_second` AFTER INSERT ON `test_sync_second` FOR EACH ROW BEGIN INSERT INTO `history_test_sync_second` (`ID`,`iVersion`,`sFieldA`,`thirdID`) VALUES (NEW.`ID`,@curVersion,NEW.`sFieldA`,NEW.`thirdID`); END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `before_delete_test_sync_second` BEFORE DELETE ON `test_sync_second` FOR EACH ROW BEGIN SELECT (UNIX_TIMESTAMP() * 10) INTO @curVersion; UPDATE `history_test_sync_second` SET `iNextVersion` = @curVersion WHERE `ID` = OLD.`ID` AND `iNextVersion` IS NULL; INSERT INTO `history_test_sync_second` (`ID`,`iVersion`,`sFieldA`,`thirdID`, `bDeleted`) VALUES (OLD.`ID`,@curVersion,OLD.`sFieldA`,OLD.`thirdID`, 1); END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `before_insert_test_sync_second` BEFORE INSERT ON `test_sync_second` FOR EACH ROW BEGIN IF (NEW.ID IS NULL OR NEW.ID = 0) THEN SET NEW.ID = FLOOR(RAND() * 1000000000) + FLOOR(RAND() * 1000000000) * 1000000000; END IF ; SELECT (UNIX_TIMESTAMP() * 10) INTO @curVersion;SET NEW.iVersion = @curVersion; END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `before_update_test_sync_second` BEFORE UPDATE ON `test_sync_second` FOR EACH ROW BEGIN IF NEW.iVersion <> OLD.iVersion THEN SET @curVersion = NEW.iVersion; ELSE SELECT (UNIX_TIMESTAMP() * 10) INTO @curVersion; END IF; IF NOT (OLD.`ID` = NEW.`ID` AND OLD.`sFieldA` <=> NEW.`sFieldA` AND OLD.`thirdID` <=> NEW.`thirdID`) THEN   SET NEW.iVersion = @curVersion;   UPDATE `history_test_sync_second` SET `iNextVersion` = @curVersion WHERE `ID` = OLD.`ID` AND `iNextVersion` IS NULL;   INSERT INTO `history_test_sync_second` (`ID`,`iVersion`,`sFieldA`,`thirdID`)       VALUES (NEW.`ID`,@curVersion,NEW.`sFieldA`,NEW.`thirdID`) ; END IF; END
+$$
+DELIMITER ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `test_sync_third`
+--
+
+CREATE TABLE `test_sync_third` (
+  `ID` bigint NOT NULL,
+  `mainID` bigint NOT NULL,
+  `iFieldB` int NOT NULL,
+  `iVersion` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+
+--
+-- Triggers `test_sync_third`
+--
+DELIMITER $$
+CREATE TRIGGER `after_insert_test_sync_third` AFTER INSERT ON `test_sync_third` FOR EACH ROW BEGIN INSERT INTO `history_test_sync_third` (`ID`,`iVersion`,`iFieldB`,`mainID`) VALUES (NEW.`ID`,@curVersion,NEW.`iFieldB`,NEW.`mainID`); END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `before_delete_test_sync_third` BEFORE DELETE ON `test_sync_third` FOR EACH ROW BEGIN SELECT (UNIX_TIMESTAMP() * 10) INTO @curVersion; UPDATE `history_test_sync_third` SET `iNextVersion` = @curVersion WHERE `ID` = OLD.`ID` AND `iNextVersion` IS NULL; INSERT INTO `history_test_sync_third` (`ID`,`iVersion`,`iFieldB`,`mainID`, `bDeleted`) VALUES (OLD.`ID`,@curVersion,OLD.`iFieldB`,OLD.`mainID`, 1); END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `before_insert_test_sync_third` BEFORE INSERT ON `test_sync_third` FOR EACH ROW BEGIN IF (NEW.ID IS NULL OR NEW.ID = 0) THEN SET NEW.ID = FLOOR(RAND() * 1000000000) + FLOOR(RAND() * 1000000000) * 1000000000; END IF ; SELECT (UNIX_TIMESTAMP() * 10) INTO @curVersion;SET NEW.iVersion = @curVersion; END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `before_update_test_sync_third` BEFORE UPDATE ON `test_sync_third` FOR EACH ROW BEGIN IF NEW.iVersion <> OLD.iVersion THEN SET @curVersion = NEW.iVersion; ELSE SELECT (UNIX_TIMESTAMP() * 10) INTO @curVersion; END IF; IF NOT (OLD.`ID` = NEW.`ID` AND OLD.`iFieldB` <=> NEW.`iFieldB` AND OLD.`mainID` <=> NEW.`mainID`) THEN   SET NEW.iVersion = @curVersion;   UPDATE `history_test_sync_third` SET `iNextVersion` = @curVersion WHERE `ID` = OLD.`ID` AND `iNextVersion` IS NULL;   INSERT INTO `history_test_sync_third` (`ID`,`iVersion`,`iFieldB`,`mainID`)       VALUES (NEW.`ID`,@curVersion,NEW.`iFieldB`,NEW.`mainID`) ; END IF; END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -364,7 +517,7 @@ CREATE TABLE `tm_grader_checks` (
   `sSource` mediumtext NOT NULL COMMENT 'TODO',
   `sTestData` mediumtext NOT NULL COMMENT 'TODO',
   `iVersion` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -377,7 +530,7 @@ CREATE TABLE `tm_hints` (
   `idTask` bigint NOT NULL,
   `iRank` tinyint NOT NULL,
   `iVersion` int NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Triggers `tm_hints`
@@ -412,7 +565,7 @@ CREATE TABLE `tm_hints_strings` (
   `sTranslator` varchar(100) NOT NULL,
   `sContent` mediumtext NOT NULL,
   `iVersion` int NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Triggers `tm_hints_strings`
@@ -444,7 +597,7 @@ CREATE TABLE `tm_platforms` (
   `ID` bigint NOT NULL,
   `name` varchar(255) NOT NULL,
   `public_key` varchar(500) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -460,7 +613,7 @@ CREATE TABLE `tm_recordings` (
   `sDateCreation` datetime NOT NULL,
   `sData` mediumtext,
   `iVersion` int NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Triggers `tm_recordings`
@@ -508,7 +661,7 @@ CREATE TABLE `tm_solutions` (
   `sGroup` varchar(50) NOT NULL,
   `sAuthor` varchar(50) NOT NULL,
   `iVersion` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Triggers `tm_solutions`
@@ -543,7 +696,7 @@ CREATE TABLE `tm_solutions_strings` (
   `sTranslator` varchar(50) DEFAULT NULL,
   `sSource` mediumtext NOT NULL,
   `iVersion` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Triggers `tm_solutions_strings`
@@ -586,7 +739,7 @@ CREATE TABLE `tm_source_codes` (
   `bActive` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'is active tab',
   `iRank` tinyint NOT NULL DEFAULT '0' COMMENT 'rank in editor tabs',
   `iVersion` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Triggers `tm_source_codes`
@@ -639,7 +792,7 @@ CREATE TABLE `tm_submissions` (
   `idUserAnswer` varchar(50) DEFAULT NULL,
   `iChecksum` int NOT NULL DEFAULT '0',
   `iVersion` int NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Triggers `tm_submissions`
@@ -674,7 +827,7 @@ CREATE TABLE `tm_submissions_subtasks` (
   `idSubtask` bigint NOT NULL,
   `idSubmission` bigint NOT NULL,
   `iVersion` bigint NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Triggers `tm_submissions_subtasks`
@@ -718,7 +871,7 @@ CREATE TABLE `tm_submissions_tests` (
   `jFiles` mediumtext,
   `iVersion` int NOT NULL,
   `idSubmissionSubtask` bigint DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Triggers `tm_submissions_tests`
@@ -772,7 +925,7 @@ CREATE TABLE `tm_tasks` (
   `sAssetsBaseUrl` varchar(250) DEFAULT NULL,
   `iVersion` bigint NOT NULL DEFAULT '0',
   `bHasSubtasks` tinyint(1) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Triggers `tm_tasks`
@@ -807,7 +960,7 @@ CREATE TABLE `tm_tasks_limits` (
   `iMaxTime` int NOT NULL DEFAULT '10000' COMMENT 'max allowed time in ms',
   `iMaxMemory` int NOT NULL COMMENT 'max allowed memory in kb',
   `iVersion` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Triggers `tm_tasks_limits`
@@ -844,7 +997,7 @@ CREATE TABLE `tm_tasks_strings` (
   `sStatement` mediumtext NOT NULL,
   `sSolution` mediumtext,
   `iVersion` int NOT NULL DEFAULT '0'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Triggers `tm_tasks_strings`
@@ -881,7 +1034,7 @@ CREATE TABLE `tm_tasks_subtasks` (
   `iPointsMax` tinyint NOT NULL,
   `bActive` tinyint(1) NOT NULL DEFAULT '1',
   `iVersion` bigint NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Triggers `tm_tasks_subtasks`
@@ -923,7 +1076,7 @@ CREATE TABLE `tm_tasks_tests` (
   `sInput` mediumtext,
   `sOutput` mediumtext,
   `iVersion` int NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Triggers `tm_tasks_tests`
@@ -954,6 +1107,30 @@ DELIMITER ;
 --
 ALTER TABLE `error_log`
   ADD PRIMARY KEY (`ID`);
+
+--
+-- Indexes for table `history_test_sync_main`
+--
+ALTER TABLE `history_test_sync_main`
+  ADD PRIMARY KEY (`historyID`),
+  ADD KEY `ID` (`ID`),
+  ADD KEY `iVersion` (`iVersion`);
+
+--
+-- Indexes for table `history_test_sync_second`
+--
+ALTER TABLE `history_test_sync_second`
+  ADD PRIMARY KEY (`historyID`),
+  ADD KEY `ID` (`ID`),
+  ADD KEY `iVersion` (`iVersion`);
+
+--
+-- Indexes for table `history_test_sync_third`
+--
+ALTER TABLE `history_test_sync_third`
+  ADD PRIMARY KEY (`historyID`),
+  ADD KEY `ID` (`ID`),
+  ADD KEY `iVersion` (`iVersion`);
 
 --
 -- Indexes for table `history_tm_hints`
@@ -1121,6 +1298,27 @@ ALTER TABLE `synchro_version`
   ADD KEY `iVersion` (`iVersion`);
 
 --
+-- Indexes for table `test_sync_main`
+--
+ALTER TABLE `test_sync_main`
+  ADD PRIMARY KEY (`ID`),
+  ADD KEY `iVersion` (`iVersion`);
+
+--
+-- Indexes for table `test_sync_second`
+--
+ALTER TABLE `test_sync_second`
+  ADD PRIMARY KEY (`ID`),
+  ADD KEY `iVersion` (`iVersion`);
+
+--
+-- Indexes for table `test_sync_third`
+--
+ALTER TABLE `test_sync_third`
+  ADD PRIMARY KEY (`ID`),
+  ADD KEY `iVersion` (`iVersion`);
+
+--
 -- Indexes for table `tm_grader_checks`
 --
 ALTER TABLE `tm_grader_checks`
@@ -1281,6 +1479,24 @@ ALTER TABLE `error_log`
   MODIFY `ID` int NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT for table `history_test_sync_main`
+--
+ALTER TABLE `history_test_sync_main`
+  MODIFY `historyID` bigint NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `history_test_sync_second`
+--
+ALTER TABLE `history_test_sync_second`
+  MODIFY `historyID` bigint NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `history_test_sync_third`
+--
+ALTER TABLE `history_test_sync_third`
+  MODIFY `historyID` bigint NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `history_tm_hints`
 --
 ALTER TABLE `history_tm_hints`
@@ -1386,4 +1602,3 @@ ALTER TABLE `tm_submissions_tests`
 ALTER TABLE `tm_tasks_tests`
   ADD CONSTRAINT `tm_tasks_tests_subtask` FOREIGN KEY (`idSubtask`) REFERENCES `tm_tasks_subtasks` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `tm_tasks_tests_task` FOREIGN KEY (`idTask`) REFERENCES `tm_tasks` (`ID`) ON DELETE CASCADE ON UPDATE CASCADE;
-COMMIT;

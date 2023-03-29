@@ -44,7 +44,7 @@ export async function execute<T>(query: string, params: string[] | Object): Prom
 
     return rows as unknown as T;
   } catch (error) {
-    throw new DatabaseError('Failed to execute MySQL query', query, error);
+    throw new DatabaseError(`Failed to execute MySQL query: ${error as string}`, query, error);
   }
 }
 
@@ -54,7 +54,7 @@ export async function executeInConnection<T>(connection: PoolConnection, query: 
 
     return rows as unknown as T;
   } catch (error) {
-    throw new DatabaseError('Failed to execute MySQL query', query, error);
+    throw new DatabaseError(`Failed to execute MySQL query: ${error as string}`, query, error);
   }
 }
 
@@ -98,5 +98,11 @@ export async function transactional(callback: (connection: PoolConnection) => Pr
     throw e;
   } finally {
     connection.release();
+  }
+}
+
+export async function closePool(): Promise<void> {
+  if (null !== pool) {
+    await pool.end();
   }
 }
