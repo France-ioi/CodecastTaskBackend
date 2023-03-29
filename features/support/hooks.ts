@@ -35,6 +35,10 @@ AfterAll(async function () {
 });
 
 async function cleanDatabase() {
+    if ('test' !== process.env['NODE_ENVIRONMENT']) {
+        throw new Error("Database cannot be cleaned while not in test environment.");
+    }
+
     for (let table of tablesToClear) {
         await Db.execute(`DELETE FROM ${table} WHERE 1`, {});
     }
