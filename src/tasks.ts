@@ -50,7 +50,7 @@ export interface TaskTestNormalized {
   platformId: string|null,
   rank: number,
   active: boolean,
-  name: string,
+  name: string|null,
   input: string,
   output: string,
 }
@@ -120,7 +120,7 @@ function normalizeTaskTest(taskTest: TaskTest): TaskTestNormalized {
     platformId: taskTest.idPlatform,
     rank: taskTest.iRank,
     active: !!taskTest.bActive,
-    name: taskTest.sName,
+    name: null, // Do not return test name to the client to avoid giving more information to it, asked by Mathias
     input: taskTest.sInput,
     output: taskTest.sOutput,
   };
