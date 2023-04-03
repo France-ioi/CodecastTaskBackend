@@ -1,5 +1,5 @@
 import {Server} from '@hapi/hapi';
-import {AfterAll, BeforeAll} from '@cucumber/cucumber';
+import {AfterAll, Before, BeforeAll} from '@cucumber/cucumber';
 import * as dotenv from 'dotenv';
 import path from 'path';
 import * as Db from '../../src/db';
@@ -17,16 +17,21 @@ const tablesToClear = [
   'tm_tasks_strings',
   'tm_tasks_subtasks',
   'tm_tasks_tests',
+  'tm_submissions',
+  'tm_submissions_subtasks',
+  'tm_submissions_tests',
 ];
 
-BeforeAll(async function () {
+BeforeAll(function () {
   dotenv.config({path: path.resolve(__dirname, '../../.env.test')});
   dotenv.config({path: path.resolve(__dirname, '../../.env')});
 
   Db.init();
-  await cleanDatabase();
-
   testServer = init();
+});
+
+Before(async function () {
+  await cleanDatabase();
 });
 
 AfterAll(async function () {

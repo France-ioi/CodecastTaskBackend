@@ -22,6 +22,7 @@ jobs:
       MYSQL_DB_PASSWORD: codecast
       MYSQL_DB_DATABASE: task_platform
       NODE_ENVIRONMENT: test
+      TEST_MODE: 1
     steps:
       - checkout
       - node/install-packages:

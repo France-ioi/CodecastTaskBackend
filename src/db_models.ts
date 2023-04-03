@@ -96,8 +96,6 @@ export interface Submission {
     bCompilError: number,
     sCompilMsg: string|null,
     sErrorMsg: string|null,
-    sFirstUserOutput: string|null,
-    sFirstExpectedOutput: string|null,
     sManualScoreDiffComment: string|null,
     bEvaluated: number,
     bConfirmed: number,
