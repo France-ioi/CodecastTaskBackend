@@ -49,7 +49,7 @@ When(/^I fire the event "([^"]*)" to the longPolling handler$/, function (this: 
 });
 
 When(/^I wait until next tick$/, async function () {
-  await new Promise(resolve => setTimeout(resolve));
+  await new Promise(resolve => setTimeout(resolve, 1));
 });
 
 Then(/^the server must have returned a response$/, function (this: TaskStepsContext) {
