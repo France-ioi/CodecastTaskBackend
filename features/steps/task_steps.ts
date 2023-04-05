@@ -8,7 +8,7 @@ import {longPollingHandler} from '../../src/long_polling';
 
 interface TaskStepsContext {
   response: ServerInjectResponse,
-  responsePromise: Promise<void>,
+  responsePromise: Promise<ServerInjectResponse>,
 }
 
 When(/^I send a (GET|POST) request to "([^"]*)"$/, async function (this: TaskStepsContext, method: string, url: string) {
@@ -23,8 +23,10 @@ When(/^I asynchronously send a (GET|POST) request to "([^"]*)"$/, function (this
     method,
     url,
   })
-    .then((response: ServerInjectResponse): void => {
+    .then((response: ServerInjectResponse): ServerInjectResponse => {
       this.response = response;
+
+      return response;
     });
 });
 
@@ -48,12 +50,17 @@ When(/^I fire the event "([^"]*)" to the longPolling handler$/, function (this: 
   longPollingHandler.fireEvent(event);
 });
 
-When(/^I wait until next tick$/, async function () {
-  await new Promise(resolve => setTimeout(resolve, 1));
+When(/^I wait (\d+)ms$/, async function (delay: number) {
+  await new Promise(resolve => setTimeout(resolve, delay));
 });
 
-Then(/^the server must have returned a response$/, function (this: TaskStepsContext) {
-  expect(this.response).to.not.be.undefined;
+Then(/^the server must have returned a response within (\d+)ms$/, async function (this: TaskStepsContext, delay: number) {
+  const result = await Promise.race([
+    this.responsePromise,
+    new Promise(resolve => setTimeout(resolve, delay)),
+  ]);
+
+  expect(result).to.not.be.undefined;
 });
 
 Then(/^the server must not have returned a response$/, function () {

@@ -40,7 +40,7 @@ AfterAll(async function () {
 });
 
 async function cleanDatabase(): Promise<void> {
-  if ('test' !== process.env['NODE_ENVIRONMENT']) {
+  if (!process.env['TEST_MODE']) {
     throw new Error('Database cannot be cleaned while not in test environment.');
   }
 
