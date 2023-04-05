@@ -4,15 +4,15 @@ export enum LongPollingHandlerResult {
 }
 
 class LongPollingHandler {
-  private listeners: {[eventName: string]: Function} = {};
+  private listeners: {[eventName: string]: {fn: Function, timeoutId: NodeJS.Timeout}} = {};
 
   waitForEvent(eventName: string, timeout: number): Promise<LongPollingHandlerResult> {
     return new Promise(resolve => {
-      this.register(eventName, resolve);
-
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         resolve(LongPollingHandlerResult.Timeout);
       }, timeout);
+
+      this.register(eventName, timeoutId, resolve);
     });
   }
 
@@ -21,16 +21,18 @@ class LongPollingHandler {
       return;
     }
 
-    const listener = this.listeners[eventName];
+    const {fn} = this.listeners[eventName];
     this.unregister(eventName);
-    listener(LongPollingHandlerResult.Event);
+    fn(LongPollingHandlerResult.Event);
   }
 
-  register(eventName: string, listener: Function): void {
-    this.listeners[eventName] = listener;
+  register(eventName: string, timeoutId: NodeJS.Timeout, listener: Function): void {
+    this.listeners[eventName] = {fn: listener, timeoutId};
   }
 
   unregister(eventName: string): void {
+    const {timeoutId} = this.listeners[eventName];
+    clearTimeout(timeoutId);
     delete this.listeners[eventName];
   }
 }
