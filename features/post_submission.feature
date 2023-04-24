@@ -20,8 +20,8 @@ Feature: Post submission
       | 5001 | 1000      | 4000       | Evaluation     | 1     | 1       | s1-t2 | 10     | 15      | 2147483647 |
       | 5002 | 1000      | 4001       | Evaluation     | 2     | 1       | s2-t1 | 15     | 10      | 2147483647 |
     And the database has the following table "tm_platforms":
-      | ID   | name                   | public_key |
-      | 1    | codecast-dev-sebastien |            |
+      | ID   | name          | public_key |
+      | 1    | codecast-test |            |
     And I seed the ID generator to 100
     And I mock the graderqueue
 
