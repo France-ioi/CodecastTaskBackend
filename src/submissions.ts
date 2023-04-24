@@ -165,7 +165,7 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
   });
 
   await Db.transactional(async connection => {
-    await Db.executeInConnection(connection, "insert into tm_source_codes (ID, idUser, idPlatform, idTask, sDate, sParams, sName, sSource, bSubmission) values(:idNewSC, :idUser, :idPlatform, :idTask, NOW(), :sParams, :idSubmission, :sSource, '1');", {
+    await Db.executeInConnection(connection, "insert into tm_source_codes (ID, idUser, idPlatform, idTask, sDate, sParams, sName, sSource, bEditable, bSubmission) values(:idNewSC, :idUser, :idPlatform, :idTask, NOW(), :sParams, :idSubmission, :sSource, '0', '1');", {
       idNewSC: idNewSourceCode,
       idUser: params.idUser,
       idPlatform: params.idPlatform,
