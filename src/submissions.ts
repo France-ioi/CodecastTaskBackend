@@ -83,6 +83,12 @@ export interface SubmissionOutput extends SubmissionNormalized {
   tests?: SubmissionTestNormalized[],
 }
 
+let randomIdGenerator = getRandomId;
+
+export function setRandomIdGenerator(getRandomId: () => string): void {
+  randomIdGenerator = getRandomId;
+}
+
 export async function getPlatformTokenParams(taskId: string, token?: string|null, platform?: string|null): Promise<PlatformTokenParameters> {
   if (!platform && process.env.TEST_MODE && process.env.TEST_MODE_PLATFORM_NAME) {
     platform = process.env.TEST_MODE_PLATFORM_NAME;
@@ -143,7 +149,6 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
     throw new InvalidInputError('Missing token or platform POST variable');
   }
 
-
   const params = await getPlatformTokenParams(submissionData.taskId, submissionData.token, submissionData.platform);
   const task = await findTaskById(params.idTaskLocal);
   if (null === task) {
@@ -153,8 +158,8 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
   const mode = submissionData.userTests && submissionData.userTests.length ? 'UserTest' : 'Submitted';
 
   // save source code (with bSubmission = 1)
-  const idNewSourceCode = getRandomId();
-  const idSubmission = getRandomId();
+  const idNewSourceCode = randomIdGenerator();
+  const idSubmission = randomIdGenerator();
   const sourceCodeParams = JSON.stringify({
     sLangProg: submissionData.answer.language,
   });

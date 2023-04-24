@@ -7,6 +7,8 @@ import {init} from '../../src/server';
 
 import chai from 'chai';
 import chaiSubset from 'chai-subset';
+import {setRandomIdGenerator as generator1} from '../../src/submissions';
+import {setRandomIdGenerator as generator2} from '../../src/grader_webhook';
 chai.use(chaiSubset);
 
 let testServer: Server;
@@ -20,13 +22,26 @@ const tablesToClear = [
   'tm_submissions',
   'tm_submissions_subtasks',
   'tm_submissions_tests',
+  'tm_platforms',
+  'tm_source_codes',
 ];
+
+let currentId = 1;
+
+export function seedRandomIdGenerator(seed: number): void {
+  currentId = seed;
+}
+
+function randomIdGenerator(): string {
+  return String(currentId++);
+}
 
 BeforeAll(function () {
   dotenv.config({path: path.resolve(__dirname, '../../.env.test')});
   dotenv.config({path: path.resolve(__dirname, '../../.env')});
 
   Db.init();
+  mockIdGenerators();
   testServer = init();
 });
 
@@ -47,6 +62,11 @@ async function cleanDatabase(): Promise<void> {
   for (const table of tablesToClear) {
     await Db.execute(`DELETE FROM ${table} WHERE 1`, {});
   }
+}
+
+function mockIdGenerators(): void {
+  generator1(randomIdGenerator);
+  generator2(randomIdGenerator);
 }
 
 export {

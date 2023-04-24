@@ -36,7 +36,7 @@ export function init(): void {
   }
 }
 
-export async function execute<T>(query: string, params: string[] | Object): Promise<T> {
+export async function execute<T>(query: string, params: string[] | Object = []): Promise<T> {
   if (null === pool) throw new DatabaseError('Pool was not created. Ensure pool is created when running the app.');
 
   try {

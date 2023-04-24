@@ -67,7 +67,55 @@ export interface JobData {
   },
 }
 
+let sendQueueRequestToGraderQueue: (queueRequest: QueueRequest) => Promise<string> = async function (queueRequest: QueueRequest) {
+  if (!process.env.GRADER_QUEUE_URL) {
+    throw new Error('Missing grader queue URL');
+  }
+
+  const gotResponse = await got.post(process.env.GRADER_QUEUE_URL, {
+    form: queueRequest,
+  });
+
+  return gotResponse.body;
+};
+
+export function setQueueRequestSender(queueRequestSender: (queueRequest: QueueRequest) => Promise<string>): void {
+  sendQueueRequestToGraderQueue = queueRequestSender;
+}
+
 export async function sendSubmissionToTaskGrader(submissionId: string, submissionData: SubmissionParameters): Promise<void> {
+  const queueRequest = await generateQueueRequest(submissionId, submissionData);
+
+  let queueAnswer: string;
+
+  try {
+    queueAnswer = await sendQueueRequestToGraderQueue(queueRequest);
+    log.debug('Queue answer', queueAnswer);
+    // console.log(response.body);
+  } catch (error) {
+    throw new Error(`Cannot read graderqueue json return: ${String(error)}`);
+  }
+
+  const queueAnswerData = JSON.parse(queueAnswer) as {errorcode: number, errormsg?: string};
+  if (queueAnswerData.errorcode !== 0) {
+    throw new Error(`Received error from graderqueue: ${queueAnswerData['errormsg'] || ''}`);
+  }
+}
+
+export interface QueueRequest {
+  request?: string,
+  priority?: number,
+  taskrevision?: string,
+  tags?: string,
+  jobname?: string,
+  jobdata?: string,
+  jobusertaskid?: string,
+  debugPassword?: string,
+  sToken?: string,
+  sPlatform?: string,
+}
+
+export async function generateQueueRequest(submissionId: string, submissionData: SubmissionParameters): Promise<QueueRequest> {
   const params = await getPlatformTokenParams(submissionData.taskId, submissionData.token, submissionData.platform);
   let idUserAnswer = null;
   let answerTokenParams: PlatformTokenParameters|null = null;
@@ -267,26 +315,5 @@ WHERE tm_submissions.ID = :idSubmission
     };
   }
 
-  if (!process.env.GRADER_QUEUE_URL) {
-    throw new Error('Missing grader queue URL');
-  }
-
-  let queueAnswer: string;
-
-  try {
-    const response = await got.post(process.env.GRADER_QUEUE_URL, {
-      form: queueRequest,
-    });
-
-    queueAnswer = response.body;
-    log.debug('Queue answer', queueAnswer);
-    // console.log(response.body);
-  } catch (error) {
-    throw new Error(`Cannot read graderqueue json return: ${String(error)}`);
-  }
-
-  const queueAnswerData = JSON.parse(queueAnswer) as {errorcode: number, errormsg?: string};
-  if (queueAnswerData.errorcode !== 0) {
-    throw new Error(`Received error from graderqueue: ${queueAnswerData['errormsg'] || ''}`);
-  }
+  return queueRequest;
 }
