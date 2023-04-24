@@ -34,6 +34,11 @@ const JSON_LANG_TO_EXT: {[key: string]: string} = {
   'c': 'c',
   'cplex': 'mod',
   'shell': 'sh',
+  'smartpy': 'py',
+  'archetype': 'arl',
+  'michelson': 'tz',
+  'mligo': 'ml',
+  'jsligo': 'js',
 };
 
 export interface JobData {
