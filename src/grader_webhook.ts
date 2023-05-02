@@ -53,6 +53,12 @@ export interface TokenParams {
   },
 }
 
+let randomIdGenerator = getRandomId;
+
+export function setRandomIdGenerator(getRandomId: () => string): void {
+  randomIdGenerator = getRandomId;
+}
+
 async function createNewTest(idSubmission: string, idTask: string, testName: string, idSubtask: string|null): Promise<TaskTest> {
   let maxRank = await Db.querySingleScalarResult<number>(`SELECT MAX(tm_tasks_tests.iRank) from tm_tasks_tests
   JOIN tm_submissions ON tm_submissions.idTask = tm_tasks_tests.idTask
@@ -64,7 +70,7 @@ async function createNewTest(idSubmission: string, idTask: string, testName: str
     maxRank = 0;
   }
 
-  const ID = getRandomId();
+  const ID = randomIdGenerator();
 
   await Db.execute('INSERT INTO tm_tasks_tests (ID, idTask, idSubtask, sGroupType, iRank, bActive, sName) values (:ID, :idTask, :idSubtask, \'Evaluation\', :iRank, 1, :sName)', {
     ID,
@@ -243,7 +249,7 @@ ${thisCompilMsg}`;
             }
             const idSubtask = curSubtask.ID;
 
-            const submSubtaskId = getRandomId();
+            const submSubtaskId = randomIdGenerator();
             subTaskIdBySubmissionSubTaskId[submSubtaskId] = idSubtask;
 
             await Db.execute('INSERT INTO tm_submissions_subtasks (ID, bSuccess, iScore, idSubtask, idSubmission) VALUES(:submissionSubtaskId, 0, 0, :idSubtask, :idSubmission);', {

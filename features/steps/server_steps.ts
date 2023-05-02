@@ -4,23 +4,22 @@ import {expect} from 'chai';
 import {readFile} from 'fs/promises';
 import {ServerInjectResponse} from '@hapi/hapi';
 import {testServer} from '../support/hooks';
-import {longPollingHandler} from '../../src/long_polling';
 
-interface TaskStepsContext {
+interface ServerStepsContext {
   response: ServerInjectResponse,
   responsePromise: Promise<ServerInjectResponse>,
 }
 
-When(/^I send a (GET|POST) request to "([^"]*)"$/, async function (this: TaskStepsContext, method: string, url: string) {
+When(/^I send a GET request to "([^"]*)"$/, async function (this: ServerStepsContext, url: string) {
   this.response = await testServer.inject({
-    method,
+    method: 'GET',
     url,
   });
 });
 
-When(/^I asynchronously send a (GET|POST) request to "([^"]*)"$/, function (this: TaskStepsContext, method: string, url: string) {
+When(/^I asynchronously send a GET request to "([^"]*)"$/, function (this: ServerStepsContext, url: string) {
   this.responsePromise = testServer.inject({
-    method,
+    method: 'GET',
     url,
   })
     .then((response: ServerInjectResponse): ServerInjectResponse => {
@@ -30,31 +29,35 @@ When(/^I asynchronously send a (GET|POST) request to "([^"]*)"$/, function (this
     });
 });
 
-Then(/^the response status code should be (\d+)$/, function (this: TaskStepsContext, errorCode) {
+When(/^I send a POST request to "([^"]*)" with the following payload:$/, async function (this: ServerStepsContext, url: string, payload: string) {
+  this.response = await testServer.inject({
+    method: 'POST',
+    url,
+    payload,
+  });
+});
+
+Then(/^the response status code should be (\d+)$/, function (this: ServerStepsContext, errorCode) {
+  if (this.response.statusCode !== errorCode) {
+    // eslint-disable-next-line
+    console.log(JSON.parse(this.response.payload));
+  }
   expect(this.response.statusCode).to.equal(errorCode);
 });
 
-Then(/^the response body should be the content of this file: "([^"]*)"$/, async function (this: TaskStepsContext, fileName: string) {
+Then(/^the response body should be the content of this file: "([^"]*)"$/, async function (this: ServerStepsContext, fileName: string) {
   const expectedResponse: unknown = JSON.parse(await readFile(path.join(__dirname, '..', fileName), 'utf8'));
   const payload: unknown = JSON.parse(this.response.payload);
   expect(payload).to.deep.equal(expectedResponse);
 });
 
-Then(/^the response body should be the following JSON:$/, function (this: TaskStepsContext, expectedJson: string) {
+Then(/^the response body should be the following JSON:$/, function (this: ServerStepsContext, expectedJson: string) {
   const expectedResponse: unknown = JSON.parse(expectedJson);
   const payload: unknown = JSON.parse(this.response.payload);
   expect(payload).to.deep.equal(expectedResponse);
 });
 
-When(/^I fire the event "([^"]*)" to the longPolling handler$/, function (this: TaskStepsContext, event: string) {
-  longPollingHandler.fireEvent(event);
-});
-
-When(/^I wait (\d+)ms$/, async function (delay: number) {
-  await new Promise(resolve => setTimeout(resolve, delay));
-});
-
-Then(/^the server must have returned a response within (\d+)ms$/, async function (this: TaskStepsContext, delay: number) {
+Then(/^the server must have returned a response within (\d+)ms$/, async function (this: ServerStepsContext, delay: number) {
   const result = await Promise.race([
     this.responsePromise,
     new Promise(resolve => setTimeout(resolve, delay)),

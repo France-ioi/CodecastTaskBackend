@@ -83,6 +83,12 @@ export interface SubmissionOutput extends SubmissionNormalized {
   tests?: SubmissionTestNormalized[],
 }
 
+let randomIdGenerator = getRandomId;
+
+export function setRandomIdGenerator(getRandomId: () => string): void {
+  randomIdGenerator = getRandomId;
+}
+
 export async function getPlatformTokenParams(taskId: string, token?: string|null, platform?: string|null): Promise<PlatformTokenParameters> {
   if (!platform && process.env.TEST_MODE && process.env.TEST_MODE_PLATFORM_NAME) {
     platform = process.env.TEST_MODE_PLATFORM_NAME;
@@ -143,7 +149,6 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
     throw new InvalidInputError('Missing token or platform POST variable');
   }
 
-
   const params = await getPlatformTokenParams(submissionData.taskId, submissionData.token, submissionData.platform);
   const task = await findTaskById(params.idTaskLocal);
   if (null === task) {
@@ -153,14 +158,14 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
   const mode = submissionData.userTests && submissionData.userTests.length ? 'UserTest' : 'Submitted';
 
   // save source code (with bSubmission = 1)
-  const idNewSourceCode = getRandomId();
-  const idSubmission = getRandomId();
+  const idNewSourceCode = randomIdGenerator();
+  const idSubmission = randomIdGenerator();
   const sourceCodeParams = JSON.stringify({
     sLangProg: submissionData.answer.language,
   });
 
   await Db.transactional(async connection => {
-    await Db.executeInConnection(connection, "insert into tm_source_codes (ID, idUser, idPlatform, idTask, sDate, sParams, sName, sSource, bSubmission) values(:idNewSC, :idUser, :idPlatform, :idTask, NOW(), :sParams, :idSubmission, :sSource, '1');", {
+    await Db.executeInConnection(connection, "insert into tm_source_codes (ID, idUser, idPlatform, idTask, sDate, sParams, sName, sSource, bEditable, bSubmission) values(:idNewSC, :idUser, :idPlatform, :idTask, NOW(), :sParams, :idSubmission, :sSource, '0', '1');", {
       idNewSC: idNewSourceCode,
       idUser: params.idUser,
       idPlatform: params.idPlatform,
