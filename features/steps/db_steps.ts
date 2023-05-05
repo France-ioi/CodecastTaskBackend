@@ -23,22 +23,30 @@ Given(/^the database has the following table "([^"]*)":$/, async function (table
 
 Then(/^the table "([^"]*)" should be:$/, async function (table: string, dataTable: DataTable) {
   const [headers, ...rows] = dataTable.raw();
+  const objectRows = rows.map(row => {
+    const object: {[header: string]: string} = {};
+    for (let i = 0; i < row.length; i++) {
+      object[headers[i]] = row[i];
+    }
+
+    return object;
+  });
 
   const query = `SELECT * FROM ${table}`;
   const results = await Db.execute<{[key: string]: unknown}[]>(query);
 
   const resultRows = [];
   for (const result of results) {
-    const resultRow: unknown[] = headers.map(() => null);
+    const resultRow: {[header: string]: string} = {};
     for (const [header, value] of Object.entries(result)) {
       const headerPosition = headers.indexOf(header);
       if (-1 === headerPosition) {
         continue;
       }
-      resultRow[headerPosition] = String(value);
+      resultRow[header] = String(value);
     }
     resultRows.push(resultRow);
   }
 
-  expect(resultRows).to.deep.equal(rows);
+  expect(resultRows).to.deep.equal(objectRows);
 });
