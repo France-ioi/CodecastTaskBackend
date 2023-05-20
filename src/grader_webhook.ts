@@ -100,9 +100,14 @@ async function createNewTest(idSubmission: string, idTask: string, testName: str
 export async function receiveSubmissionResultsFromTaskGrader(taskGraderWebhookPayload: unknown): Promise<void> {
   const taskGraderWebhookParams: TaskGraderWebhookPayload = decode(taskGraderWebhookPayloadDecoder)(taskGraderWebhookPayload);
 
-  const jwesDecoder = new JwesDecoder();
-  await jwesDecoder.setKeys(process.env.GRADER_QUEUE_PUBLIC_KEY, process.env.GRADER_QUEUE_OWN_PRIVATE_KEY);
-  const tokenParams = await jwesDecoder.decodeJwes(taskGraderWebhookParams.sToken) as TokenParams;
+  let tokenParams;
+  if (process.env.GRADER_QUEUE_DEBUG_PASSWORD) {
+    tokenParams = JSON.parse(taskGraderWebhookParams.sToken) as TokenParams;
+  } else {
+    const jwesDecoder = new JwesDecoder();
+    await jwesDecoder.setKeys(process.env.GRADER_QUEUE_PUBLIC_KEY, process.env.GRADER_QUEUE_OWN_PRIVATE_KEY);
+    tokenParams = await jwesDecoder.decodeJwes(taskGraderWebhookParams.sToken) as TokenParams;
+  }
 
   const submission = await findSubmissionById(tokenParams.sTaskName);
   if (null === submission) {
@@ -187,7 +192,8 @@ ${thisCompilMsg}`;
         sLog = 'None of your tests allow finding the error in this solution.';
       }
 
-      await Db.execute('insert ignore into tm_submissions_tests (idSubmission, iErrorCode, idTest, iScore, sLog) values (:idSubmission, :iErrorCode, :idTest, :iScore, :sLog);', {
+      await Db.execute('insert ignore into tm_submissions_tests (ID, idSubmission, iErrorCode, idTest, iScore, sLog) values (:ID, :idSubmission, :iErrorCode, :idTest, :iScore, :sLog);', {
+        ID: randomIdGenerator(),
         idSubmission: tokenParams.sTaskName,
         idTest: test.ID,
         iScore,
@@ -326,7 +332,8 @@ ${thisCompilMsg}`;
 
             bNoFeedback = testReport.execution?.noFeedback ? 1 : 0;
 
-            await Db.execute('insert ignore into tm_submissions_tests (idSubmission, idTest, iScore, iTimeMs, iMemoryKb, iErrorCode, sErrorMsg, sExpectedOutput, idSubmissionSubtask, bNoFeedback) values (:idSubmission, :idTest, :iScore, :iTimeMs, :iMemoryKb, :iErrorCode, :sErrorMsg, :sExpectedOutput, :idSubmissionSubtask, :bNoFeedback);', {
+            await Db.execute('insert ignore into tm_submissions_tests (ID, idSubmission, idTest, iScore, iTimeMs, iMemoryKb, iErrorCode, sErrorMsg, sExpectedOutput, idSubmissionSubtask, bNoFeedback) values (:ID, :idSubmission, :idTest, :iScore, :iTimeMs, :iMemoryKb, :iErrorCode, :sErrorMsg, :sExpectedOutput, :idSubmissionSubtask, :bNoFeedback);', {
+              ID: randomIdGenerator(),
               idSubmission: tokenParams.sTaskName,
               idTest: test.ID,
               iScore: 0,
@@ -362,7 +369,8 @@ ${thisCompilMsg}`;
           iScoreTotal += iScore;
           const sOutput = testReport.execution?.stdout.data.trimEnd();
 
-          await Db.execute('insert ignore into tm_submissions_tests (idSubmission, idTest, iScore, iTimeMs, iMemoryKb, iErrorCode, sOutput, sExpectedOutput, sErrorMsg, sLog, jFiles, idSubmissionSubtask, bNoFeedback) values (:idSubmission, :idTest, :iScore, :iTimeMs, :iMemoryKb, :iErrorCode, :sOutput, :sExpectedOutput, :sErrorMsg, :sLog, :jFiles, :idSubmissionSubtask, :bNoFeedback);', {
+          await Db.execute('insert ignore into tm_submissions_tests (ID, idSubmission, idTest, iScore, iTimeMs, iMemoryKb, iErrorCode, sOutput, sExpectedOutput, sErrorMsg, sLog, jFiles, idSubmissionSubtask, bNoFeedback) values (:ID, :idSubmission, :idTest, :iScore, :iTimeMs, :iMemoryKb, :iErrorCode, :sOutput, :sExpectedOutput, :sErrorMsg, :sLog, :jFiles, :idSubmissionSubtask, :bNoFeedback);', {
+            ID: randomIdGenerator(),
             idSubmission: tokenParams.sTaskName,
             idTest: test.ID,
             iScore,

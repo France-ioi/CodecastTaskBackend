@@ -186,6 +186,7 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
 
     if ('UserTest' === mode && submissionData.userTests && submissionData.userTests.length) {
       const valuesToInsert = submissionData.userTests.map((test, index) => ({
+        ID: randomIdGenerator(),
         idUser: params.idUser,
         idPlatform: params.idPlatform,
         idTask: params.idTaskLocal,
@@ -196,7 +197,7 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
         idSubmission,
       }));
 
-      await Db.executeInConnection(connection, 'insert into tm_tasks_tests (idUser, idPlatform, idTask, sGroupType, sInput, sOutput, sName, iRank, idSubmission) values ?', valuesToInsert);
+      await Db.executeInConnection(connection, 'insert into tm_tasks_tests (ID, idUser, idPlatform, idTask, sGroupType, sInput, sOutput, sName, iRank, idSubmission) values ?', valuesToInsert);
     }
   });
 
