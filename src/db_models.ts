@@ -1,3 +1,5 @@
+import {SubmissionMode} from './submissions';
+
 export interface Task {
     ID: string,
     sTextId: string,
@@ -99,7 +101,7 @@ export interface Submission {
     sManualScoreDiffComment: string|null,
     bEvaluated: number,
     bConfirmed: number,
-    sMode: string,
+    sMode: SubmissionMode,
     sReturnUrl: string|null,
     idUserAnswer: string|null,
     iChecksum: number,
