@@ -131,7 +131,7 @@ export async function receiveSubmissionResultsFromTaskGrader(taskGraderWebhookPa
   // json contains the names of the tests, but when the submission is with user tests,
   // it contains names like id-xxx where xxx is the ID of the tm_task_test
   for (const test of allTests) {
-    if ('Submission' === test.sGroupType) {
+    if ('Submission' === test.sGroupType || 'User' === test.sGroupType) {
       testsByName[`id-${test.ID}`] = test;
     } else {
       testsByName[test.sName] = test;

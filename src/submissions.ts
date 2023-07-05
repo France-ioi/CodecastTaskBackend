@@ -4,7 +4,7 @@ import {
   SourceCode,
   Submission,
   SubmissionSubtask,
-  SubmissionTest,
+  SubmissionTest, TaskTest,
 } from './db_models';
 import {decodePlatformToken, PlatformTokenParameters} from './tokenization';
 import {decode, getRandomId} from './util';
@@ -12,7 +12,7 @@ import * as D from 'io-ts/Decoder';
 import {pipe} from 'fp-ts/function';
 import {InvalidInputError} from './error_handler';
 import {sendSubmissionToTaskGrader} from './grader_interface';
-import {findTaskById,} from './tasks';
+import {findTaskById, normalizeTaskTest} from './tasks';
 
 export const submissionDataDecoder = pipe(
   D.struct({
@@ -39,6 +39,13 @@ export const submissionDataDecoder = pipe(
 );
 export type SubmissionParameters = D.TypeOf<typeof submissionDataDecoder>;
 
+export enum SubmissionMode {
+  Submitted = 'Submitted',
+  LimitedTime = 'LimitedTime',
+  Contest = 'Contest',
+  UserTest = 'UserTest',
+}
+
 export interface SubmissionNormalized {
   id: string,
   success: boolean,
@@ -52,7 +59,7 @@ export interface SubmissionNormalized {
   confirmed: boolean,
   manualCorrection: boolean,
   manualScoreDiffComment: string|null,
-  mode: string,
+  mode: SubmissionMode,
 }
 
 export interface SubmissionSubtaskNormalized {
@@ -155,7 +162,7 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
     throw new InvalidInputError(`Invalid task id: ${params.idTaskLocal}`);
   }
 
-  const mode = submissionData.userTests && submissionData.userTests.length ? 'UserTest' : 'Submitted';
+  const mode = submissionData.userTests && submissionData.userTests.length ? SubmissionMode.UserTest : SubmissionMode.Submitted;
 
   // save source code (with bSubmission = 1)
   const idNewSourceCode = randomIdGenerator();
@@ -185,19 +192,20 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
     });
 
     if ('UserTest' === mode && submissionData.userTests && submissionData.userTests.length) {
-      const valuesToInsert = submissionData.userTests.map((test, index) => ({
-        ID: randomIdGenerator(),
-        idUser: params.idUser,
-        idPlatform: params.idPlatform,
-        idTask: params.idTaskLocal,
-        sInput: test.input,
-        sOutput: test.output,
-        name: test.name,
-        iRank: index,
+      const valuesToInsert = submissionData.userTests.map((test, index) => ([
+        randomIdGenerator(),
+        params.idUser,
+        params.idPlatform,
+        params.idTaskLocal,
+        'User',
+        test.input,
+        test.output,
+        test.name,
+        index,
         idSubmission,
-      }));
+      ]));
 
-      await Db.executeInConnection(connection, 'insert into tm_tasks_tests (ID, idUser, idPlatform, idTask, sGroupType, sInput, sOutput, sName, iRank, idSubmission) values ?', valuesToInsert);
+      await Db.executeInConnection(connection, 'insert into tm_tasks_tests (ID, idUser, idPlatform, idTask, sGroupType, sInput, sOutput, sName, iRank, idSubmission) values ?', [valuesToInsert]);
     }
   });
 
@@ -241,10 +249,13 @@ function normalizeSubmissionSubtask(submissionSubtask: SubmissionSubtask): Submi
   };
 }
 
-function normalizeSubmissionTest(submissionTest: SubmissionTest): SubmissionTestNormalized {
+function normalizeSubmissionTest(submissionTest: SubmissionTest, submissionTests: TaskTest[]): SubmissionTestNormalized {
+  const originalTest = submissionTests.find(test => submissionTest.idTest === test.ID);
+
   return {
     id: submissionTest.ID,
     testId: submissionTest.idTest,
+    ...(originalTest ? {test: normalizeTaskTest(originalTest)} : {}),
     score: submissionTest.iScore,
     timeMs: submissionTest.iTimeMs,
     memoryKb: submissionTest.iMemoryKb,
@@ -270,11 +281,12 @@ export async function getSubmission(submissionId: string): Promise<SubmissionOut
   }
 
   const submissionSubtasks = await Db.execute<SubmissionSubtask[]>('SELECT * FROM tm_submissions_subtasks WHERE idSubmission = ?', [submissionId]);
-  const submissionTests = await Db.execute<SubmissionTest[]>('SELECT * FROM tm_submissions_tests WHERE idSubmission = ?', [submissionId]);
+  const submissionTestResults = await Db.execute<SubmissionTest[]>('SELECT * FROM tm_submissions_tests WHERE idSubmission = ?', [submissionId]);
+  const submissionTests = await Db.execute<TaskTest[]>('SELECT * FROM tm_tasks_tests WHERE idSubmission = ? AND sGroupType = "User"', [submissionId]);
 
   return {
     ...normalizeSubmission(submission),
     subTasks: submissionSubtasks.map(normalizeSubmissionSubtask),
-    tests: submissionTests.map(normalizeSubmissionTest),
+    tests: submissionTestResults.map(test => normalizeSubmissionTest(test, submissionTests)),
   };
 }

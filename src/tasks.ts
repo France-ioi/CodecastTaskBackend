@@ -109,7 +109,7 @@ function normalizeTaskSubtask(taskSubtask: TaskSubtask): TaskSubtaskNormalized {
   };
 }
 
-function normalizeTaskTest(taskTest: TaskTest): TaskTestNormalized {
+export function normalizeTaskTest(taskTest: TaskTest): TaskTestNormalized {
   return {
     id: taskTest.ID,
     taskId: taskTest.idTask,
@@ -120,7 +120,7 @@ function normalizeTaskTest(taskTest: TaskTest): TaskTestNormalized {
     platformId: taskTest.idPlatform,
     rank: taskTest.iRank,
     active: !!taskTest.bActive,
-    name: null, // Do not return test name to the client to avoid giving more information to it, asked by Mathias
+    name: 'User' === taskTest.sGroupType ? taskTest.sName : null, // Do not return test name to the client to avoid giving more information to it, asked by Mathias
     input: taskTest.sInput,
     output: taskTest.sOutput,
   };
