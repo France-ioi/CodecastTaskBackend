@@ -6,6 +6,7 @@ import {Submission, TaskLimit, TaskLimitModel, TaskTest} from './db_models';
 import {InvalidInputError} from './error_handler';
 import got from 'got';
 import log from 'loglevel';
+import {getRandomId} from './util';
 
 function baseLangToJSONLang(baseLang: string): string {
   baseLang = baseLang.toLocaleLowerCase();
@@ -276,7 +277,13 @@ WHERE tm_submissions.ID = :idSubmission
     locale: submissionData.sLocale,
   };
 
-  const jobUserTaskId = `${submission.idTask}-${submission.idUser}-${submission.idPlatform}`;
+  // When this is a test user, avoid blocking the grader queue because several people use
+  // the grader queue at the same time. If several users use the grader queue at the same time
+  // on the same task outside a platform, they will all have the same jobUserTaskId, and this
+  // is problematic since the grader queue will re-start the submission everytime and cancel the previous
+  // ones made with this identifier. To prevent this, we generate a random identifier.
+  const idUser = process.env.TEST_MODE_USER_ID === submission.idUser ? getRandomId() : submission.idUser;
+  const jobUserTaskId = `${submission.idTask}-${idUser}-${submission.idPlatform}`;
 
   let evalTags = task.sEvalTags;
   if (!evalTags && process.env.GRADER_QUEUE_DEFAULT_TAGS) {

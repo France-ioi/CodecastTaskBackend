@@ -7,8 +7,7 @@ import {init} from '../../src/server';
 
 import chai from 'chai';
 import chaiSubset from 'chai-subset';
-import {setRandomIdGenerator as generator1} from '../../src/submissions';
-import {setRandomIdGenerator as generator2} from '../../src/grader_webhook';
+import {setRandomIdGenerator} from '../../src/util';
 chai.use(chaiSubset);
 
 let testServer: Server;
@@ -41,7 +40,7 @@ BeforeAll(function () {
   dotenv.config({path: path.resolve(__dirname, '../../.env')});
 
   Db.init();
-  mockIdGenerators();
+  setRandomIdGenerator(randomIdGenerator);
   testServer = init();
 });
 
@@ -62,11 +61,6 @@ async function cleanDatabase(): Promise<void> {
   for (const table of tablesToClear) {
     await Db.execute(`DELETE FROM ${table} WHERE 1`, {});
   }
-}
-
-function mockIdGenerators(): void {
-  generator1(randomIdGenerator);
-  generator2(randomIdGenerator);
 }
 
 export {

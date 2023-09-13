@@ -72,7 +72,7 @@ Feature: Post submission
       "tags": "",
       "jobname": "101",
       "jobdata": "{\"taskPath\":\"$ROOT_PATH/FranceIOI/Contests/2018/Algorea_finale/plateau\",\"extraParams\":{\"solutionFilename\":\"101.py\",\"solutionContent\":\"print('ici')\",\"solutionLanguage\":\"python3\",\"solutionDependencies\":\"@defaultDependencies-python3\",\"solutionFilterTests\":\"@defaultFilterTests-python3\",\"solutionId\":\"sol0-101.py\",\"solutionExecId\":\"exec0-101.py\",\"defaultSolutionCompParams\":{\"memoryLimitKb\":131072,\"timeLimitMs\":10000,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]},\"defaultSolutionExecParams\":{\"memoryLimitKb\":64000,\"timeLimitMs\":200,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]}},\"options\":{\"locale\":\"fr\"}}",
-      "jobusertaskid": "1000-1-1",
+      "jobusertaskid": "1000-102-1",
       "debugPassword": "test"
     }
     """
@@ -137,7 +137,7 @@ Feature: Post submission
       "tags": "",
       "jobname": "101",
       "jobdata": "{\"taskPath\":\"$ROOT_PATH/FranceIOI/Contests/2018/Algorea_finale/plateau\",\"extraParams\":{\"solutionFilename\":\"101.py\",\"solutionContent\":\"print('ici')\",\"solutionLanguage\":\"python3\",\"solutionDependencies\":\"@defaultDependencies-python3\",\"solutionFilterTests\":[\"id-*.in\"],\"solutionId\":\"sol0-101.py\",\"solutionExecId\":\"exec0-101.py\",\"defaultSolutionCompParams\":{\"memoryLimitKb\":131072,\"timeLimitMs\":10000,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]},\"defaultSolutionExecParams\":{\"memoryLimitKb\":64000,\"timeLimitMs\":200,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]}},\"extraTests\":[{\"name\":\"id-102.in\",\"content\":\"test\"},{\"name\":\"id-102.out\",\"content\":\"ici\"}],\"executions\":[{\"id\":\"testExecution\",\"idSolution\":\"@solutionId\",\"filterTests\":[\"id-*.in\"],\"runExecution\":\"@defaultSolutionExecParams\"}],\"options\":{\"locale\":\"fr\"}}",
-      "jobusertaskid": "1000-1-1",
+      "jobusertaskid": "1000-103-1",
       "debugPassword": "test"
     }
     """
