@@ -90,12 +90,6 @@ export interface SubmissionOutput extends SubmissionNormalized {
   tests?: SubmissionTestNormalized[],
 }
 
-let randomIdGenerator = getRandomId;
-
-export function setRandomIdGenerator(getRandomId: () => string): void {
-  randomIdGenerator = getRandomId;
-}
-
 export async function getPlatformTokenParams(taskId: string, token?: string|null, platform?: string|null): Promise<PlatformTokenParameters> {
   if (!platform && process.env.TEST_MODE && process.env.TEST_MODE_PLATFORM_NAME) {
     platform = process.env.TEST_MODE_PLATFORM_NAME;
@@ -165,8 +159,8 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
   const mode = submissionData.userTests && submissionData.userTests.length ? SubmissionMode.UserTest : SubmissionMode.Submitted;
 
   // save source code (with bSubmission = 1)
-  const idNewSourceCode = randomIdGenerator();
-  const idSubmission = randomIdGenerator();
+  const idNewSourceCode = getRandomId();
+  const idSubmission = getRandomId();
   const sourceCodeParams = JSON.stringify({
     sLangProg: submissionData.answer.language,
   });
@@ -193,7 +187,7 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
 
     if ('UserTest' === mode && submissionData.userTests && submissionData.userTests.length) {
       const valuesToInsert = submissionData.userTests.map((test, index) => ([
-        randomIdGenerator(),
+        getRandomId(),
         params.idUser,
         params.idPlatform,
         params.idTaskLocal,

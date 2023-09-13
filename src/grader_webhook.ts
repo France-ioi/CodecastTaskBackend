@@ -53,12 +53,6 @@ export interface TokenParams {
   },
 }
 
-let randomIdGenerator = getRandomId;
-
-export function setRandomIdGenerator(getRandomId: () => string): void {
-  randomIdGenerator = getRandomId;
-}
-
 async function createNewTest(idSubmission: string, idTask: string, testName: string, idSubtask: string|null): Promise<TaskTest> {
   let maxRank = await Db.querySingleScalarResult<number>(`SELECT MAX(tm_tasks_tests.iRank) from tm_tasks_tests
   JOIN tm_submissions ON tm_submissions.idTask = tm_tasks_tests.idTask
@@ -70,7 +64,7 @@ async function createNewTest(idSubmission: string, idTask: string, testName: str
     maxRank = 0;
   }
 
-  const ID = randomIdGenerator();
+  const ID = getRandomId();
 
   await Db.execute('INSERT INTO tm_tasks_tests (ID, idTask, idSubtask, sGroupType, iRank, bActive, sName) values (:ID, :idTask, :idSubtask, \'Evaluation\', :iRank, 1, :sName)', {
     ID,
@@ -193,7 +187,7 @@ ${thisCompilMsg}`;
       }
 
       await Db.execute('insert ignore into tm_submissions_tests (ID, idSubmission, iErrorCode, idTest, iScore, sLog) values (:ID, :idSubmission, :iErrorCode, :idTest, :iScore, :sLog);', {
-        ID: randomIdGenerator(),
+        ID: getRandomId(),
         idSubmission: tokenParams.sTaskName,
         idTest: test.ID,
         iScore,
@@ -255,7 +249,7 @@ ${thisCompilMsg}`;
             }
             const idSubtask = curSubtask.ID;
 
-            const submSubtaskId = randomIdGenerator();
+            const submSubtaskId = getRandomId();
             subTaskIdBySubmissionSubTaskId[submSubtaskId] = idSubtask;
 
             await Db.execute('INSERT INTO tm_submissions_subtasks (ID, bSuccess, iScore, idSubtask, idSubmission) VALUES(:submissionSubtaskId, 0, 0, :idSubtask, :idSubmission);', {
@@ -333,7 +327,7 @@ ${thisCompilMsg}`;
             bNoFeedback = testReport.execution?.noFeedback ? 1 : 0;
 
             await Db.execute('insert ignore into tm_submissions_tests (ID, idSubmission, idTest, iScore, iTimeMs, iMemoryKb, iErrorCode, sErrorMsg, sExpectedOutput, idSubmissionSubtask, bNoFeedback) values (:ID, :idSubmission, :idTest, :iScore, :iTimeMs, :iMemoryKb, :iErrorCode, :sErrorMsg, :sExpectedOutput, :idSubmissionSubtask, :bNoFeedback);', {
-              ID: randomIdGenerator(),
+              ID: getRandomId(),
               idSubmission: tokenParams.sTaskName,
               idTest: test.ID,
               iScore: 0,
@@ -370,7 +364,7 @@ ${thisCompilMsg}`;
           const sOutput = testReport.execution?.stdout.data.trimEnd();
 
           await Db.execute('insert ignore into tm_submissions_tests (ID, idSubmission, idTest, iScore, iTimeMs, iMemoryKb, iErrorCode, sOutput, sExpectedOutput, sErrorMsg, sLog, jFiles, idSubmissionSubtask, bNoFeedback) values (:ID, :idSubmission, :idTest, :iScore, :iTimeMs, :iMemoryKb, :iErrorCode, :sOutput, :sExpectedOutput, :sErrorMsg, :sLog, :jFiles, :idSubmissionSubtask, :bNoFeedback);', {
-            ID: randomIdGenerator(),
+            ID: getRandomId(),
             idSubmission: tokenParams.sTaskName,
             idTest: test.ID,
             iScore,
