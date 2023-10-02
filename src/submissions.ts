@@ -34,6 +34,7 @@ export const submissionDataDecoder = pipe(
       name: D.string,
       input: D.string,
       output: D.string,
+      clientId: D.nullable(D.string),
     })),
   }))
 );
@@ -195,11 +196,12 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
         test.input,
         test.output,
         test.name,
+        test.clientId,
         index,
         idSubmission,
       ]));
 
-      await Db.executeInConnection(connection, 'insert into tm_tasks_tests (ID, idUser, idPlatform, idTask, sGroupType, sInput, sOutput, sName, iRank, idSubmission) values ?', [valuesToInsert]);
+      await Db.executeInConnection(connection, 'insert into tm_tasks_tests (ID, idUser, idPlatform, idTask, sGroupType, sInput, sOutput, sName, sClientId, iRank, idSubmission) values ?', [valuesToInsert]);
     }
   });
 

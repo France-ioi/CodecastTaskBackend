@@ -60,7 +60,8 @@
       "input": "16",
       "output": "20",
       "subtaskId": "4000",
-      "taskId": "1000"
+      "taskId": "1000",
+      "clientId": null
     },
     {
       "id": "5001",
@@ -74,7 +75,8 @@
       "input": "10",
       "output": "15",
       "subtaskId": "4000",
-      "taskId": "1000"
+      "taskId": "1000",
+      "clientId": null
     },
     {
       "id": "5002",
@@ -88,7 +90,8 @@
       "input": "15",
       "output": "10",
       "subtaskId": "4001",
-      "taskId": "1000"
+      "taskId": "1000",
+      "clientId": null
     }
   ]
 }

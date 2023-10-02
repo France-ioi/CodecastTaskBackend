@@ -91,7 +91,8 @@ Feature: Post submission
           {
             "name": "Custom test",
             "input": "test",
-            "output": "ici"
+            "output": "ici",
+            "clientId": "user-0"
           }
         ],
         "sLocale": "fr",
@@ -122,11 +123,11 @@ Feature: Post submission
       | ID   | idUser    | idPlatform  | idTask     | sParams                | sName | sSource      | bEditable | bSubmission | sType | bActive | iRank | iVersion   |
       | 100  | 1         | 1           | 1000       | {"sLangProg":"python"} | 101   | print('ici') | 0         | 1           | User  | 0       | 0     | 2147483647 |
     And the table "tm_tasks_tests" should be:
-      | ID   | idTask | idSubtask | idSubmission | sGroupType   | idUser | idPlatform | iRank | bActive | sName       | sInput | sOutput | iVersion   |
-      | 102  | 1000   | null      | 101          | User         | 1      | 1          | 0     | 0       | Custom test | test   | ici     | 2147483647 |
-      | 5000 | 1000   | 4000      | null         | Evaluation   | null   | null       | 0     | 1       | s1-t1       | 16     | 20      | 2147483647 |
-      | 5001 | 1000   | 4000      | null         | Evaluation   | null   | null       | 1     | 1       | s1-t2       | 10     | 15      | 2147483647 |
-      | 5002 | 1000   | 4001      | null         | Evaluation   | null   | null       | 2     | 1       | s2-t1       | 15     | 10      | 2147483647 |
+      | ID   | idTask | idSubtask | idSubmission | sGroupType   | idUser | idPlatform | iRank | bActive | sName       | sInput | sOutput | sClientId | iVersion   |
+      | 102  | 1000   | null      | 101          | User         | 1      | 1          | 0     | 0       | Custom test | test   | ici     | user-0    | 2147483647 |
+      | 5000 | 1000   | 4000      | null         | Evaluation   | null   | null       | 0     | 1       | s1-t1       | 16     | 20      | null      | 2147483647 |
+      | 5001 | 1000   | 4000      | null         | Evaluation   | null   | null       | 1     | 1       | s1-t2       | 10     | 15      | null      | 2147483647 |
+      | 5002 | 1000   | 4001      | null         | Evaluation   | null   | null       | 2     | 1       | s2-t1       | 15     | 10      | null      | 2147483647 |
 
     And the grader queue should have received the following request:
     """

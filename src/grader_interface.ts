@@ -188,7 +188,7 @@ WHERE tm_submissions.ID = :idSubmission
 
   let tests: TaskTest[] = [];
   if ('UserTest' === submission.sMode) {
-    tests = await Db.execute<TaskTest[]>('SELECT tm_tasks_tests.* FROM tm_tasks_tests WHERE idUser = :idUser and idPlatform = :idPlatform and idTask = :idTask and idSubmission = :idSubmission', {
+    tests = await Db.execute<TaskTest[]>('SELECT tm_tasks_tests.* FROM tm_tasks_tests WHERE idUser = :idUser and idPlatform = :idPlatform and idTask = :idTask and idSubmission = :idSubmission ORDER BY iRank ASC', {
       idUser: params.idUser,
       idTask: params.idTaskLocal,
       idPlatform: params.idPlatform,

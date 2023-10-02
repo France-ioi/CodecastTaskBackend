@@ -374,6 +374,7 @@ CREATE TABLE `history_tm_tasks_tests` (
   `sName` varchar(100) NOT NULL,
   `sInput` mediumtext,
   `sOutput` mediumtext,
+  `sClientId` VARCHAR(30) DEFAULT NULL,
   `iVersion` int NOT NULL DEFAULT '0',
   `iNextVersion` int DEFAULT NULL,
   `bDeleted` tinyint(1) NOT NULL
@@ -1075,6 +1076,7 @@ CREATE TABLE `tm_tasks_tests` (
   `sName` varchar(100) NOT NULL,
   `sInput` mediumtext,
   `sOutput` mediumtext,
+  `sClientId` VARCHAR(30) DEFAULT NULL,
   `iVersion` int NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
@@ -1082,11 +1084,11 @@ CREATE TABLE `tm_tasks_tests` (
 -- Triggers `tm_tasks_tests`
 --
 DELIMITER $$
-CREATE TRIGGER `after_insert_tm_tasks_tests` AFTER INSERT ON `tm_tasks_tests` FOR EACH ROW BEGIN INSERT INTO `history_tm_tasks_tests` (`ID`,`iVersion`,`idTask`,`idSubtask`,`idSubmission`,`sGroupType`,`idUser`,`idPlatform`,`sOutput`,`sInput`,`sName`,`iRank`) VALUES (NEW.`ID`,@curVersion,NEW.`idTask`,NEW.`idSubtask`,NEW.`idSubmission`,NEW.`sGroupType`,NEW.`idUser`,NEW.`idPlatform`,NEW.`sOutput`,NEW.`sInput`,NEW.`sName`,NEW.`iRank`); END
+CREATE TRIGGER `after_insert_tm_tasks_tests` AFTER INSERT ON `tm_tasks_tests` FOR EACH ROW BEGIN INSERT INTO `history_tm_tasks_tests` (`ID`,`iVersion`,`idTask`,`idSubtask`,`idSubmission`,`sGroupType`,`idUser`,`idPlatform`,`sOutput`,`sInput`,`sName`,`sClientId`,`iRank`) VALUES (NEW.`ID`,@curVersion,NEW.`idTask`,NEW.`idSubtask`,NEW.`idSubmission`,NEW.`sGroupType`,NEW.`idUser`,NEW.`idPlatform`,NEW.`sOutput`,NEW.`sInput`,NEW.`sName`,NEW.`sClientId`,NEW.`iRank`); END
 $$
 DELIMITER ;
 DELIMITER $$
-CREATE TRIGGER `before_delete_tm_tasks_tests` BEFORE DELETE ON `tm_tasks_tests` FOR EACH ROW BEGIN SELECT (UNIX_TIMESTAMP() * 10) INTO @curVersion; UPDATE `history_tm_tasks_tests` SET `iNextVersion` = @curVersion WHERE `ID` = OLD.`ID` AND `iNextVersion` IS NULL; INSERT INTO `history_tm_tasks_tests` (`ID`,`iVersion`,`idTask`,`idSubtask`,`idSubmission`,`sGroupType`,`idUser`,`idPlatform`,`sOutput`,`sInput`,`sName`,`iRank`, `bDeleted`) VALUES (OLD.`ID`,@curVersion,OLD.`idTask`,OLD.`idSubtask`,OLD.`idSubmission`,OLD.`sGroupType`,OLD.`idUser`,OLD.`idPlatform`,OLD.`sOutput`,OLD.`sInput`,OLD.`sName`,OLD.`iRank`, 1); END
+CREATE TRIGGER `before_delete_tm_tasks_tests` BEFORE DELETE ON `tm_tasks_tests` FOR EACH ROW BEGIN SELECT (UNIX_TIMESTAMP() * 10) INTO @curVersion; UPDATE `history_tm_tasks_tests` SET `iNextVersion` = @curVersion WHERE `ID` = OLD.`ID` AND `iNextVersion` IS NULL; INSERT INTO `history_tm_tasks_tests` (`ID`,`iVersion`,`idTask`,`idSubtask`,`idSubmission`,`sGroupType`,`idUser`,`idPlatform`,`sOutput`,`sInput`,`sName`,`sClientId`,`iRank`, `bDeleted`) VALUES (OLD.`ID`,@curVersion,OLD.`idTask`,OLD.`idSubtask`,OLD.`idSubmission`,OLD.`sGroupType`,OLD.`idUser`,OLD.`idPlatform`,OLD.`sOutput`,OLD.`sInput`,OLD.`sName`,OLD.`sClientId`,OLD.`iRank`, 1); END
 $$
 DELIMITER ;
 DELIMITER $$
@@ -1094,7 +1096,7 @@ CREATE TRIGGER `before_insert_tm_tasks_tests` BEFORE INSERT ON `tm_tasks_tests` 
 $$
 DELIMITER ;
 DELIMITER $$
-CREATE TRIGGER `before_update_tm_tasks_tests` BEFORE UPDATE ON `tm_tasks_tests` FOR EACH ROW BEGIN IF NEW.iVersion <> OLD.iVersion THEN SET @curVersion = NEW.iVersion; ELSE SELECT (UNIX_TIMESTAMP() * 10) INTO @curVersion; END IF; IF NOT (OLD.`ID` = NEW.`ID` AND OLD.`idTask` <=> NEW.`idTask` AND OLD.`idSubtask` <=> NEW.`idSubtask` AND OLD.`idSubmission` <=> NEW.`idSubmission` AND OLD.`sGroupType` <=> NEW.`sGroupType` AND OLD.`idUser` <=> NEW.`idUser` AND OLD.`idPlatform` <=> NEW.`idPlatform` AND OLD.`sOutput` <=> NEW.`sOutput` AND OLD.`sInput` <=> NEW.`sInput` AND OLD.`sName` <=> NEW.`sName` AND OLD.`iRank` <=> NEW.`iRank`) THEN   SET NEW.iVersion = @curVersion;   UPDATE `history_tm_tasks_tests` SET `iNextVersion` = @curVersion WHERE `ID` = OLD.`ID` AND `iNextVersion` IS NULL;   INSERT INTO `history_tm_tasks_tests` (`ID`,`iVersion`,`idTask`,`idSubtask`,`idSubmission`,`sGroupType`,`idUser`,`idPlatform`,`sOutput`,`sInput`,`sName`,`iRank`)       VALUES (NEW.`ID`,@curVersion,NEW.`idTask`,NEW.`idSubtask`,NEW.`idSubmission`,NEW.`sGroupType`,NEW.`idUser`,NEW.`idPlatform`,NEW.`sOutput`,NEW.`sInput`,NEW.`sName`,NEW.`iRank`) ; END IF; END
+CREATE TRIGGER `before_update_tm_tasks_tests` BEFORE UPDATE ON `tm_tasks_tests` FOR EACH ROW BEGIN IF NEW.iVersion <> OLD.iVersion THEN SET @curVersion = NEW.iVersion; ELSE SELECT (UNIX_TIMESTAMP() * 10) INTO @curVersion; END IF; IF NOT (OLD.`ID` = NEW.`ID` AND OLD.`idTask` <=> NEW.`idTask` AND OLD.`idSubtask` <=> NEW.`idSubtask` AND OLD.`idSubmission` <=> NEW.`idSubmission` AND OLD.`sGroupType` <=> NEW.`sGroupType` AND OLD.`idUser` <=> NEW.`idUser` AND OLD.`idPlatform` <=> NEW.`idPlatform` AND OLD.`sOutput` <=> NEW.`sOutput` AND OLD.`sInput` <=> NEW.`sInput` AND OLD.`sName` <=> NEW.`sName` AND OLD.`sClientId` <=> NEW.`sClientId` AND OLD.`iRank` <=> NEW.`iRank`) THEN   SET NEW.iVersion = @curVersion;   UPDATE `history_tm_tasks_tests` SET `iNextVersion` = @curVersion WHERE `ID` = OLD.`ID` AND `iNextVersion` IS NULL;   INSERT INTO `history_tm_tasks_tests` (`ID`,`iVersion`,`idTask`,`idSubtask`,`idSubmission`,`sGroupType`,`idUser`,`idPlatform`,`sOutput`,`sInput`,`sName`,`sClientId`,`iRank`)       VALUES (NEW.`ID`,@curVersion,NEW.`idTask`,NEW.`idSubtask`,NEW.`idSubmission`,NEW.`sGroupType`,NEW.`idUser`,NEW.`idPlatform`,NEW.`sOutput`,NEW.`sInput`,NEW.`sName`,NEW.`sClientId`,NEW.`iRank`) ; END IF; END
 $$
 DELIMITER ;
 
