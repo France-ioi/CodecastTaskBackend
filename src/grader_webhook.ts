@@ -88,6 +88,7 @@ async function createNewTest(idSubmission: string, idTask: string, testName: str
     bActive: 1,
     sInput: '',
     iVersion: 0,
+    sClientId: null,
   };
 }
 

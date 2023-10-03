@@ -74,6 +74,7 @@ export interface TaskTest {
     sName: string,
     sInput: string,
     sOutput: string,
+    sClientId: string|null,
     iVersion: number,
 }
 

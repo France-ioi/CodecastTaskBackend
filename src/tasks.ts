@@ -53,6 +53,7 @@ export interface TaskTestNormalized {
   name: string|null,
   input: string,
   output: string,
+  clientId: string|null,
 }
 
 export interface TaskOutput extends TaskNormalized {
@@ -123,6 +124,7 @@ export function normalizeTaskTest(taskTest: TaskTest): TaskTestNormalized {
     name: 'User' === taskTest.sGroupType ? taskTest.sName : null, // Do not return test name to the client to avoid giving more information to it, asked by Mathias
     input: taskTest.sInput,
     output: taskTest.sOutput,
+    clientId: taskTest.sClientId,
   };
 }
 
