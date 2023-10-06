@@ -72,7 +72,7 @@ Feature: Post submission
       "tags": "",
       "jobname": "101",
       "jobdata": "{\"taskPath\":\"$ROOT_PATH/FranceIOI/Contests/2018/Algorea_finale/plateau\",\"extraParams\":{\"solutionFilename\":\"101.py\",\"solutionContent\":\"print('ici')\",\"solutionLanguage\":\"python3\",\"solutionDependencies\":\"@defaultDependencies-python3\",\"solutionFilterTests\":\"@defaultFilterTests-python3\",\"solutionId\":\"sol0-101.py\",\"solutionExecId\":\"exec0-101.py\",\"defaultSolutionCompParams\":{\"memoryLimitKb\":131072,\"timeLimitMs\":10000,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]},\"defaultSolutionExecParams\":{\"memoryLimitKb\":64000,\"timeLimitMs\":200,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]}},\"options\":{\"locale\":\"fr\"}}",
-      "jobusertaskid": "1000-102-1",
+      "jobusertaskid": "1000-103-1",
       "debugPassword": "test"
     }
     """
@@ -124,7 +124,7 @@ Feature: Post submission
       | 100  | 1         | 1           | 1000       | {"sLangProg":"python"} | 101   | print('ici') | 0         | 1           | User  | 0       | 0     | 2147483647 |
     And the table "tm_tasks_tests" should be:
       | ID   | idTask | idSubtask | idSubmission | sGroupType   | idUser | idPlatform | iRank | bActive | sName       | sInput | sOutput | sClientId | iVersion   |
-      | 102  | 1000   | null      | 101          | User         | 1      | 1          | 0     | 0       | Custom test | test   | ici     | user-0    | 2147483647 |
+      | 10   | 1000   | null      | 101          | User         | 1      | 1          | 0     | 0       | Custom test | test   | ici     | user-0    | 2147483647 |
       | 5000 | 1000   | 4000      | null         | Evaluation   | null   | null       | 0     | 1       | s1-t1       | 16     | 20      | null      | 2147483647 |
       | 5001 | 1000   | 4000      | null         | Evaluation   | null   | null       | 1     | 1       | s1-t2       | 10     | 15      | null      | 2147483647 |
       | 5002 | 1000   | 4001      | null         | Evaluation   | null   | null       | 2     | 1       | s2-t1       | 15     | 10      | null      | 2147483647 |
@@ -137,7 +137,7 @@ Feature: Post submission
       "taskrevision": "7156",
       "tags": "",
       "jobname": "101",
-      "jobdata": "{\"taskPath\":\"$ROOT_PATH/FranceIOI/Contests/2018/Algorea_finale/plateau\",\"extraParams\":{\"solutionFilename\":\"101.py\",\"solutionContent\":\"print('ici')\",\"solutionLanguage\":\"python3\",\"solutionDependencies\":\"@defaultDependencies-python3\",\"solutionFilterTests\":[\"id-*.in\"],\"solutionId\":\"sol0-101.py\",\"solutionExecId\":\"exec0-101.py\",\"defaultSolutionCompParams\":{\"memoryLimitKb\":131072,\"timeLimitMs\":10000,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]},\"defaultSolutionExecParams\":{\"memoryLimitKb\":64000,\"timeLimitMs\":200,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]}},\"extraTests\":[{\"name\":\"id-102.in\",\"content\":\"test\"},{\"name\":\"id-102.out\",\"content\":\"ici\"}],\"executions\":[{\"id\":\"testExecution\",\"idSolution\":\"@solutionId\",\"filterTests\":[\"id-*.in\"],\"runExecution\":\"@defaultSolutionExecParams\"}],\"options\":{\"locale\":\"fr\"}}",
+      "jobdata": "{\"taskPath\":\"$ROOT_PATH/FranceIOI/Contests/2018/Algorea_finale/plateau\",\"extraParams\":{\"solutionFilename\":\"101.py\",\"solutionContent\":\"print('ici')\",\"solutionLanguage\":\"python3\",\"solutionDependencies\":\"@defaultDependencies-python3\",\"solutionFilterTests\":[\"id-*.in\"],\"solutionId\":\"sol0-101.py\",\"solutionExecId\":\"exec0-101.py\",\"defaultSolutionCompParams\":{\"memoryLimitKb\":131072,\"timeLimitMs\":10000,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]},\"defaultSolutionExecParams\":{\"memoryLimitKb\":64000,\"timeLimitMs\":200,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]}},\"extraTests\":[{\"name\":\"id-10.in\",\"content\":\"test\"},{\"name\":\"id-10.out\",\"content\":\"ici\"}],\"executions\":[{\"id\":\"testExecution\",\"idSolution\":\"@solutionId\",\"filterTests\":[\"id-*.in\"],\"runExecution\":\"@defaultSolutionExecParams\"}],\"options\":{\"locale\":\"fr\"}}",
       "jobusertaskid": "1000-103-1",
       "debugPassword": "test"
     }
