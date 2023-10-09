@@ -186,9 +186,10 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
       sMode: mode,
     });
 
+    const testPrefixId = getRandomId().slice(0, -2);
     if ('UserTest' === mode && submissionData.userTests && submissionData.userTests.length) {
       const valuesToInsert = submissionData.userTests.map((test, index) => ([
-        getRandomId(),
+        testPrefixId + '' + String(index),
         params.idUser,
         params.idPlatform,
         params.idTaskLocal,
