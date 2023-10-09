@@ -13,6 +13,7 @@ import {pipe} from 'fp-ts/function';
 import {InvalidInputError} from './error_handler';
 import {sendSubmissionToTaskGrader} from './grader_interface';
 import {findTaskById, normalizeTaskTest} from './tasks';
+import {ProgramExecutionResultMetadata} from './grader_webhook';
 
 export const submissionDataDecoder = pipe(
   D.struct({
@@ -56,6 +57,7 @@ export interface SubmissionNormalized {
   compilationError: boolean,
   compilationMessage: string|null,
   errorMessage: string|null,
+  metadata: ProgramExecutionResultMetadata|null,
   evaluated: boolean,
   confirmed: boolean,
   manualCorrection: boolean,
@@ -80,6 +82,7 @@ export interface SubmissionTestNormalized {
   output: string|null,
   expectedOutput: string|null,
   errorMessage: string|null,
+  metadata: ProgramExecutionResultMetadata|null,
   log: string|null,
   noFeedback: boolean,
   files: string[]|null,
@@ -229,6 +232,7 @@ function normalizeSubmission(submission: Submission): SubmissionNormalized {
     compilationError: !!submission.bCompilError,
     compilationMessage: submission.sCompilMsg,
     errorMessage: submission.sErrorMsg,
+    metadata: submission.sMetadata ? JSON.parse(submission.sMetadata) as ProgramExecutionResultMetadata : null,
     evaluated: !!submission.bEvaluated,
     confirmed: !!submission.bConfirmed,
     manualCorrection: !!submission.bManualCorrection,
@@ -257,6 +261,7 @@ function normalizeSubmissionTest(submissionTest: SubmissionTest, submissionTests
     timeMs: submissionTest.iTimeMs,
     memoryKb: submissionTest.iMemoryKb,
     errorCode: submissionTest.iErrorCode,
+    metadata: submissionTest.sMetadata ? JSON.parse(submissionTest.sMetadata) as ProgramExecutionResultMetadata : null,
     output: submissionTest.sOutput,
     expectedOutput: submissionTest.sExpectedOutput,
     errorMessage: submissionTest.sErrorMsg,

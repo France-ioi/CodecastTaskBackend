@@ -15,6 +15,11 @@ export const taskGraderWebhookPayloadDecoder = pipe(
 );
 export type TaskGraderWebhookPayload = D.TypeOf<typeof taskGraderWebhookPayloadDecoder>;
 
+export interface ProgramExecutionResultMetadata {
+  errorfile: number,
+  errorline: number,
+}
+
 export interface ProgramExecutionResult {
   noFeedback: boolean,
   exitSig: number,
@@ -29,6 +34,7 @@ export interface ProgramExecutionResult {
   files: any,
   timeTakenMs: number,
   memoryUsedKb: number,
+  metadata?: ProgramExecutionResultMetadata,
 }
 
 export interface GraderResultExecution {
@@ -139,6 +145,7 @@ export async function receiveSubmissionResultsFromTaskGrader(taskGraderWebhookPa
   let nbTestsTotal = 0;
   let bCompilError = false;
   let sCompilMsg = graderResults?.solutions[0]?.compilationExecution?.stderr?.data ?? '';
+  const sMetadata = graderResults?.solutions[0]?.compilationExecution?.metadata ? JSON.stringify(graderResults?.solutions[0]?.compilationExecution?.metadata) : null;
   let sErrorMsg = '';
   let iScore = 0;
 
@@ -200,7 +207,7 @@ ${thisCompilMsg}`;
     iScore = 100 * nbTestsFailedTotal / nbTestsTotal;
     const bSuccess = (nbTestsFailedTotal === nbTestsTotal);
 
-    await Db.execute('UPDATE tm_submissions SET nbTestsPassed = :nbTestsPassed, iScore = :iScore, nbTestsTotal = :nbTestsTotal, bCompilError = :bCompilError, bSuccess = :bSuccess, sCompilMsg = :sCompilMsg, sErrorMsg = :sErrorMsg, bEvaluated = \'1\' WHERE id = :sName', {
+    await Db.execute('UPDATE tm_submissions SET nbTestsPassed = :nbTestsPassed, iScore = :iScore, nbTestsTotal = :nbTestsTotal, bCompilError = :bCompilError, bSuccess = :bSuccess, sCompilMsg = :sCompilMsg, sErrorMsg = :sErrorMsg, sMetadata = :sMetadata, bEvaluated = \'1\' WHERE id = :sName', {
       sName: tokenParams.sTaskName,
       nbTestsPassed: nbTestsFailedTotal,
       iScore,
@@ -208,6 +215,7 @@ ${thisCompilMsg}`;
       bCompilError,
       sErrorMsg: '',
       sCompilMsg,
+      sMetadata,
       bSuccess,
     });
   } else {
@@ -316,6 +324,7 @@ ${thisCompilMsg}`;
         }
 
         let bNoFeedback = 0;
+        const sMetadata = testReport.execution?.metadata ? JSON.stringify(testReport.execution.metadata) : null;
         if (!testReport.checker) {
           if (testReport.execution) {
             // test produces an error in the code
@@ -327,7 +336,7 @@ ${thisCompilMsg}`;
 
             bNoFeedback = testReport.execution?.noFeedback ? 1 : 0;
 
-            await Db.execute('insert ignore into tm_submissions_tests (ID, idSubmission, idTest, iScore, iTimeMs, iMemoryKb, iErrorCode, sErrorMsg, sExpectedOutput, idSubmissionSubtask, bNoFeedback) values (:ID, :idSubmission, :idTest, :iScore, :iTimeMs, :iMemoryKb, :iErrorCode, :sErrorMsg, :sExpectedOutput, :idSubmissionSubtask, :bNoFeedback);', {
+            await Db.execute('insert ignore into tm_submissions_tests (ID, idSubmission, idTest, iScore, iTimeMs, iMemoryKb, iErrorCode, sErrorMsg, sMetadata, sExpectedOutput, idSubmissionSubtask, bNoFeedback) values (:ID, :idSubmission, :idTest, :iScore, :iTimeMs, :iMemoryKb, :iErrorCode, :sErrorMsg, :sMetadata, :sExpectedOutput, :idSubmissionSubtask, :bNoFeedback);', {
               ID: getRandomId(),
               idSubmission: tokenParams.sTaskName,
               idTest: test.ID,
@@ -337,6 +346,7 @@ ${thisCompilMsg}`;
               iErrorCode,
               sExpectedOutput: test.sOutput,
               sErrorMsg,
+              sMetadata,
               idSubmissionSubtask: submissionSubtaskId,
               bNoFeedback,
             });
@@ -364,7 +374,7 @@ ${thisCompilMsg}`;
           iScoreTotal += iScore;
           const sOutput = testReport.execution?.stdout.data.trimEnd();
 
-          await Db.execute('insert ignore into tm_submissions_tests (ID, idSubmission, idTest, iScore, iTimeMs, iMemoryKb, iErrorCode, sOutput, sExpectedOutput, sErrorMsg, sLog, jFiles, idSubmissionSubtask, bNoFeedback) values (:ID, :idSubmission, :idTest, :iScore, :iTimeMs, :iMemoryKb, :iErrorCode, :sOutput, :sExpectedOutput, :sErrorMsg, :sLog, :jFiles, :idSubmissionSubtask, :bNoFeedback);', {
+          await Db.execute('insert ignore into tm_submissions_tests (ID, idSubmission, idTest, iScore, iTimeMs, iMemoryKb, iErrorCode, sOutput, sExpectedOutput, sErrorMsg, sMetadata, sLog, jFiles, idSubmissionSubtask, bNoFeedback) values (:ID, :idSubmission, :idTest, :iScore, :iTimeMs, :iMemoryKb, :iErrorCode, :sOutput, :sExpectedOutput, :sErrorMsg, :sMetadata, :sLog, :jFiles, :idSubmissionSubtask, :bNoFeedback);', {
             ID: getRandomId(),
             idSubmission: tokenParams.sTaskName,
             idTest: test.ID,
@@ -375,6 +385,7 @@ ${thisCompilMsg}`;
             sOutput,
             sExpectedOutput: test.sOutput,
             sErrorMsg: testReport.execution?.stderr.data,
+            sMetadata,
             sLog: testLog,
             jFiles: files,
             idSubmissionSubtask: submissionSubtaskId,
@@ -412,7 +423,7 @@ ${thisCompilMsg}`;
 
     const bSuccess = (iScore > 99);
 
-    await Db.execute('UPDATE tm_submissions SET nbTestsPassed = :nbTestsPassed, iScore = :iScore, nbTestsTotal = :nbTestsTotal, bCompilError = :bCompilError, bSuccess = :bSuccess, sCompilMsg = :sCompilMsg, sErrorMsg = :sErrorMsg, bEvaluated = \'1\' WHERE id = :sName', {
+    await Db.execute('UPDATE tm_submissions SET nbTestsPassed = :nbTestsPassed, iScore = :iScore, nbTestsTotal = :nbTestsTotal, bCompilError = :bCompilError, bSuccess = :bSuccess, sCompilMsg = :sCompilMsg, sErrorMsg = :sErrorMsg, sMetadata = :sMetadata, bEvaluated = \'1\' WHERE id = :sName', {
       sName: tokenParams.sTaskName,
       nbTestsPassed,
       iScore,
@@ -420,6 +431,7 @@ ${thisCompilMsg}`;
       bCompilError,
       sErrorMsg,
       sCompilMsg,
+      sMetadata,
       bSuccess,
     });
   }
