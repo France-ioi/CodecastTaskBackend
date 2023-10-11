@@ -41,23 +41,24 @@ Feature: Get submission
         "confirmed": false,
         "manualCorrection": false,
         "manualScoreDiffComment": null,
+        "metadata": null,
         "mode": "Submitted"
       }
       """
 
   Scenario: Get evaluated submission by id
     Given the database has the following table "tm_submissions":
-      | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | bConfirmed | sMode     | iChecksum | iVersion   |
-      | 6000 | 1      | 1          | 1000   | 2023-04-03 | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 1          | 0          | Submitted | 0         | 2147483647 |
+      | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | sMetadata        | bConfirmed | sMode     | iChecksum | iVersion   |
+      | 6000 | 1      | 1          | 1000   | 2023-04-03 | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 1          | {"errorline": 5} | 0          | Submitted | 0         | 2147483647 |
     And the database has the following table "tm_submissions_subtasks":
       | ID   | bSuccess | iScore | idSubtask | idSubmission | iVersion   |
       | 7000 | 0        | 50     | 4000      | 6000         | 2147483647 |
       | 7001 | 1        | 100    | 4001      | 6000         | 2147483647 |
     And the database has the following table "tm_submissions_tests":
-      | ID   | idSubmission | idTest | iScore | iTimeMs | iMemoryKb | iErrorCode | sOutput | sErrorMsg | sLog   | bNoFeedback | iVersion   | idSubmissionSubtask |
-      | 8000 | 6000         | 5000   | 100     | 5       | 22       | 0          |         |           |        | 1           | 2147483647 | 7000                |
-      | 8001 | 6000         | 5001   | 0       | 2       | 25       | 1          |         | Erreur    |        | 1           | 2147483647 | 7000                |
-      | 8002 | 6000         | 5002   | 100     | 3       | 26       | 0          |         |           |        | 1           | 2147483647 | 7001                |
+      | ID   | idSubmission | idTest | iScore | iTimeMs | iMemoryKb | iErrorCode | sOutput | sErrorMsg | sMetadata        | sLog   | bNoFeedback | iVersion   | idSubmissionSubtask |
+      | 8000 | 6000         | 5000   | 100     | 5       | 22       | 0          |         |           | {"errorline": 4} |        | 1           | 2147483647 | 7000                |
+      | 8001 | 6000         | 5001   | 0       | 2       | 25       | 1          |         | Erreur    |                  |        | 1           | 2147483647 | 7000                |
+      | 8002 | 6000         | 5002   | 100     | 3       | 26       | 0          |         |           |                  |        | 1           | 2147483647 | 7001                |
     When I send a GET request to "/submissions/6000"
     Then the response status code should be 200
     And the response body should be the following JSON:
@@ -75,6 +76,9 @@ Feature: Get submission
         "confirmed": false,
         "manualCorrection": false,
         "manualScoreDiffComment": null,
+        "metadata": {
+          "errorline": 5
+        },
         "mode": "Submitted",
         "subTasks": [
           {
@@ -101,6 +105,9 @@ Feature: Get submission
             "output": "",
             "expectedOutput": null,
             "errorMessage": "",
+            "metadata": {
+              "errorline": 4
+            },
             "log": "",
             "noFeedback": true,
             "files": null,
@@ -116,6 +123,7 @@ Feature: Get submission
             "output": "",
             "expectedOutput": null,
             "errorMessage": "Erreur",
+            "metadata": null,
             "log": "",
             "noFeedback": true,
             "files": null,
@@ -131,6 +139,7 @@ Feature: Get submission
             "output": "",
             "expectedOutput": null,
             "errorMessage": "",
+            "metadata": null,
             "log": "",
             "noFeedback": true,
             "files": null,
@@ -174,6 +183,7 @@ Feature: Get submission
         "confirmed": false,
         "manualCorrection": false,
         "manualScoreDiffComment": null,
+        "metadata": null,
         "mode": "Submitted"
       }
       """
