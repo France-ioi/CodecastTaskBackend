@@ -24,6 +24,9 @@ Feature: Get submission
     Given the database has the following table "tm_submissions":
       | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | bConfirmed | sMode     | iChecksum | iVersion   |
       | 6000 | 1      | 1          | 1000   | 2023-04-03 | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 0          | 0          | Submitted | 0         | 2147483647 |
+    And the database has the following table "tm_source_codes":
+      | ID   | idUser | idPlatform | idTask | sDate      | sParams                | sName              | sSource      | bEditable | bSubmission | sType | bActive | iRank | iVersion   |
+      | 7001 | 1      | 1          | 1000   | 2023-04-03 | {"sLangProg":"python"} | 485380303499640413 | print("ici") | 0         | 1           | User  | 0       | 0     | 2147483647 |
     When I send a GET request to "/submissions/6000"
     Then the response status code should be 200
     And the response body should be the following JSON:
@@ -42,6 +45,17 @@ Feature: Get submission
         "manualCorrection": false,
         "manualScoreDiffComment": null,
         "metadata": null,
+        "sourceCode": {
+           "id": "7001",
+           "name": "485380303499640413",
+           "source": "print(\"ici\")",
+           "params": {
+             "sLangProg": "python"
+           },
+           "rank": 0,
+           "active": false,
+           "editable": false
+        },
         "mode": "Submitted"
       }
       """
@@ -59,6 +73,9 @@ Feature: Get submission
       | 8000 | 6000         | 5000   | 100     | 5       | 22       | 0          |         |           | {"errorline": 4} |        | 1           | 2147483647 | 7000                |
       | 8001 | 6000         | 5001   | 0       | 2       | 25       | 1          |         | Erreur    |                  |        | 1           | 2147483647 | 7000                |
       | 8002 | 6000         | 5002   | 100     | 3       | 26       | 0          |         |           |                  |        | 1           | 2147483647 | 7001                |
+    And the database has the following table "tm_source_codes":
+      | ID   | idUser | idPlatform | idTask | sDate      | sParams                | sName              | sSource      | bEditable | bSubmission | sType | bActive | iRank | iVersion   |
+      | 7001 | 1      | 1          | 1000   | 2023-04-03 | {"sLangProg":"python"} | 485380303499640413 | print("ici") | 0         | 1           | User  | 0       | 0     | 2147483647 |
     When I send a GET request to "/submissions/6000"
     Then the response status code should be 200
     And the response body should be the following JSON:
@@ -80,6 +97,17 @@ Feature: Get submission
           "errorline": 5
         },
         "mode": "Submitted",
+        "sourceCode": {
+           "id": "7001",
+           "name": "485380303499640413",
+           "source": "print(\"ici\")",
+           "params": {
+             "sLangProg": "python"
+           },
+           "rank": 0,
+           "active": false,
+           "editable": false
+        },
         "subTasks": [
           {
             "id": "7000",
@@ -162,6 +190,9 @@ Feature: Get submission
       | 8000 | 6000         | 5000   | 100     | 5       | 22       | 0          |         |           |        | 1           | 2147483647 | 7000                |
       | 8001 | 6000         | 5001   | 0       | 2       | 25       | 1          |         | Erreur    |        | 1           | 2147483647 | 7000                |
       | 8002 | 6000         | 5002   | 100     | 3       | 26       | 0          |         |           |        | 1           | 2147483647 | 7001                |
+    And the database has the following table "tm_source_codes":
+      | ID   | idUser | idPlatform | idTask | sDate      | sParams                | sName              | sSource      | bEditable | bSubmission | sType | bActive | iRank | iVersion   |
+      | 7001 | 1      | 1          | 1000   | 2023-04-03 | {"sLangProg":"python"} | 485380303499640413 | print("ici") | 0         | 1           | User  | 0       | 0     | 2147483647 |
     When I asynchronously send a GET request to "/submissions/6000?longPolling"
     And I wait 10ms
     Then the server must not have returned a response
@@ -184,7 +215,18 @@ Feature: Get submission
         "manualCorrection": false,
         "manualScoreDiffComment": null,
         "metadata": null,
-        "mode": "Submitted"
+        "mode": "Submitted",
+        "sourceCode": {
+           "id": "7001",
+           "name": "485380303499640413",
+           "source": "print(\"ici\")",
+           "params": {
+             "sLangProg": "python"
+           },
+           "rank": 0,
+           "active": false,
+           "editable": false
+        }
       }
       """
 
