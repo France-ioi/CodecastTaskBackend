@@ -89,7 +89,22 @@ export interface SubmissionTestNormalized {
   submissionSubtaskId: string|null,
 }
 
+export interface SourceCodeParams {
+  sLangProg: string,
+}
+
+export interface SourceCodeNormalized {
+  id: string,
+  params: SourceCodeParams|null,
+  name: string,
+  source: string,
+  editable: boolean,
+  active: boolean,
+  rank: number,
+}
+
 export interface SubmissionOutput extends SubmissionNormalized {
+  sourceCode?: SourceCodeNormalized|null,
   subTasks?: SubmissionSubtaskNormalized[],
   tests?: SubmissionTestNormalized[],
 }
@@ -272,14 +287,31 @@ function normalizeSubmissionTest(submissionTest: SubmissionTest, submissionTests
   };
 }
 
+function normalizeSourceCode(sourceCode: SourceCode): SourceCodeNormalized {
+  return {
+    id: sourceCode.ID,
+    params: sourceCode.sParams ? JSON.parse(sourceCode.sParams) as SourceCodeParams : null,
+    name: sourceCode.sName,
+    source: sourceCode.sSource,
+    editable: !!sourceCode.bEditable,
+    active: !!sourceCode.bActive,
+    rank: sourceCode.iRank,
+  };
+}
+
 export async function getSubmission(submissionId: string): Promise<SubmissionOutput|null> {
   const submission = await findSubmissionById(submissionId);
   if (null === submission) {
     return null;
   }
 
+  const sourceCode = await findSourceCodeById(submission.idSourceCode);
+
   if (!submission.bEvaluated) {
-    return normalizeSubmission(submission);
+    return {
+      ...normalizeSubmission(submission),
+      sourceCode: null !== sourceCode ? normalizeSourceCode(sourceCode) : null,
+    };
   }
 
   const submissionSubtasks = await Db.execute<SubmissionSubtask[]>('SELECT * FROM tm_submissions_subtasks WHERE idSubmission = ?', [submissionId]);
@@ -288,6 +320,7 @@ export async function getSubmission(submissionId: string): Promise<SubmissionOut
 
   return {
     ...normalizeSubmission(submission),
+    sourceCode: null !== sourceCode ? normalizeSourceCode(sourceCode) : null,
     subTasks: submissionSubtasks.map(normalizeSubmissionSubtask),
     tests: submissionTestResults.map(test => normalizeSubmissionTest(test, submissionTests)),
   };
