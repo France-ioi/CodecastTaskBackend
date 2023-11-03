@@ -33,6 +33,7 @@ Feature: Post submission
         "answerToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpdGVtVXJsIjoiaHR0cDovL2x2aC5tZTo4MDAxL25leHQvdGFzaz90YXNrSUQ9bnVsbCZ2ZXJzaW9uPXVuZGVmaW5lZCIsInJhbmRvbVNlZWQiOiI2Iiwic0hpbnRzUmVxdWVzdGVkIjoiW10iLCJzQW5zd2VyIjoiXCJcXFwiYWFhXFxcIlwiIiwiaWF0IjoxNjgyMzQxMTQxfQ.vNA9EgZkGboNS7aGzFJRo60JdrQX-APIOHnf313ESzA",
         "answer": {
           "language": "python",
+          "fileName": "Code 5",
           "sourceCode": "print('ici')"
         },
         "userTests": [],
@@ -61,8 +62,8 @@ Feature: Post submission
       | ID   | idUser    | idPlatform  | idTask     | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | bConfirmed | sMode     | iChecksum | iVersion   |
       | 101  | 1         | 1           | 1000       | 100          | 0                 | 0        | 0            | 0             | 0      | 0            | 0          | 0          | Submitted | 0         | 2147483647 |
     And the table "tm_source_codes" should be:
-      | ID   | idUser    | idPlatform  | idTask     | sParams                | sName | sSource      | bEditable | bSubmission | sType | bActive | iRank | iVersion   |
-      | 100  | 1         | 1           | 1000       | {"sLangProg":"python"} | 101   | print('ici') | 0         | 1           | User  | 0       | 0     | 2147483647 |
+      | ID   | idUser    | idPlatform  | idTask     | sParams                | sName  | sSource      | bEditable | bSubmission | sType | bActive | iRank | iVersion   |
+      | 100  | 1         | 1           | 1000       | {"sLangProg":"python"} | Code 5 | print('ici') | 0         | 1           | User  | 0       | 0     | 2147483647 |
     And the grader queue should have received the following request:
     """
     {
@@ -85,6 +86,7 @@ Feature: Post submission
         "answerToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpdGVtVXJsIjoiaHR0cDovL2x2aC5tZTo4MDAxL25leHQvdGFzaz90YXNrSUQ9bnVsbCZ2ZXJzaW9uPXVuZGVmaW5lZCIsInJhbmRvbVNlZWQiOiI2Iiwic0hpbnRzUmVxdWVzdGVkIjoiW10iLCJzQW5zd2VyIjoiXCJcXFwiYWFhXFxcIlwiIiwiaWF0IjoxNjgyMzQxMTQxfQ.vNA9EgZkGboNS7aGzFJRo60JdrQX-APIOHnf313ESzA",
         "answer": {
           "language": "python",
+          "fileName": "Code 5",
           "sourceCode": "print('ici')"
         },
         "userTests": [
@@ -120,8 +122,8 @@ Feature: Post submission
       | ID   | idUser    | idPlatform  | idTask     | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | bConfirmed | sMode     | iChecksum | iVersion   |
       | 101  | 1         | 1           | 1000       | 100          | 0                 | 0        | 0            | 0             | 0      | 0            | 0          | 0          | UserTest  | 0         | 2147483647 |
     And the table "tm_source_codes" should be:
-      | ID   | idUser    | idPlatform  | idTask     | sParams                | sName | sSource      | bEditable | bSubmission | sType | bActive | iRank | iVersion   |
-      | 100  | 1         | 1           | 1000       | {"sLangProg":"python"} | 101   | print('ici') | 0         | 1           | User  | 0       | 0     | 2147483647 |
+      | ID   | idUser    | idPlatform  | idTask     | sParams                | sName  | sSource      | bEditable | bSubmission | sType | bActive | iRank | iVersion   |
+      | 100  | 1         | 1           | 1000       | {"sLangProg":"python"} | Code 5 | print('ici') | 0         | 1           | User  | 0       | 0     | 2147483647 |
     And the table "tm_tasks_tests" should be:
       | ID   | idTask | idSubtask | idSubmission | sGroupType   | idUser | idPlatform | iRank | bActive | sName       | sInput | sOutput | sClientId | iVersion   |
       | 10   | 1000   | null      | 101          | User         | 1      | 1          | 0     | 0       | Custom test | test   | ici     | user-0    | 2147483647 |
@@ -151,6 +153,7 @@ Feature: Post submission
         "answerToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpdGVtVXJsIjoiaHR0cDovL2x2aC5tZTo4MDAxL25leHQvdGFzaz90YXNrSUQ9bnVsbCZ2ZXJzaW9uPXVuZGVmaW5lZCIsInJhbmRvbVNlZWQiOiI2Iiwic0hpbnRzUmVxdWVzdGVkIjoiW10iLCJzQW5zd2VyIjoiXCJcXFwiYWFhXFxcIlwiIiwiaWF0IjoxNjgyMzQxMTQxfQ.vNA9EgZkGboNS7aGzFJRo60JdrQX-APIOHnf313ESzA",
         "answer": {
           "language": "python",
+          "fileName": "Code 5",
           "sourceCode": "print('ici')"
         },
         "userTests": [],

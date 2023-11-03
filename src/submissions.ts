@@ -23,6 +23,7 @@ export const submissionDataDecoder = pipe(
     }),
     answer: D.struct({
       sourceCode: D.string,
+      fileName: D.nullable(D.string),
       language: D.string,
     }),
     sLocale: D.string,
@@ -185,13 +186,13 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
   });
 
   await Db.transactional(async connection => {
-    await Db.executeInConnection(connection, "insert into tm_source_codes (ID, idUser, idPlatform, idTask, sDate, sParams, sName, sSource, bEditable, bSubmission) values(:idNewSC, :idUser, :idPlatform, :idTask, NOW(), :sParams, :idSubmission, :sSource, '0', '1');", {
+    await Db.executeInConnection(connection, "insert into tm_source_codes (ID, idUser, idPlatform, idTask, sDate, sParams, sName, sSource, bEditable, bSubmission) values(:idNewSC, :idUser, :idPlatform, :idTask, NOW(), :sParams, :sName, :sSource, '0', '1');", {
       idNewSC: idNewSourceCode,
       idUser: params.idUser,
       idPlatform: params.idPlatform,
       idTask: params.idTaskLocal,
       sParams: sourceCodeParams,
-      idSubmission,
+      sName: submissionData.answer.fileName ?? idSubmission,
       sSource: submissionData.answer.sourceCode
     });
 
