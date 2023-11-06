@@ -7,6 +7,7 @@
     "@hapi/hapi": "^20.2.2",
     "fp-ts": "^2.12.3",
     "got": "^11",
+    "hapi-plugin-websocket": "^2.4.8",
     "io-ts": "^2.2.18",
     "jose": "^4.9.0",
     "loglevel": "^1.8.1",
