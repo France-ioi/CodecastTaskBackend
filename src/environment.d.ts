@@ -9,7 +9,7 @@ declare global {
       GRADER_QUEUE_OWN_PRIVATE_KEY: string,
       GRADER_QUEUE_OWN_NAME: string,
       GRADER_QUEUE_URL: string,
-      GRADER_QUEUE_DEBUG: boolean,
+      CODECAST_DEBUGGERS_URL: string,
     }
   }
 }

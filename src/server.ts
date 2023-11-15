@@ -8,7 +8,7 @@ import {receiveSubmissionResultsFromTaskGrader} from './grader_webhook';
 import {longPollingHandler} from './long_polling';
 import log from 'loglevel';
 import HAPIWebSocket from 'hapi-plugin-websocket';
-import {remoteExecutionProxyHandler} from './remote_executon_proxy';
+import {remoteExecutionProxyHandler} from './remote_execution_proxy';
 
 export async function init(): Promise<Server> {
   const server = Hapi.server({
@@ -103,7 +103,7 @@ export async function init(): Promise<Server> {
           autoping: 30 * 1000,
         },
       },
-      handler: async request => await remoteExecutionProxyHandler(request.payload)
+      handler: async request => await remoteExecutionProxyHandler(request.websocket(), request.payload)
     },
   });
 
