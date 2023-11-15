@@ -25,13 +25,20 @@ export const remoteExecutionClientDecoder = pipe(
 );
 export type RemoteExecutionClientPayload = D.TypeOf<typeof remoteExecutionClientDecoder>;
 
+const handlerProxies: RemoteSocketProxyHandler[] = [];
+
 class RemoteSocketProxyHandler {
   private serverWebSocket: ws.WebSocket;
   private clientWebSocket: ws.WebSocket;
+  private proxyId: number|null = null;
 
   public constructor(websocket: ws.WebSocket) {
     this.clientWebSocket = websocket;
-    this.serverWebSocket = new ws.WebSocket(process.env.CODECAST_DEBUGGERS_URL);
+    // eslint-disable-next-line
+    this.serverWebSocket = new ws.WebSocket(process.env.CODECAST_DEBUGGERS_URL as string);
+    this.clientWebSocket.onclose = (): void => {
+      this.close('client');
+    };
   }
 
   public init(): Promise<void> {
@@ -41,8 +48,12 @@ class RemoteSocketProxyHandler {
           clearInterval(timer);
 
           this.serverWebSocket.onmessage = (webSocketMessage): void => {
-            log.debug('[Remote] Server -> Client', webSocketMessage.data);
+            log.debug('[Remote] Server -> Client', JSON.parse(webSocketMessage.data as string));
             this.clientWebSocket.send(webSocketMessage.data);
+          };
+
+          this.serverWebSocket.onclose = (): void => {
+            this.close('server');
           };
 
           resolve();
@@ -51,13 +62,32 @@ class RemoteSocketProxyHandler {
     });
   }
 
+  public setProxyId(proxyId: number): void {
+    this.proxyId = proxyId;
+  }
+
   public handlePayload(clientPayloadData: RemoteExecutionClientPayload): void {
     log.debug('[Remote] Client -> Server', clientPayloadData);
     this.serverWebSocket.send(JSON.stringify(clientPayloadData));
   }
-}
 
-const handlerProxies: RemoteSocketProxyHandler[] = [];
+  public close(from: 'client'|'server'): void {
+    if (null === this.proxyId) {
+      return;
+    }
+
+    log.debug('[Remote] Connection closed');
+    if ('client' === from) {
+      this.serverWebSocket.send(JSON.stringify({action: 'close'}));
+    } else if ('server' === from) {
+      this.clientWebSocket.send(JSON.stringify({action: 'close'}));
+    }
+    this.clientWebSocket.close();
+    this.serverWebSocket.close();
+    delete handlerProxies[this.proxyId];
+    this.proxyId = null;
+  }
+}
 
 export async function remoteExecutionProxyHandler(websocket: HAPIPluginWebsocket.PluginState, clientPayload: unknown): Promise<null> {
   const clientPayloadData: RemoteExecutionClientPayload = decode(remoteExecutionClientDecoder)(clientPayload);
@@ -69,6 +99,7 @@ export async function remoteExecutionProxyHandler(websocket: HAPIPluginWebsocket
     log.debug('[Remote] New connection, proxy established');
     handlerProxies.push(newProxy);
     websocket.ctx.proxyId = handlerProxies.length - 1;
+    newProxy.setProxyId(websocket.ctx.proxyId as number);
   }
 
   const proxyHandler = handlerProxies[websocket.ctx.proxyId as number];
