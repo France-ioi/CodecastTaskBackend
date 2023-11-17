@@ -39,7 +39,9 @@ class RemoteSocketProxyHandler {
     this.serverWebSocket.addEventListener('error', () => {
       log.debug('[Remote] Impossible to connect to server');
       this.clientWebSocket.send(JSON.stringify({
-        action: 'close',
+        message: {
+          action: 'close',
+        }
       }));
     });
     this.clientWebSocket.onclose = (): void => {
@@ -84,9 +86,9 @@ class RemoteSocketProxyHandler {
 
     log.debug('[Remote] Connection closed');
     if ('client' === from) {
-      this.serverWebSocket.send(JSON.stringify({action: 'close'}));
+      this.serverWebSocket.send(JSON.stringify({message: {action: 'close'}}));
     } else if ('server' === from) {
-      this.clientWebSocket.send(JSON.stringify({action: 'close'}));
+      this.clientWebSocket.send(JSON.stringify({message: {action: 'close'}}));
     }
     this.clientWebSocket.close();
     this.serverWebSocket.close();
