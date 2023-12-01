@@ -103,7 +103,7 @@ export async function init(): Promise<Server> {
           autoping: 30 * 1000,
         },
       },
-      handler: async request => await remoteExecutionProxyHandler(request.websocket(), request.payload)
+      handler: async request => await remoteExecutionProxyHandler(request.websocket().ws, request.websocket().ctx, request.payload)
     },
   });
 

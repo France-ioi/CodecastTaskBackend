@@ -1,7 +1,6 @@
 import {decode} from './util';
 import {pipe} from 'fp-ts/function';
 import * as D from 'io-ts/Decoder';
-import HAPIPluginWebsocket from 'hapi-plugin-websocket';
 import * as ws from 'ws';
 import log from 'loglevel';
 
@@ -93,20 +92,20 @@ class RemoteSocketProxyHandler {
   }
 }
 
-export async function remoteExecutionProxyHandler(websocket: HAPIPluginWebsocket.PluginState, clientPayload: unknown): Promise<null> {
+export async function remoteExecutionProxyHandler(websocket: ws.WebSocket, webSocketContext: Record<string, any>, clientPayload: unknown): Promise<null> {
   const clientPayloadData: RemoteExecutionClientPayload = decode(remoteExecutionClientDecoder)(clientPayload);
 
-  if (undefined === websocket.ctx.proxyId) {
+  if (undefined === webSocketContext.proxyId) {
     // Establish proxy
-    const newProxy = new RemoteSocketProxyHandler(websocket.ws);
+    const newProxy = new RemoteSocketProxyHandler(websocket);
     await newProxy.init();
     log.debug('[Remote] New connection, proxy established');
     handlerProxies.push(newProxy);
-    websocket.ctx.proxyId = handlerProxies.length - 1;
-    newProxy.setProxyId(websocket.ctx.proxyId as number);
+    webSocketContext.proxyId = handlerProxies.length - 1;
+    newProxy.setProxyId(webSocketContext.proxyId as number);
   }
 
-  const proxyHandler = handlerProxies[websocket.ctx.proxyId as number];
+  const proxyHandler = handlerProxies[webSocketContext.proxyId as number];
   proxyHandler.handlePayload(clientPayloadData);
 
   return null;
