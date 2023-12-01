@@ -38,11 +38,7 @@ class RemoteSocketProxyHandler {
     this.serverWebSocket = new ws.WebSocket(process.env.CODECAST_DEBUGGERS_URL as string);
     this.serverWebSocket.addEventListener('error', () => {
       log.debug('[Remote] Impossible to connect to server');
-      this.clientWebSocket.send(JSON.stringify({
-        message: {
-          action: 'close',
-        }
-      }));
+      this.close('server');
     });
     this.clientWebSocket.onclose = (): void => {
       this.close('client');
