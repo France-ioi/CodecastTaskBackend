@@ -36,7 +36,7 @@ Feature: Proxy websocket connections from client to remote server
       }
       """
     And I wait 10ms
-    And the "client" WS server should have received the following JSON:
+    Then the "client" WS server should have received the following JSON:
       """
       {
         "messageId": 1,
