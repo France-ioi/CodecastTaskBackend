@@ -35,13 +35,13 @@ function randomIdGenerator(): string {
   return String(currentId++);
 }
 
-BeforeAll(function () {
+BeforeAll(async function () {
   dotenv.config({path: path.resolve(__dirname, '../../.env.test')});
   dotenv.config({path: path.resolve(__dirname, '../../.env')});
 
   Db.init();
   setRandomIdGenerator(randomIdGenerator);
-  testServer = init();
+  testServer = await init();
 });
 
 Before(async function () {
