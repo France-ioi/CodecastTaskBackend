@@ -25,7 +25,7 @@ jobs:
       TEST_MODE_PLATFORM_NAME: codecast-test
       TEST_MODE_USER_ID: 1
       GRADER_QUEUE_DEBUG_PASSWORD: test
-      CODECAST_DEBUGGERS_URL: ws://127.0.0.1:9997/remote-execution
+      CODECAST_DEBUGGERS_URL: ws://127.0.0.1:9003
     steps:
       - checkout
       - node/install-packages:

@@ -83,6 +83,15 @@ interface WebSocketData {
 const openServers: {[key: string]: WebSocketData} = {};
 const activeConnections: {[serverName: string]: ws.WebSocket} = {};
 
+export function closeOpenServers(): void {
+  for (const server of Object.values(openServers)) {
+    server.wss.close();
+  }
+  for (const activeConnection of Object.values(activeConnections)) {
+    activeConnection.close();
+  }
+}
+
 When(/^I connect to the "([^"]*)" WS server$/, async function (this: ServerStepsContext, serverName: string) {
   const newWebSocket = new ws.WebSocket(`ws://127.0.0.1:${openServers[serverName].port}`);
 
