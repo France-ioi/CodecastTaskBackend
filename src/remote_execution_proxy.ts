@@ -12,6 +12,7 @@ export const remoteExecutionClientDecoder = pipe(
         action: D.string,
       }),
       D.intersect(D.partial({
+        speed: D.number,
         answer: D.struct({
           language: D.string,
           fileName: D.string,
