@@ -7,6 +7,7 @@ import {InvalidInputError} from './error_handler';
 import got from 'got';
 import log from 'loglevel';
 import {getRandomId} from './util';
+import appConfig from './config';
 
 function baseLangToJSONLang(baseLang: string): string {
   baseLang = baseLang.toLocaleLowerCase();
@@ -69,11 +70,11 @@ export interface JobData {
 }
 
 let sendQueueRequestToGraderQueue: (queueRequest: QueueRequest) => Promise<string> = async function (queueRequest: QueueRequest) {
-  if (!process.env.GRADER_QUEUE_URL) {
+  if (!appConfig.graderQueue.url) {
     throw new Error('Missing grader queue URL');
   }
 
-  const gotResponse = await got.post(process.env.GRADER_QUEUE_URL, {
+  const gotResponse = await got.post(appConfig.graderQueue.url, {
     form: queueRequest,
   });
 
@@ -127,7 +128,7 @@ export async function generateQueueRequest(submissionId: string, submissionData:
     }
   }
 
-  if (answerTokenParams && !process.env.TEST_MODE) {
+  if (answerTokenParams && !appConfig.testMode.enabled) {
     if (answerTokenParams.idUser !== params.idUser || answerTokenParams.itemUrl !== params.itemUrl) {
       throw new InvalidInputError(`Mismatching tokens idUser or itemUrl, token = ${JSON.stringify(params)}, answerToken = ${JSON.stringify(answerTokenParams)}`);
     }
@@ -182,7 +183,7 @@ WHERE tm_submissions.ID = :idSubmission
     throw new InvalidInputError('Cannot find source code associated with this submission');
   }
 
-  if (!submissionData.answerToken && !process.env.TEST_MODE && 'UserTest' !== submission.sMode) {
+  if (!submissionData.answerToken && !appConfig.testMode.enabled && 'UserTest' !== submission.sMode) {
     throw new InvalidInputError('Missing answerToken, required for this type of submission');
   }
 
@@ -282,12 +283,12 @@ WHERE tm_submissions.ID = :idSubmission
   // on the same task outside a platform, they will all have the same jobUserTaskId, and this
   // is problematic since the grader queue will re-start the submission everytime and cancel the previous
   // ones made with this identifier. To prevent this, we generate a random identifier.
-  const idUser = process.env.TEST_MODE_USER_ID === submission.idUser ? getRandomId() : submission.idUser;
+  const idUser = appConfig.testMode.userId === submission.idUser ? getRandomId() : submission.idUser;
   const jobUserTaskId = `${submission.idTask}-${idUser}-${submission.idPlatform}`;
 
   let evalTags = task.sEvalTags;
-  if (!evalTags && process.env.GRADER_QUEUE_DEFAULT_TAGS) {
-    evalTags = process.env.GRADER_QUEUE_DEFAULT_TAGS;
+  if (!evalTags && appConfig.graderQueue.defaultTags) {
+    evalTags = appConfig.graderQueue.defaultTags;
   }
 
   const queueRequestParams = {
@@ -304,21 +305,21 @@ WHERE tm_submissions.ID = :idSubmission
 
   let queueRequest;
 
-  if (process.env.GRADER_QUEUE_DEBUG_PASSWORD) {
+  if (appConfig.graderQueue.debugPassword) {
     // Use debug password to send plain request
     queueRequest = {
       ...queueRequestParams,
-      debugPassword: process.env.GRADER_QUEUE_DEBUG_PASSWORD
+      debugPassword: appConfig.graderQueue.debugPassword,
     };
   } else {
     // Generate encrypted and signed token for the request
     const tokenGenerator = new TokenGenerator();
-    await tokenGenerator.setKeys(process.env.GRADER_QUEUE_OWN_PRIVATE_KEY, process.env.GRADER_QUEUE_PUBLIC_KEY);
+    await tokenGenerator.setKeys(appConfig.graderQueue.ownPrivateKey, appConfig.graderQueue.publicKey);
     const jwe = await tokenGenerator.encodeJwes(queueRequestParams);
 
     queueRequest = {
       sToken: jwe,
-      sPlatform: process.env.GRADER_QUEUE_OWN_NAME,
+      sPlatform: appConfig.graderQueue.ownName,
     };
   }
 

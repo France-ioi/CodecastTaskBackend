@@ -14,6 +14,7 @@ import {InvalidInputError} from './error_handler';
 import {sendSubmissionToTaskGrader} from './grader_interface';
 import {findTaskById, normalizeTaskTest} from './tasks';
 import {ProgramExecutionResultMetadata} from './grader_webhook';
+import appConfig from './config';
 
 export const submissionDataDecoder = pipe(
   D.struct({
@@ -111,8 +112,8 @@ export interface SubmissionOutput extends SubmissionNormalized {
 }
 
 export async function getPlatformTokenParams(taskId: string, token?: string|null, platform?: string|null): Promise<PlatformTokenParameters> {
-  if (!platform && process.env.TEST_MODE && process.env.TEST_MODE_PLATFORM_NAME) {
-    platform = process.env.TEST_MODE_PLATFORM_NAME;
+  if (!platform && appConfig.testMode.enabled && appConfig.testMode.platformName) {
+    platform = appConfig.testMode.platformName;
   }
 
   const platforms = await Db.execute<Platform[]>('SELECT ID, public_key FROM tm_platforms WHERE name = ?', [platform]);
@@ -166,7 +167,7 @@ async function getLocalIdTask(params: PlatformTokenParameters): Promise<string> 
 export async function createSubmission(submissionDataPayload: unknown): Promise<string> {
   const submissionData: SubmissionParameters = decode(submissionDataDecoder)(submissionDataPayload);
 
-  if (!process.env.TEST_MODE && (!submissionData.token || !submissionData.platform)) {
+  if (!appConfig.testMode.enabled && (!submissionData.token || !submissionData.platform)) {
     throw new InvalidInputError('Missing token or platform POST variable');
   }
 

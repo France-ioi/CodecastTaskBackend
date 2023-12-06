@@ -1,4 +1,5 @@
 import {createPool, Pool, PoolConnection, RowDataPacket} from 'mysql2/promise';
+import appConfig from './config';
 
 let pool: Pool|null = null;
 
@@ -19,11 +20,11 @@ export class DatabaseError extends Error {
 export function init(): void {
   try {
     pool = createPool({
-      host: process.env.MYSQL_DB_HOST,
-      port: Number(process.env.MYSQL_DB_PORT),
-      user: process.env.MYSQL_DB_USER,
-      password: process.env.MYSQL_DB_PASSWORD,
-      database: process.env.MYSQL_DB_DATABASE,
+      host: appConfig.mysqlDatabase.host,
+      port: appConfig.mysqlDatabase.port,
+      user: appConfig.mysqlDatabase.user,
+      password: appConfig.mysqlDatabase.password,
+      database: appConfig.mysqlDatabase.database,
       charset: 'utf8',
       namedPlaceholders: true,
       supportBigNumbers: true,

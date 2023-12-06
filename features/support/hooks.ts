@@ -1,7 +1,5 @@
 import {Server} from '@hapi/hapi';
 import {AfterAll, Before, BeforeAll} from '@cucumber/cucumber';
-import * as dotenv from 'dotenv';
-import path from 'path';
 import * as Db from '../../src/db';
 import {init} from '../../src/server';
 
@@ -9,6 +7,7 @@ import chai from 'chai';
 import chaiSubset from 'chai-subset';
 import {setRandomIdGenerator} from '../../src/util';
 import {closeOpenServers} from '../steps/server_steps';
+import appConfig from '../../src/config';
 chai.use(chaiSubset);
 
 let testServer: Server;
@@ -37,9 +36,6 @@ function randomIdGenerator(): string {
 }
 
 BeforeAll(async function () {
-  dotenv.config({path: path.resolve(__dirname, '../../.env.test')});
-  dotenv.config({path: path.resolve(__dirname, '../../.env')});
-
   Db.init();
   setRandomIdGenerator(randomIdGenerator);
   testServer = await init();
@@ -56,7 +52,7 @@ AfterAll(async function () {
 });
 
 async function cleanDatabase(): Promise<void> {
-  if (!process.env['TEST_MODE']) {
+  if (!appConfig.testMode.enabled) {
     throw new Error('Database cannot be cleaned while not in test environment.');
   }
 

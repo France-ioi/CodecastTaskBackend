@@ -3,6 +3,7 @@ import {pipe} from 'fp-ts/function';
 import * as D from 'io-ts/Decoder';
 import * as ws from 'ws';
 import log from 'loglevel';
+import appConfig from './config';
 
 export const remoteExecutionClientDecoder = pipe(
   D.struct({
@@ -35,7 +36,7 @@ class RemoteSocketProxyHandler {
   public constructor(websocket: ws.WebSocket) {
     this.clientWebSocket = websocket;
     // eslint-disable-next-line
-    this.serverWebSocket = new ws.WebSocket(process.env.CODECAST_DEBUGGERS_URL as string);
+    this.serverWebSocket = new ws.WebSocket(appConfig.codecastDebuggersUrl);
     this.serverWebSocket.addEventListener('error', () => {
       log.debug('[Remote] Impossible to connect to server');
       this.close('server');

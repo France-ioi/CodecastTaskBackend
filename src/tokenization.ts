@@ -2,6 +2,7 @@ import {Platform} from './db_models';
 import * as jose from 'jose';
 import {KeyLike} from 'jose/dist/types/types';
 import moment from 'moment';
+import appConfig from './config';
 
 export interface PlatformTokenParameters {
     idUser: string|null,
@@ -20,12 +21,12 @@ export interface PlatformTokenParameters {
 
 function getTestTokenParameters(taskId: string): PlatformTokenParameters {
   return {
-    idUser: process.env.TEST_MODE_USER_ID ? process.env.TEST_MODE_USER_ID : null,
+    idUser: appConfig.testMode.userId ? appConfig.testMode.userId : null,
     bSubmissionPossible: true,
     idTaskLocal: taskId,
-    itemUrl: process.env.BASE_URL ? process.env.BASE_URL + '?taskId=' + taskId : null,
-    bAccessSolutions: Boolean(process.env.TEST_MODE_ACCESS_SOLUTIONS),
-    nbHintsGiven: Number(process.env.TEST_MODE_NB_HINTS_GIVEN),
+    itemUrl: appConfig.baseUrl ? appConfig.baseUrl + '?taskId=' + taskId : null,
+    bAccessSolutions: appConfig.testMode.accessSolutions,
+    nbHintsGiven: appConfig.testMode.nbHintsGiven,
   };
 }
 
@@ -65,7 +66,7 @@ export function decodePlatformToken(token: string|null|undefined, platformKey: s
 
     throw new Error('Reading token is not implemented yet');
   } catch (e) {
-    if (process.env.TEST_MODE) {
+    if (appConfig.testMode.enabled) {
       return getTestTokenParameters(askedTaskId);
     } else {
       throw e;
