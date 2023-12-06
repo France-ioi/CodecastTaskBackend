@@ -126,13 +126,13 @@ Given(/^I have a "([^"]*)" WS server on port (\d+)$/, function (this: ServerStep
   server.wss.on('connection', (ws: ws.WebSocket) => {
     server.activeConnections.push(ws);
 
-    if ('server' === serverName) {
+    if ('debuggers-mock' === serverName) {
       activeConnections[serverName] = ws;
     }
 
     ws.onmessage = (webSocketMessage): void => {
       const jsonMessage: unknown = JSON.parse(webSocketMessage.data as string);
-      if ('client' === serverName) {
+      if ('backend' === serverName) {
         void remoteExecutionProxyHandler(ws, server.ctx, jsonMessage);
       } else {
         openServers[serverName].lastMessages.push(jsonMessage);
