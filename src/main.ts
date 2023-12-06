@@ -11,5 +11,7 @@ log.setLevel(process.env['NODE_ENV'] === 'development' ? 'trace' : 'info');
 
 Db.init();
 
-init();
-start();
+void (async (): Promise<void> => {
+  const server = await init();
+  start(server);
+})();

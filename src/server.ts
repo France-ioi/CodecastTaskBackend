@@ -7,17 +7,19 @@ import {ErrorHandler, isResponseBoom, NotFoundError} from './error_handler';
 import {receiveSubmissionResultsFromTaskGrader} from './grader_webhook';
 import {longPollingHandler} from './long_polling';
 import log from 'loglevel';
+import HAPIWebSocket from 'hapi-plugin-websocket';
+import {remoteExecutionProxyHandler} from './remote_execution_proxy';
 
-export let server: Server;
-
-export const init = function(): Server {
-  server = Hapi.server({
+export async function init(): Promise<Server> {
+  const server = Hapi.server({
     port: process.env.PORT || 4000,
     host: '0.0.0.0',
     routes: {
       cors: true,
     },
   });
+
+  await server.register(HAPIWebSocket);
 
   server.route({
     method: 'GET',
@@ -91,6 +93,20 @@ export const init = function(): Server {
     }
   });
 
+  server.route({
+    method: 'POST',
+    path: '/remote-execution',
+    options: {
+      plugins: {
+        websocket: {
+          only: true,
+          autoping: 30 * 1000,
+        },
+      },
+      handler: async request => await remoteExecutionProxyHandler(request.websocket().ws, request.websocket().ctx, request.payload)
+    },
+  });
+
   const errorHandler = new ErrorHandler();
 
   server.ext('onPreResponse', (request, h): ReturnValue => {
@@ -104,9 +120,9 @@ export const init = function(): Server {
   });
 
   return server;
-};
+}
 
-export const start = function (): void {
+export const start = function (server: Server): void {
   log.info(`Listening on ${String(server.settings.host)}:${String(server.settings.port)}`);
 
   void server.start();

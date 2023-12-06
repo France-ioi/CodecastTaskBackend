@@ -8,6 +8,7 @@ import {init} from '../../src/server';
 import chai from 'chai';
 import chaiSubset from 'chai-subset';
 import {setRandomIdGenerator} from '../../src/util';
+import {closeOpenServers} from '../steps/server_steps';
 chai.use(chaiSubset);
 
 let testServer: Server;
@@ -35,13 +36,13 @@ function randomIdGenerator(): string {
   return String(currentId++);
 }
 
-BeforeAll(function () {
+BeforeAll(async function () {
   dotenv.config({path: path.resolve(__dirname, '../../.env.test')});
   dotenv.config({path: path.resolve(__dirname, '../../.env')});
 
   Db.init();
   setRandomIdGenerator(randomIdGenerator);
-  testServer = init();
+  testServer = await init();
 });
 
 Before(async function () {
@@ -51,6 +52,7 @@ Before(async function () {
 AfterAll(async function () {
   await testServer.stop({timeout: 0});
   await Db.closePool();
+  closeOpenServers();
 });
 
 async function cleanDatabase(): Promise<void> {
