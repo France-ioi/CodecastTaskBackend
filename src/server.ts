@@ -9,10 +9,11 @@ import {longPollingHandler} from './long_polling';
 import log from 'loglevel';
 import HAPIWebSocket from 'hapi-plugin-websocket';
 import {remoteExecutionProxyHandler} from './remote_execution_proxy';
+import appConfig from './config';
 
 export async function init(): Promise<Server> {
   const server = Hapi.server({
-    port: process.env.PORT || 4000,
+    port: appConfig.port || 4000,
     host: '0.0.0.0',
     routes: {
       cors: true,

@@ -7,6 +7,7 @@ import * as Db from './db';
 import {TaskSubtask, TaskTest} from './db_models';
 import {findTaskById} from './tasks';
 import {longPollingHandler} from './long_polling';
+import appConfig from './config';
 
 export const taskGraderWebhookPayloadDecoder = pipe(
   D.struct({
@@ -102,11 +103,11 @@ export async function receiveSubmissionResultsFromTaskGrader(taskGraderWebhookPa
   const taskGraderWebhookParams: TaskGraderWebhookPayload = decode(taskGraderWebhookPayloadDecoder)(taskGraderWebhookPayload);
 
   let tokenParams;
-  if (process.env.GRADER_QUEUE_DEBUG_PASSWORD) {
+  if (appConfig.graderQueue.debugPassword) {
     tokenParams = JSON.parse(taskGraderWebhookParams.sToken) as TokenParams;
   } else {
     const jwesDecoder = new JwesDecoder();
-    await jwesDecoder.setKeys(process.env.GRADER_QUEUE_PUBLIC_KEY, process.env.GRADER_QUEUE_OWN_PRIVATE_KEY);
+    await jwesDecoder.setKeys(appConfig.graderQueue.publicKey, appConfig.graderQueue.ownPrivateKey);
     tokenParams = await jwesDecoder.decodeJwes(taskGraderWebhookParams.sToken) as TokenParams;
   }
 

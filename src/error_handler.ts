@@ -1,6 +1,7 @@
 import Hapi, {ResponseValue} from '@hapi/hapi';
 import {Boom} from '@hapi/boom';
 import {DatabaseError} from './db';
+import appConfig from './config';
 
 export class NotFoundError extends Error {
 }
@@ -30,13 +31,13 @@ export class ErrorHandler {
       }
 
       return h
-        .response({error: 'A database error has occurred.', ...(process.env.TEST_MODE ? {details: String(e), query: e.query, databaseError: e.error} : {})})
+        .response({error: 'A database error has occurred.', ...(appConfig.testMode.enabled ? {details: String(e), query: e.query, databaseError: e.error} : {})})
         .code(500);
     }
 
     if (e instanceof NotFoundError) {
       return h
-        .response({error: 'Not found', ...(process.env.TEST_MODE ? {details: String(e)} : {})})
+        .response({error: 'Not found', ...(appConfig.testMode.enabled ? {details: String(e)} : {})})
         .code(404);
     }
 
@@ -44,7 +45,7 @@ export class ErrorHandler {
     console.error(e);
 
     return h
-      .response({error: 'An internal server error occurred', ...(process.env.TEST_MODE ? {details: String(e)} : {})})
+      .response({error: 'An internal server error occurred', ...(appConfig.testMode.enabled ? {details: String(e)} : {})})
       .code(500);
   }
 }

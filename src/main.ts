@@ -1,13 +1,9 @@
 import {init, start} from './server';
-import path from 'path';
-import * as dotenv from 'dotenv';
 import * as Db from './db';
 import log from 'loglevel';
+import appConfig from './config';
 
-dotenv.config({path: path.resolve(__dirname, '../.env.local')});
-dotenv.config({path: path.resolve(__dirname, '../.env')});
-
-log.setLevel(process.env['NODE_ENV'] === 'development' ? 'trace' : 'info');
+log.setLevel(appConfig.nodeEnv === 'development' ? 'trace' : 'info');
 
 Db.init();
 
