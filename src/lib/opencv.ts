@@ -4,6 +4,7 @@ import fs, {createWriteStream} from 'fs';
 import {randomUUID} from 'crypto';
 import got from 'got';
 import stream from 'stream';
+import path from 'path';
 
 const OPENCV_IMAGE = 'hdgigante/python-opencv:4.8.1-alpine';
 const CACHE_FOLDER = 'cache';
@@ -59,10 +60,11 @@ cv2.imwrite('${resultImageName}', result)`;
     fs.writeFileSync(`${CACHE_FOLDER}/app.py`, program);
 
     const outputStream = new EchoStream();
+    const cacheFolder = path.join(__dirname, '../../', CACHE_FOLDER);
 
     const data = await dockerInstance.run(OPENCV_IMAGE, ['python3', 'app.py'], outputStream, {
       HostConfig: {
-        Binds: [`/home/sebastien/Documents/france-ioi/codecast-task-backend/${CACHE_FOLDER}:/opt/build`],
+        Binds: [`${cacheFolder}:/opt/build`],
         AutoRemove: true,
       },
     }) as {StatusCode: number}[];
