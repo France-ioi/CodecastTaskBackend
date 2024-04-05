@@ -19,18 +19,22 @@ interface Config {
     publicKey: string,
     defaultTags: string,
     debug: boolean,
-    debugPassword: string,
+    debugPassword: string|undefined,
     url: string,
     ownName: string,
   },
   testMode: {
     enabled: boolean,
-    platformName: string,
-    userId: string,
+    platformName: string|undefined,
+    userId: string|undefined,
     accessSolutions: boolean,
     nbHintsGiven: number,
   },
   codecastDebuggersUrl: string,
+}
+
+function stringifyIfExists(string: string|undefined): string|undefined {
+  return string ? String(string) : undefined;
 }
 
 const appConfig: Config = {
@@ -49,16 +53,16 @@ const appConfig: Config = {
     publicKey: String(process.env.GRADER_QUEUE_PUBLIC_KEY),
     defaultTags: String(process.env.GRADER_QUEUE_DEFAULT_TAGS),
     debug: '1' === String(process.env.GRADER_QUEUE_DEBUG),
-    debugPassword: String(process.env.GRADER_QUEUE_DEBUG_PASSWORD),
+    debugPassword: stringifyIfExists(process.env.GRADER_QUEUE_DEBUG_PASSWORD),
     url: String(process.env.GRADER_QUEUE_URL),
     ownName: String(process.env.GRADER_QUEUE_OWN_NAME),
   },
   testMode: {
     enabled: '1' === String(process.env.TEST_MODE),
-    platformName: String(process.env.TEST_MODE_PLATFORM_NAME),
-    userId: String(process.env.TEST_MODE_USER_ID),
+    platformName: stringifyIfExists(process.env.TEST_MODE_PLATFORM_NAME),
+    userId: stringifyIfExists(process.env.TEST_MODE_USER_ID),
     accessSolutions: '1' === String(process.env.TEST_MODE_ACCESS_SOLUTIONS),
-    nbHintsGiven: Number(process.env.TEST_MODE_NB_HINTS_GIVEN),
+    nbHintsGiven: process.env.TEST_MODE_NB_HINTS_GIVEN ? Number(process.env.TEST_MODE_NB_HINTS_GIVEN) : 0,
   },
   codecastDebuggersUrl: String(process.env.CODECAST_DEBUGGERS_URL),
 };
