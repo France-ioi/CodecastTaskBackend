@@ -82,6 +82,7 @@ export interface Platform {
     ID: string,
     name: string,
     public_key: string,
+    api_url: string,
 }
 
 export interface Submission {

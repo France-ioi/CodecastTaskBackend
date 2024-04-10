@@ -9,6 +9,9 @@ export class NotFoundError extends Error {
 export class InvalidInputError extends Error {
 }
 
+export class PlatformInteractionError extends Error {
+}
+
 export function isResponseBoom(response: any): response is Boom {
   return (response as Boom).isBoom && (response as Boom).isServer;
 }

@@ -1,12 +1,10 @@
 import * as Db from './db';
 import {
-  Platform,
   SourceCode,
   Submission,
   SubmissionSubtask,
   SubmissionTest, TaskTest,
 } from './db_models';
-import {decodePlatformToken, PlatformTokenParameters} from './tokenization';
 import {decode, getRandomId} from './util';
 import * as D from 'io-ts/Decoder';
 import {pipe} from 'fp-ts/function';
@@ -15,6 +13,13 @@ import {sendSubmissionToTaskGrader} from './grader_interface';
 import {findTaskById, normalizeTaskTest} from './tasks';
 import {ProgramExecutionResultMetadata} from './grader_webhook';
 import appConfig from './config';
+import {
+  askPlatformAnswerToken,
+  extractPlatformAnswerTaskTokenData,
+  extractPlatformTaskTokenData,
+  PlatformAnswerTokenData,
+  PlatformTaskTokenData,
+} from './platform_interface';
 
 export const submissionDataDecoder = pipe(
   D.struct({
@@ -42,6 +47,16 @@ export const submissionDataDecoder = pipe(
   }))
 );
 export type SubmissionParameters = D.TypeOf<typeof submissionDataDecoder>;
+
+export const offlineSubmissionDataDecoder = pipe(
+  D.struct({
+    token: D.string,
+    platform: D.string,
+    answer: D.string,
+    // sLocale: D.string,
+  }),
+);
+export type OfflineSubmissionParameters = D.TypeOf<typeof offlineSubmissionDataDecoder>;
 
 export enum SubmissionMode {
   Submitted = 'Submitted',
@@ -111,59 +126,22 @@ export interface SubmissionOutput extends SubmissionNormalized {
   tests?: SubmissionTestNormalized[],
 }
 
-export async function getPlatformTokenParams(taskId: string, token?: string|null, platform?: string|null): Promise<PlatformTokenParameters> {
-  if (!platform && appConfig.testMode.enabled && appConfig.testMode.platformName) {
-    platform = appConfig.testMode.platformName;
-  }
+export async function createOfflineSubmission(submissionDataPayload: unknown): Promise<string> {
+  const submissionData: OfflineSubmissionParameters = decode(offlineSubmissionDataDecoder)(submissionDataPayload);
+  const tokenData = await extractPlatformTaskTokenData(submissionData.token, submissionData.platform);
 
-  const platforms = await Db.execute<Platform[]>('SELECT ID, public_key FROM tm_platforms WHERE name = ?', [platform]);
-  if (!platforms.length) {
-    throw new InvalidInputError(`Cannot find platform ${platform || ''}`);
-  }
+  // Get answer token from platform
+  const answerToken = await askPlatformAnswerToken(submissionData.token, submissionData.answer, tokenData.platform);
 
-  const platformEntity = platforms[0];
-  const platformKey = platformEntity.public_key;
+  // console.log('answer token', answerToken);
+  // Create submission with answer token
 
-  const params = decodePlatformToken(token, platformKey, platform as string, taskId, platformEntity);
-
-  if (!params.idUser || (!params.idItem && !params.itemUrl)) {
-    // console.error('Missing idUser or idItem in token', params);
-    throw new InvalidInputError('Missing idUser or idItem in token');
-  }
-
-  params.idPlatform = platformEntity.ID;
-  params.idTaskLocal = await getLocalIdTask(params);
-
-  return params;
+  return answerToken;
 }
 
-function getIdFromUrl(itemUrl: string): string|null {
-  const urlSearchParams = (new URL(itemUrl)).searchParams;
-  const params = Object.fromEntries(urlSearchParams.entries());
-
-  return params['taskId'] ? params['taskId'] : null;
-}
-
-async function getLocalIdTask(params: PlatformTokenParameters): Promise<string> {
-  const idItem = params.idItem || null;
-  const itemUrl = params.itemUrl || null;
-  if (itemUrl) {
-    const id = getIdFromUrl(itemUrl);
-    if (!id) {
-      throw new InvalidInputError('Cannot find ID in url ' + itemUrl);
-    }
-
-    return id;
-  }
-
-  const id = await Db.querySingleScalarResult<string>('SELECT ID FROM tm_tasks WHERE sTextId = ?', [idItem]);
-  if (!id) {
-    throw new InvalidInputError(`Cannot find task ${idItem || ''}`);
-  }
-
-  return id;
-}
-
+// This requires a token and an answer token, except if:
+//   - we execute user tests (it's not a submission)
+//   - or the test mode is enabled
 export async function createSubmission(submissionDataPayload: unknown): Promise<string> {
   const submissionData: SubmissionParameters = decode(submissionDataDecoder)(submissionDataPayload);
 
@@ -171,11 +149,18 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
     throw new InvalidInputError('Missing token or platform POST variable');
   }
 
-  const params = await getPlatformTokenParams(submissionData.taskId, submissionData.token, submissionData.platform);
-  const task = await findTaskById(params.idTaskLocal);
+  const taskTokenData = await extractPlatformTaskTokenData(submissionData.token, submissionData.platform, submissionData.taskId);
+  const task = await findTaskById(taskTokenData.idTaskLocal);
   if (null === task) {
-    throw new InvalidInputError(`Invalid task id: ${params.idTaskLocal}`);
+    throw new InvalidInputError(`Invalid task id: ${taskTokenData.idTaskLocal}`);
   }
+
+  let answerTokenData: PlatformAnswerTokenData|null = null;
+  if (submissionData.answerToken) {
+    answerTokenData = await extractPlatformAnswerTaskTokenData(submissionData.answerToken, submissionData.platform, submissionData.taskId);
+  }
+
+  checkAnswerTokenValid(answerTokenData, taskTokenData);
 
   const mode = submissionData.userTests && submissionData.userTests.length ? SubmissionMode.UserTest : SubmissionMode.Submitted;
 
@@ -189,9 +174,9 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
   await Db.transactional(async connection => {
     await Db.executeInConnection(connection, "insert into tm_source_codes (ID, idUser, idPlatform, idTask, sDate, sParams, sName, sSource, bEditable, bSubmission) values(:idNewSC, :idUser, :idPlatform, :idTask, NOW(), :sParams, :sName, :sSource, '0', '1');", {
       idNewSC: idNewSourceCode,
-      idUser: params.idUser,
-      idPlatform: params.idPlatform,
-      idTask: params.idTaskLocal,
+      idUser: taskTokenData.payload.idUser,
+      idPlatform: taskTokenData.platform.ID,
+      idTask: taskTokenData.idTaskLocal,
       sParams: sourceCodeParams,
       sName: submissionData.answer.fileName ?? idSubmission,
       sSource: submissionData.answer.sourceCode
@@ -199,9 +184,9 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
 
     await Db.executeInConnection(connection, 'insert into tm_submissions (ID, idUser, idPlatform, idTask, sDate, idSourceCode, sMode) values(:idSubmission, :idUser, :idPlatform, :idTask, NOW(), :idSourceCode, :sMode);', {
       idSubmission,
-      idUser: params.idUser,
-      idPlatform: params.idPlatform,
-      idTask: params.idTaskLocal,
+      idUser: taskTokenData.payload.idUser,
+      idPlatform: taskTokenData.platform.ID,
+      idTask: taskTokenData.idTaskLocal,
       idSourceCode: idNewSourceCode,
       sMode: mode,
     });
@@ -210,9 +195,9 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
     if ('UserTest' === mode && submissionData.userTests && submissionData.userTests.length) {
       const valuesToInsert = submissionData.userTests.map((test, index) => ([
         testPrefixId + '' + String(index),
-        params.idUser,
-        params.idPlatform,
-        params.idTaskLocal,
+        taskTokenData.payload.idUser,
+        taskTokenData.platform.ID,
+        taskTokenData.idTaskLocal,
         'User',
         test.input,
         test.output,
@@ -226,9 +211,23 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
     }
   });
 
-  await sendSubmissionToTaskGrader(idSubmission, submissionData);
+  await sendSubmissionToTaskGrader(idSubmission, submissionData, taskTokenData, answerTokenData);
 
   return idSubmission;
+}
+
+export function checkAnswerTokenValid(answerTokenData: PlatformAnswerTokenData|null = null, taskTokenData: PlatformTaskTokenData): void {
+  if (answerTokenData && !appConfig.testMode.enabled) {
+    if (answerTokenData.payload.idUser !== taskTokenData.payload.idUser || answerTokenData.payload.itemUrl !== taskTokenData.payload.itemUrl) {
+      throw new InvalidInputError(`Mismatching tokens idUser or itemUrl, token = ${JSON.stringify(taskTokenData)}, answerToken = ${JSON.stringify(answerTokenData)}`);
+    }
+    if (!answerTokenData.payload.sAnswer) {
+      throw new InvalidInputError('Missing answer in answerToken');
+    }
+    if (false === taskTokenData.payload.bSubmissionPossible || false === taskTokenData.payload.bAllowGrading) {
+      throw new InvalidInputError('Token indicates read-only task');
+    }
+  }
 }
 
 export async function findSourceCodeById(sourceCodeId: string): Promise<SourceCode|null> {

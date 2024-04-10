@@ -1,7 +1,7 @@
 import Hapi, {Lifecycle} from '@hapi/hapi';
 import {Server} from '@hapi/hapi';
 import {getTask} from './tasks';
-import {createSubmission, getSubmission} from './submissions';
+import {createOfflineSubmission, createSubmission, getSubmission} from './submissions';
 import ReturnValue = Lifecycle.ReturnValue;
 import {ErrorHandler, isResponseBoom, NotFoundError} from './error_handler';
 import {receiveSubmissionResultsFromTaskGrader} from './grader_webhook';
@@ -43,6 +43,21 @@ export async function init(): Promise<Server> {
     options: {
       handler: async (request, h) => {
         const submissionId = await createSubmission(request.payload);
+
+        return h.response({
+          success: true,
+          submissionId,
+        });
+      }
+    }
+  });
+
+  server.route({
+    method: 'POST',
+    path: '/submissions-offline',
+    options: {
+      handler: async (request, h) => {
+        const submissionId = await createOfflineSubmission(request.payload);
 
         return h.response({
           success: true,

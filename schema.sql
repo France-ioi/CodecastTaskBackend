@@ -599,7 +599,8 @@ DELIMITER ;
 CREATE TABLE `tm_platforms` (
   `ID` bigint NOT NULL,
   `name` varchar(255) NOT NULL,
-  `public_key` varchar(500) NOT NULL
+  `public_key` varchar(500) NOT NULL,
+  `api_url` varchar(200) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
