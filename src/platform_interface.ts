@@ -11,13 +11,13 @@ import {InvalidInputError, PlatformInteractionError} from './error_handler';
 
 export interface PlatformTaskTokenData {
   payload: PlatformTaskTokenPayload,
-  idTaskLocal: string,
+  taskId: string,
   platform: Platform,
 }
 
 export interface PlatformAnswerTokenData {
   payload: PlatformAnswerTokenPayload,
-  idTaskLocal: string,
+  taskId: string,
   platform: Platform,
 }
 
@@ -40,7 +40,7 @@ export async function extractPlatformTaskTokenData(token: string|null|undefined,
 
   return {
     payload: payload,
-    idTaskLocal: await getLocalIdTask(payload),
+    taskId: await getTaskIdFromTaskTokenPayload(payload),
     platform: platformEntity,
   };
 }
@@ -64,7 +64,7 @@ export async function extractPlatformAnswerTaskTokenData(token: string|null|unde
 
   return {
     payload: payload,
-    idTaskLocal: await getLocalIdTask(payload),
+    taskId: await getTaskIdFromTaskTokenPayload(payload),
     platform: platformEntity,
   };
 }
@@ -76,7 +76,7 @@ function getIdFromUrl(itemUrl: string): string|null {
   return params['taskId'] ? params['taskId'] : null;
 }
 
-async function getLocalIdTask(params: PlatformGenericTokenPayload): Promise<string> {
+async function getTaskIdFromTaskTokenPayload(params: PlatformGenericTokenPayload): Promise<string> {
   const idItem = params.idItem || null;
   const itemUrl = params.itemUrl || null;
   if (itemUrl) {

@@ -132,7 +132,7 @@ export async function generateQueueRequest(submissionId: string, submissionData:
   if (returnUrl || idUserAnswer) {
     await Db.execute('update tm_submissions set sReturnUrl = :returnUrl, idUserAnswer = :idUserAnswer WHERE tm_submissions.`ID` = :idSubmission and tm_submissions.idUser = :idUser and tm_submissions.idPlatform = :idPlatform and tm_submissions.idTask = :idTask;', {
       idUser: taskTokenData.payload.idUser,
-      idTask: taskTokenData.idTaskLocal,
+      idTask: taskTokenData.taskId,
       idPlatform: taskTokenData.platform.ID,
       idSubmission: submissionId,
       returnUrl,
@@ -149,7 +149,7 @@ WHERE tm_submissions.ID = :idSubmission
   and tm_submissions.idPlatform = :idPlatform
   and tm_submissions.idTask = :idTask;`, {
     idUser: taskTokenData.payload.idUser,
-    idTask: taskTokenData.idTaskLocal,
+    idTask: taskTokenData.taskId,
     idPlatform: taskTokenData.platform.ID,
     idSubmission: submissionId,
   });
@@ -157,9 +157,9 @@ WHERE tm_submissions.ID = :idSubmission
     throw new InvalidInputError('Cannot find submission ' + submissionId);
   }
 
-  const task = await findTaskById(taskTokenData.idTaskLocal);
+  const task = await findTaskById(taskTokenData.taskId);
   if (null === task) {
-    throw new InvalidInputError(`Cannot find task with id ${taskTokenData.idTaskLocal}`);
+    throw new InvalidInputError(`Cannot find task with id ${taskTokenData.taskId}`);
   }
   const sourceCode = await findSourceCodeById(submission.idSourceCode);
   if (null === sourceCode) {
@@ -174,7 +174,7 @@ WHERE tm_submissions.ID = :idSubmission
   if ('UserTest' === submission.sMode) {
     tests = await Db.execute<TaskTest[]>('SELECT tm_tasks_tests.* FROM tm_tasks_tests WHERE idUser = :idUser and idPlatform = :idPlatform and idTask = :idTask and idSubmission = :idSubmission ORDER BY iRank ASC', {
       idUser: taskTokenData.payload.idUser,
-      idTask: taskTokenData.idTaskLocal,
+      idTask: taskTokenData.taskId,
       idPlatform: taskTokenData.platform.ID,
       idSubmission: submissionId,
     });
@@ -258,7 +258,7 @@ WHERE tm_submissions.ID = :idSubmission
 
   jobData['taskPath'] = task.sTaskPath;
   jobData['options'] = {
-    locale: submissionData.sLocale,
+    locale: submissionData.sLocale ?? 'fr',
   };
 
   // When this is a test user, avoid blocking the grader queue because several people use

@@ -1,7 +1,13 @@
 import Hapi, {Lifecycle} from '@hapi/hapi';
 import {Server} from '@hapi/hapi';
 import {getTask} from './tasks';
-import {createOfflineSubmission, createSubmission, getSubmission} from './submissions';
+import {
+  createOfflineSubmission,
+  createSubmission,
+  getSubmission, offlineSubmissionDataDecoder, OfflineSubmissionParameters,
+  submissionDataDecoder,
+  SubmissionParameters
+} from './submissions';
 import ReturnValue = Lifecycle.ReturnValue;
 import {ErrorHandler, isResponseBoom, NotFoundError} from './error_handler';
 import {receiveSubmissionResultsFromTaskGrader} from './grader_webhook';
@@ -10,6 +16,7 @@ import log from 'loglevel';
 import HAPIWebSocket from 'hapi-plugin-websocket';
 import {remoteExecutionProxyHandler} from './remote_execution_proxy';
 import appConfig from './config';
+import {decode} from './util';
 
 export async function init(): Promise<Server> {
   const server = Hapi.server({
@@ -42,7 +49,9 @@ export async function init(): Promise<Server> {
     path: '/submissions',
     options: {
       handler: async (request, h) => {
-        const submissionId = await createSubmission(request.payload);
+        const submissionData: SubmissionParameters = decode(submissionDataDecoder)(request.payload);
+
+        const submissionId = await createSubmission(submissionData);
 
         return h.response({
           success: true,
@@ -57,7 +66,9 @@ export async function init(): Promise<Server> {
     path: '/submissions-offline',
     options: {
       handler: async (request, h) => {
-        const submissionId = await createOfflineSubmission(request.payload);
+        const submissionData: OfflineSubmissionParameters = decode(offlineSubmissionDataDecoder)(request.payload);
+
+        const submissionId = await createOfflineSubmission(submissionData);
 
         return h.response({
           success: true,

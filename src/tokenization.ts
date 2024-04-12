@@ -61,13 +61,23 @@ export class TokenGenerator {
   public algorithm = 'ES256';
 
   // Own private key to sign for JWS, recipient public key to encrypt for JWE
-  public async setKeys(jwsKey: string|undefined, jweKey: string|undefined): Promise<void> {
-    if (!jwsKey || !jweKey) {
+  public async setKeys(jwsKey: string, jweKey: string|undefined = undefined): Promise<void> {
+    await this.setJwsKey(jwsKey);
+
+    if (jweKey) {
+      await this.setJweKey(jweKey);
+    }
+  }
+
+  public async setJwsKey(jwsKey: string): Promise<void> {
+    if (!jwsKey) {
       throw new Error('A valid JWS key and a valid JWE key must be fulfilled');
     }
-    // console.log({jwsKey, jweKey});
 
     this.jwsKey = await jose.importPKCS8(jwsKey, this.algorithm);
+  }
+
+  public async setJweKey(jweKey: string): Promise<void> {
     this.jweKey = await jose.importSPKI(jweKey, this.algorithm);
   }
 

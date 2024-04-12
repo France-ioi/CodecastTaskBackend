@@ -1,11 +1,6 @@
 import * as Db from './db';
-import {
-  SourceCode,
-  Submission,
-  SubmissionSubtask,
-  SubmissionTest, TaskTest,
-} from './db_models';
-import {decode, getRandomId} from './util';
+import {SourceCode, Submission, SubmissionSubtask, SubmissionTest, TaskTest,} from './db_models';
+import {getRandomId} from './util';
 import * as D from 'io-ts/Decoder';
 import {pipe} from 'fp-ts/function';
 import {InvalidInputError} from './error_handler';
@@ -24,17 +19,14 @@ import {
 export const submissionDataDecoder = pipe(
   D.struct({
     taskId: D.string,
-    taskParams: D.struct({
-      returnUrl: D.string,
-    }),
     answer: D.struct({
       sourceCode: D.string,
       fileName: D.nullable(D.string),
       language: D.string,
     }),
-    sLocale: D.string,
   }),
   D.intersect(D.partial({
+    sLocale: D.string,
     token: D.nullable(D.string),
     platform: D.nullable(D.string),
     answerToken: D.nullable(D.string),
@@ -44,6 +36,9 @@ export const submissionDataDecoder = pipe(
       output: D.string,
       clientId: D.nullable(D.string),
     })),
+    taskParams: D.struct({
+      returnUrl: D.string,
+    }),
   }))
 );
 export type SubmissionParameters = D.TypeOf<typeof submissionDataDecoder>;
@@ -52,9 +47,15 @@ export const offlineSubmissionDataDecoder = pipe(
   D.struct({
     token: D.string,
     platform: D.string,
-    answer: D.string,
-    // sLocale: D.string,
+    answer: D.struct({
+      sourceCode: D.string,
+      fileName: D.nullable(D.string),
+      language: D.string,
+    }),
   }),
+  D.intersect(D.partial({
+    sLocale: D.string,
+  }))
 );
 export type OfflineSubmissionParameters = D.TypeOf<typeof offlineSubmissionDataDecoder>;
 
@@ -126,33 +127,38 @@ export interface SubmissionOutput extends SubmissionNormalized {
   tests?: SubmissionTestNormalized[],
 }
 
-export async function createOfflineSubmission(submissionDataPayload: unknown): Promise<string> {
-  const submissionData: OfflineSubmissionParameters = decode(offlineSubmissionDataDecoder)(submissionDataPayload);
+export async function createOfflineSubmission(submissionData: OfflineSubmissionParameters): Promise<string> {
   const tokenData = await extractPlatformTaskTokenData(submissionData.token, submissionData.platform);
 
+  const answerAsString = JSON.stringify(submissionData.answer);
+
   // Get answer token from platform
-  const answerToken = await askPlatformAnswerToken(submissionData.token, submissionData.answer, tokenData.platform);
+  const answerToken = await askPlatformAnswerToken(submissionData.token, answerAsString, tokenData.platform);
 
-  // console.log('answer token', answerToken);
   // Create submission with answer token
+  const submissionParameters: SubmissionParameters = {
+    token: submissionData.token,
+    taskId: tokenData.taskId,
+    answerToken,
+    answer: submissionData.answer,
+    sLocale: submissionData.sLocale ?? 'fr',
+  };
 
-  return answerToken;
+  return await createSubmission(submissionParameters);
 }
 
 // This requires a token and an answer token, except if:
 //   - we execute user tests (it's not a submission)
 //   - or the test mode is enabled
-export async function createSubmission(submissionDataPayload: unknown): Promise<string> {
-  const submissionData: SubmissionParameters = decode(submissionDataDecoder)(submissionDataPayload);
-
+export async function createSubmission(submissionData: SubmissionParameters): Promise<string> {
   if (!appConfig.testMode.enabled && (!submissionData.token || !submissionData.platform)) {
     throw new InvalidInputError('Missing token or platform POST variable');
   }
 
   const taskTokenData = await extractPlatformTaskTokenData(submissionData.token, submissionData.platform, submissionData.taskId);
-  const task = await findTaskById(taskTokenData.idTaskLocal);
+  const task = await findTaskById(taskTokenData.taskId);
   if (null === task) {
-    throw new InvalidInputError(`Invalid task id: ${taskTokenData.idTaskLocal}`);
+    throw new InvalidInputError(`Invalid task id: ${taskTokenData.taskId}`);
   }
 
   let answerTokenData: PlatformAnswerTokenData|null = null;
@@ -176,7 +182,7 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
       idNewSC: idNewSourceCode,
       idUser: taskTokenData.payload.idUser,
       idPlatform: taskTokenData.platform.ID,
-      idTask: taskTokenData.idTaskLocal,
+      idTask: taskTokenData.taskId,
       sParams: sourceCodeParams,
       sName: submissionData.answer.fileName ?? idSubmission,
       sSource: submissionData.answer.sourceCode
@@ -186,7 +192,7 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
       idSubmission,
       idUser: taskTokenData.payload.idUser,
       idPlatform: taskTokenData.platform.ID,
-      idTask: taskTokenData.idTaskLocal,
+      idTask: taskTokenData.taskId,
       idSourceCode: idNewSourceCode,
       sMode: mode,
     });
@@ -197,7 +203,7 @@ export async function createSubmission(submissionDataPayload: unknown): Promise<
         testPrefixId + '' + String(index),
         taskTokenData.payload.idUser,
         taskTokenData.platform.ID,
-        taskTokenData.idTaskLocal,
+        taskTokenData.taskId,
         'User',
         test.input,
         test.output,
