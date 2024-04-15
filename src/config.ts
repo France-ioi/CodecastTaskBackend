@@ -1,6 +1,12 @@
 import path from 'path';
 import * as dotenv from 'dotenv';
-dotenv.config({path: path.resolve(__dirname, '../.env.' + ('test' === process.env['NODE_ENV'] ? 'test' : 'local'))});
+
+let nodeEnv = String(process.env['NODE_ENV']);
+if ('cucumber-js' === path.basename(process.argv[1])) {
+  nodeEnv = 'test';
+}
+
+dotenv.config({path: path.resolve(__dirname, '../.env.' + ('test' === nodeEnv ? 'test' : 'local'))});
 dotenv.config({path: path.resolve(__dirname, '../.env')});
 
 interface Config {
@@ -38,7 +44,7 @@ function stringifyIfExists(string: string|undefined): string|undefined {
 }
 
 const appConfig: Config = {
-  nodeEnv: String(process.env['NODE_ENV']),
+  nodeEnv,
   port: process.env['PORT'] ? Number(process.env['PORT']) : null,
   mysqlDatabase: {
     host: String(process.env.MYSQL_DB_HOST),
