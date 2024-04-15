@@ -29,6 +29,9 @@ interface Config {
     url: string,
     ownName: string,
   },
+  platform: {
+    ownPrivateKey: string,
+  },
   testMode: {
     enabled: boolean,
     platformName: string|undefined,
@@ -62,6 +65,9 @@ const appConfig: Config = {
     debugPassword: stringifyIfExists(process.env.GRADER_QUEUE_DEBUG_PASSWORD),
     url: String(process.env.GRADER_QUEUE_URL),
     ownName: String(process.env.GRADER_QUEUE_OWN_NAME),
+  },
+  platform: {
+    ownPrivateKey: String(process.env.PLATFORM_OWN_PRIVATE_KEY),
   },
   testMode: {
     enabled: '1' === String(process.env.TEST_MODE),

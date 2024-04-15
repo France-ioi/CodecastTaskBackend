@@ -139,6 +139,7 @@ export async function createOfflineSubmission(submissionData: OfflineSubmissionP
   const submissionParameters: SubmissionParameters = {
     token: submissionData.token,
     taskId: tokenData.taskId,
+    platform: submissionData.platform,
     answerToken,
     answer: submissionData.answer,
     sLocale: submissionData.sLocale ?? 'fr',

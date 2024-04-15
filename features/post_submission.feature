@@ -21,7 +21,7 @@ Feature: Post submission
       | 5002 | 1000      | 4001       | Evaluation     | 2     | 1       | s2-t1 | 15     | 10      | 2147483647 |
     And the database has the following table "tm_platforms":
       | ID   | name          | public_key | api_url |
-      | 1    | codecast-test | -----BEGIN PUBLIC KEY----- MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2fdfSR+W+pwMz/hx11pyJndF1L+LDHyIIW3tj5vYQ57aUjtnU9LUxdscMfF1F9ZNzmHutU+bRKlutNodoEKSHVkRyotQ0qK/VO2nv+DYuiJ0EB2V1uf77xkZzrMT+htukD5XUMyAt38amb6y7daFC5dcD9B7Q2Hx1RT5hzjCILWzZsRD83xEKQ1QAg6JwYYWVVEx759O2SUDqxffyuw/wqANfgWxihlIPimVFbbDoTpfpTf7fnDZu9UU8lFIK4I3EyFRRmKGUC99sMIfw545/p2byB3veIi6507Rb2k0nlwhq2zfGwHlUbwy4QLqL9zk2ipEN5tLvJn4ltU6YOQOawIDAQAB-----END PUBLIC KEY----- | https://mockapi.com |
+      | 1    | codecast-test | -----BEGIN PUBLIC KEY----- MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt8dBg+ojFTrgFeDxoGqqBSQkW/BDSl/H+qzpIpZTCj4mw7zyrIeV7zaaPuA/8g8WVPDjliuVxLwOnX6p8bT0ZEgsyo4/nql2VEI1cLBqSowQ3VoICqeRYHqgv+8g/B4mFxvRRpNNWiM9aE80KtjXBesi7GjULjg6Jnpqfn1UAGrx4AlnbuabH50/xQoQMWLHSpSVhnpEV5XrUPvzHGbkW51/HRRMEF9Fj5SSPs8vQPbA5ZO8H7NgHwN+8fyNuyVtm9DwY9QZVp2mYlbLlV/+y8xrd5TKf/aGyMjVr3du5YwfosrlrnTAJ+DgoxuZRw77DKaiATxSpEiQRH/C208mOwIDAQAB -----END PUBLIC KEY----- | https://mockapi.com |
     And I seed the ID generator to 100
     And I mock the graderqueue
 
