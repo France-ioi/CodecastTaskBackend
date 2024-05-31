@@ -1,12 +1,14 @@
 import got from 'got';
 import {
-  decodePlatformTaskToken, PlatformAnswerTokenPayload,
+  decodePlatformTaskToken,
+  PlatformAnswerTokenPayload,
   PlatformGenericTokenPayload,
   PlatformTaskTokenPayload,
+  TokenGenerator,
 } from './tokenization';
 import appConfig from './config';
 import * as Db from './db';
-import {Platform} from './db_models';
+import {Platform, Submission} from './db_models';
 import {InvalidInputError, PlatformInteractionError} from './error_handler';
 
 export interface PlatformTaskTokenData {
@@ -117,6 +119,8 @@ export async function askPlatformAnswerToken(taskToken: string, answer: string, 
   const gotResponse = await got.post(platformUrl, {
     headers: {
       'content-type': 'application/json',
+      // TODO: remove this
+      Cookie: 'access_token=3!9e77b78wo8l0n1slexc35xra7ur05x1q!beta.opentezos.com!/api/',
     },
     json: askAnswerTokenRequest,
   }).json<{success: boolean, data?: {answer_token: string}}>();
@@ -139,4 +143,56 @@ export async function getPlatformByName(platformName?: string|null): Promise<Pla
   }
 
   return platforms[0];
+}
+
+export async function getPlatformById(platformId: string): Promise<Platform> {
+  const platforms = await Db.execute<Platform[]>('SELECT * FROM tm_platforms WHERE id = ?', [platformId]);
+  if (!platforms.length) {
+    throw new InvalidInputError(`Cannot find platform ${platformId || ''}`);
+  }
+
+  return platforms[0];
+}
+
+export async function sendSubmissionResultToPlatform(submission: Submission): Promise<void> {
+  // $scoreToken = generateScoreToken(submission, $idItem, $itemUrl, $idUser, $idSubmission, $score, $tokenGenerator, $idUserAnswer);
+
+  const platform = await getPlatformById(submission.idPlatform);
+  const platformUrl = `${platform.api_url}/items/save-grade`;
+
+  const saveGradeRequest = {
+    token: '',
+    answer_token: '',
+    score_token: '',
+    score: 50,
+  };
+
+  const gotResponse = await got.post(platformUrl, {
+    headers: {
+      'content-type': 'application/json',
+      // TODO: remove this
+      Cookie: 'access_token=3!9e77b78wo8l0n1slexc35xra7ur05x1q!beta.opentezos.com!/api/',
+    },
+    json: saveGradeRequest,
+  }).json<{success: boolean}>();
+
+  if (!gotResponse.success) {
+    throw new PlatformInteractionError('Impossible to save grade on the platform');
+  }
+}
+
+export async function generateScoreToken(submission: Submission): Promise<string> {
+  const tokenGenerator = new TokenGenerator();
+  await tokenGenerator.setKeys(appConfig.platform.ownPrivateKey);
+
+  const params = {
+    idUser: submission.idUser,
+    idItem: submission.idTask,
+    itemUrl: '', // TODO
+    idUserAnswer: '',
+    sAnswer: '',
+    score: 0,
+  };
+
+  return await tokenGenerator.jwsSignPayload(params);
 }
