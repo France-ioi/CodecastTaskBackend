@@ -16,7 +16,9 @@ export async function init(): Promise<Server> {
     port: appConfig.port || 4000,
     host: '0.0.0.0',
     routes: {
-      cors: true,
+      cors: {
+        origin: ['*'],
+      }
     },
   });
 
