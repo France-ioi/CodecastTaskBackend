@@ -213,7 +213,7 @@ CREATE TABLE `history_tm_submissions` (
   `iVersion` int NOT NULL,
   `iNextVersion` int DEFAULT NULL,
   `bDeleted` tinyint(1) NOT NULL,
-  `sParams` tinytext DEFAULT NULL,
+  `sParams` tinytext DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------

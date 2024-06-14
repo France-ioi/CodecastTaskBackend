@@ -167,3 +167,7 @@ Given(/^I setup a mock API answering any POST request to "([^"]*)" with the foll
     .post(endpoint)
     .reply(200, JSON.parse(mockPayload) as Record<string, any>);
 });
+
+Then(/^the mock API should have received the expected request$/, function () {
+  expect(nock.isDone()).to.be.true;
+});
