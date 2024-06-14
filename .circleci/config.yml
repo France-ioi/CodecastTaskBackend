@@ -26,43 +26,6 @@ jobs:
       TEST_MODE_USER_ID: 1
       GRADER_QUEUE_DEBUG_PASSWORD: test
       CODECAST_DEBUGGERS_URL: ws://127.0.0.1:9003
-      PLATFORM_OWN_PRIVATE_KEY: -----BEGIN PRIVATE KEY-----
-        MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC3x0GD6iMVOuAV
-        4PGgaqoFJCRb8ENKX8f6rOkillMKPibDvPKsh5XvNpo+4D/yDxZU8OOWK5XEvA6d
-        fqnxtPRkSCzKjj+eqXZUQjVwsGpKjBDdWggKp5FgeqC/7yD8HiYXG9FGk01aIz1o
-        TzQq2NcF6yLsaNQuODomemp+fVQAavHgCWdu5psfnT/FChAxYsdKlJWGekRXletQ
-        +/McZuRbnX8dFEwQX0WPlJI+zy9A9sDlk7wfs2AfA37x/I27JW2b0PBj1BlWnaZi
-        VsuVX/7LzGt3lMp/9obIyNWvd27ljB+iyuWudMAn4OCjG5lHDvsMpqIBPFKkSJBE
-        f8LbTyY7AgMBAAECggEANWPyYSAC3DaUBlco61lBlqfG1lzpN7C22NkmC9HPQyEG
-        QwRgHgZv5SSgUBb3DNwcOUYYYDa+Vn7p4hB7z8gp3f5n4NrNmcsSoOzxOJFP9+NU
-        PPJcdrfy0KwfilMu6n/ZwgnnVRETPlYRj32/IpmHcmU66qKTze+w2R/kU2YWot3w
-        6HDN0xW7rXSXENNbS6sPizu8ppQSbbe4paGb/Kd+lpvnUzCSb+kJ1I5uCDlhM0Wq
-        QhJqUH6LJCTYKATIr921xaUR5g+0xX2WchcvZYeG3jz6D+E2JPzOsm6j0q2N65MB
-        8qiSTd93s+ApVEruI2zr3jrEuAL65zBIPnxP0INTdQKBgQDWfdilk0Tn/yx5q6M9
-        3ECXGlJ3+qmIJNtEO7ehW+WMM15OAtsPy3oDLmqrggTqshrTHuJDVRt3SPiF10yJ
-        QsMVpY1HDIYDBnhL/xXIvYeI1JOC7bZWgoDJQQE3mvi0ZdLHI5PGpvwPm/QPno6d
-        XFXnABdxmJx3yfAj49V3eJPDFQKBgQDbV9dTfXolQ9brtvyV05DRHdO9r/KhufGw
-        F/x2uWSIm4YgKpF4qS5MzHh2qkvz8S7NGY6U6hJfFQJpK2bDKY2foTH+QzPGr09a
-        B2ywkpL881hk65NN+Dd78Fsq4t5VQ6f68HYzzbfnWn5gkKUgdSVdxR0VJMm9T3SK
-        DjHwDRnYDwKBgQCAiYYNI4YFqYuTlmILLjSe2K1XLSXvanbkGw1ea13SeO4ovdld
-        S8jgoy5VfWNI6lbc8gMR6qy8/UPBoVZCY3nZPQ6+5yhgI75vfHwngjz4qLuFmMLO
-        cQKQmJ4MHpiwMtzvbcifIW6oRAMsYQ6CCtWHyyxBbP1HZAK+30gLgny6SQKBgEqW
-        jmSX0MeHUDiL20zfyukxqWVhxbJ1Vti472M4HBXQPUYG870CWvpGtdg0hOuJYo7g
-        V/oPtvuaW12EIsfPA5f66tM56wtvZh6JU86fqVhXMAHxkf/7nnKJA5eL2mtIPIE6
-        8Bchp54Gyd7wkRZ+f5xpgUBFaEz2Df08YoLtEZLFAoGBAKrPUXpj4hCsql5cs0wb
-        wqM1cE5jX4v3kp9yLPowajvJ5lqUaOwF+IdvJdJZij+GMiU68RnYe/HeVSh8VuQd
-        D1xjXqelqtiuVY0MtDvDeqU0VSYQ7TjaTYcqC0xsUXBC2gs8SN1cn9CY9Y2id0Cy
-        228q7a9S6AUIicRMFGVLDjVz
-        -----END PRIVATE KEY-----
-      PLATFORM_OWN_PUBLIC_KEY: -----BEGIN PUBLIC KEY-----
-        MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt8dBg+ojFTrgFeDxoGqq
-        BSQkW/BDSl/H+qzpIpZTCj4mw7zyrIeV7zaaPuA/8g8WVPDjliuVxLwOnX6p8bT0
-        ZEgsyo4/nql2VEI1cLBqSowQ3VoICqeRYHqgv+8g/B4mFxvRRpNNWiM9aE80KtjX
-        Besi7GjULjg6Jnpqfn1UAGrx4AlnbuabH50/xQoQMWLHSpSVhnpEV5XrUPvzHGbk
-        W51/HRRMEF9Fj5SSPs8vQPbA5ZO8H7NgHwN+8fyNuyVtm9DwY9QZVp2mYlbLlV/+
-        y8xrd5TKf/aGyMjVr3du5YwfosrlrnTAJ+DgoxuZRw77DKaiATxSpEiQRH/C208m
-        OwIDAQAB
-        -----END PUBLIC KEY-----
     steps:
       - checkout
       - node/install-packages:
