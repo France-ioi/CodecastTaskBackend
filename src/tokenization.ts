@@ -14,6 +14,8 @@ export interface PlatformGenericTokenPayload {
   platformName?: string,
   type?: string,
   secret?: string,
+  idAttempt?: string,
+  idItemLocal?: string,
 }
 
 export interface PlatformTaskTokenPayload extends PlatformGenericTokenPayload {

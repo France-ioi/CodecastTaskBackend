@@ -15,6 +15,7 @@ import {
   PlatformAnswerTokenData,
   PlatformTaskTokenData,
 } from './platform_interface';
+import {PlatformTaskTokenPayload} from './tokenization';
 
 export const submissionDataDecoder = pipe(
   D.struct({
@@ -167,6 +168,19 @@ export async function createSubmission(submissionData: SubmissionParameters): Pr
     answerTokenData = await extractPlatformAnswerTaskTokenData(submissionData.answerToken, submissionData.platform, submissionData.taskId);
   }
 
+  const submissionParamsKeys: (keyof PlatformTaskTokenPayload)[] = [
+    'idAttempt',
+    'idItemLocal',
+    'itemUrl',
+  ];
+
+  const submissionParams: Partial<Record<keyof PlatformTaskTokenPayload, unknown>> = {};
+  for (const submissionParamsKey of submissionParamsKeys) {
+    if (submissionParamsKey in taskTokenData.payload) {
+      submissionParams[submissionParamsKey] = taskTokenData.payload[submissionParamsKey];
+    }
+  }
+
   checkAnswerTokenValid(answerTokenData, taskTokenData);
 
   const mode = submissionData.userTests && submissionData.userTests.length ? SubmissionMode.UserTest : SubmissionMode.Submitted;
@@ -189,13 +203,14 @@ export async function createSubmission(submissionData: SubmissionParameters): Pr
       sSource: submissionData.answer.sourceCode
     });
 
-    await Db.executeInConnection(connection, 'insert into tm_submissions (ID, idUser, idPlatform, idTask, sDate, idSourceCode, sMode) values(:idSubmission, :idUser, :idPlatform, :idTask, NOW(), :idSourceCode, :sMode);', {
+    await Db.executeInConnection(connection, 'insert into tm_submissions (ID, idUser, idPlatform, idTask, sDate, idSourceCode, sMode, sParams) values(:idSubmission, :idUser, :idPlatform, :idTask, NOW(), :idSourceCode, :sMode, :sParams);', {
       idSubmission,
       idUser: taskTokenData.payload.idUser,
       idPlatform: taskTokenData.platform.ID,
       idTask: taskTokenData.taskId,
       idSourceCode: idNewSourceCode,
       sMode: mode,
+      sParams: Object.keys(submissionParams).length ? JSON.stringify(submissionParams) : null,
     });
 
     const testPrefixId = getRandomId().slice(0, -2);

@@ -8,6 +8,7 @@ import {TaskSubtask, TaskTest} from './db_models';
 import {findTaskById} from './tasks';
 import {longPollingHandler} from './long_polling';
 import appConfig from './config';
+import {sendSubmissionResultToPlatform} from './platform_interface';
 
 export const taskGraderWebhookPayloadDecoder = pipe(
   D.struct({
@@ -439,12 +440,5 @@ ${thisCompilMsg}`;
 
   longPollingHandler.fireEvent('evaluation-' + submission.ID);
 
-  // $itemUrl = $config->baseUrl.'task.html?taskId='.$task['ID'];
-  //
-  // if ($task['sReturnUrl'] && $task['sMode'] != 'UserTest') {
-  //   sendResultsToReturnUrl($task['sTextId'], $task['idUser'], $iScore, $tokenParams['sTaskName'], $task['sReturnUrl'], $itemUrl, $task['idUserAnswer']);
-  // }
-
-
-  // sendSubmissionResultToPlatform(submission, taskGraderWebhookParams.sToken, tokenParams.);
+  await sendSubmissionResultToPlatform(submission, iScore);
 }

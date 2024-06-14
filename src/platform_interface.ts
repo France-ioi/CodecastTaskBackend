@@ -8,8 +8,9 @@ import {
 } from './tokenization';
 import appConfig from './config';
 import * as Db from './db';
-import {Platform, Submission} from './db_models';
-import {InvalidInputError, PlatformInteractionError} from './error_handler';
+import {Platform, SourceCode, Submission} from './db_models';
+import {InvalidInputError, NotFoundError, PlatformInteractionError} from './error_handler';
+import log from 'loglevel';
 
 export interface PlatformTaskTokenData {
   payload: PlatformTaskTokenPayload,
@@ -109,6 +110,10 @@ function getTestTokenParameters(taskId: string): PlatformTaskTokenPayload {
 }
 
 export async function askPlatformAnswerToken(taskToken: string, answer: string, platform: Platform): Promise<string> {
+  if (!platform.api_url) {
+    throw new PlatformInteractionError('No API URL associated with this platform: ' + platform.name);
+  }
+
   const platformUrl = `${platform.api_url}/answers`;
 
   const askAnswerTokenRequest = {
@@ -119,8 +124,6 @@ export async function askPlatformAnswerToken(taskToken: string, answer: string, 
   const gotResponse = await got.post(platformUrl, {
     headers: {
       'content-type': 'application/json',
-      // TODO: remove this
-      Cookie: 'access_token=3!9e77b78wo8l0n1slexc35xra7ur05x1q!beta.opentezos.com!/api/',
     },
     json: askAnswerTokenRequest,
   }).json<{success: boolean, data?: {answer_token: string}}>();
@@ -154,24 +157,21 @@ export async function getPlatformById(platformId: string): Promise<Platform> {
   return platforms[0];
 }
 
-export async function sendSubmissionResultToPlatform(submission: Submission): Promise<void> {
-  // $scoreToken = generateScoreToken(submission, $idItem, $itemUrl, $idUser, $idSubmission, $score, $tokenGenerator, $idUserAnswer);
+export async function sendSubmissionResultToPlatform(submission: Submission, score: number): Promise<void> {
+  const scoreToken = await generateScoreToken(submission, score);
 
   const platform = await getPlatformById(submission.idPlatform);
   const platformUrl = `${platform.api_url}/items/save-grade`;
 
   const saveGradeRequest = {
-    token: '',
-    answer_token: '',
-    score_token: '',
-    score: 50,
+    score_token: scoreToken,
   };
+
+  log.debug('Transmitting results to platform');
 
   const gotResponse = await got.post(platformUrl, {
     headers: {
       'content-type': 'application/json',
-      // TODO: remove this
-      Cookie: 'access_token=3!9e77b78wo8l0n1slexc35xra7ur05x1q!beta.opentezos.com!/api/',
     },
     json: saveGradeRequest,
   }).json<{success: boolean}>();
@@ -181,18 +181,35 @@ export async function sendSubmissionResultToPlatform(submission: Submission): Pr
   }
 }
 
-export async function generateScoreToken(submission: Submission): Promise<string> {
+export async function generateScoreToken(submission: Submission, score: number): Promise<string> {
   const tokenGenerator = new TokenGenerator();
   await tokenGenerator.setKeys(appConfig.platform.ownPrivateKey);
 
+  const submissionTokenParameters = submission.sParams ? JSON.parse(submission.sParams) as object : {};
+
   const params = {
+    ...submissionTokenParameters,
     idUser: submission.idUser,
     idItem: submission.idTask,
-    itemUrl: '', // TODO
-    idUserAnswer: '',
-    sAnswer: '',
-    score: 0,
+    idUserAnswer: submission.idUserAnswer,
+    sAnswer: await getScoreTokenAnswer(submission),
+    score: String(score),
   };
 
   return await tokenGenerator.jwsSignPayload(params);
+}
+
+async function getScoreTokenAnswer(submission: Submission): Promise<string> {
+  const sourceCode = await Db.querySingleResult<SourceCode>('select tm_source_codes.* from tm_source_codes join tm_submissions on tm_submissions.idSourceCode = tm_source_codes.ID and tm_submissions.ID = ?', [submission.ID]);
+  if (null === sourceCode) {
+    throw new NotFoundError(`Cannot find source code for submission id: ${String(submission.ID)}`);
+  }
+
+  const sourceCodeParams = JSON.parse(sourceCode.sParams) as {sLangProg: string};
+
+  return JSON.stringify({
+    idSubmission: submission.ID,
+    langProg: sourceCodeParams['sLangProg'],
+    sourceCode: sourceCode.sSource,
+  });
 }

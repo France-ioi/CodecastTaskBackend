@@ -108,6 +108,7 @@ export interface Submission {
     sReturnUrl: string|null,
     idUserAnswer: string|null,
     iChecksum: number,
+    sParams: string|null,
     iVersion: number,
 }
 
