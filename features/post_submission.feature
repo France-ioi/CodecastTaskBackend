@@ -20,8 +20,8 @@ Feature: Post submission
       | 5001 | 1000      | 4000       | Evaluation     | 1     | 1       | s1-t2 | 10     | 15      | 2147483647 |
       | 5002 | 1000      | 4001       | Evaluation     | 2     | 1       | s2-t1 | 15     | 10      | 2147483647 |
     And the database has the following table "tm_platforms":
-      | ID   | name          | public_key |
-      | 1    | codecast-test |            |
+      | ID   | name          | public_key | api_url |
+      | 1    | codecast-test | -----BEGIN PUBLIC KEY----- MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt8dBg+ojFTrgFeDxoGqqBSQkW/BDSl/H+qzpIpZTCj4mw7zyrIeV7zaaPuA/8g8WVPDjliuVxLwOnX6p8bT0ZEgsyo4/nql2VEI1cLBqSowQ3VoICqeRYHqgv+8g/B4mFxvRRpNNWiM9aE80KtjXBesi7GjULjg6Jnpqfn1UAGrx4AlnbuabH50/xQoQMWLHSpSVhnpEV5XrUPvzHGbkW51/HRRMEF9Fj5SSPs8vQPbA5ZO8H7NgHwN+8fyNuyVtm9DwY9QZVp2mYlbLlV/+y8xrd5TKf/aGyMjVr3du5YwfosrlrnTAJ+DgoxuZRw77DKaiATxSpEiQRH/C208mOwIDAQAB -----END PUBLIC KEY----- | https://mockapi.com |
     And I seed the ID generator to 100
     And I mock the graderqueue
 
@@ -132,18 +132,18 @@ Feature: Post submission
       | 5002 | 1000   | 4001      | null         | Evaluation   | null   | null       | 2     | 1       | s2-t1       | 15     | 10      | null      | 2147483647 |
 
     And the grader queue should have received the following request:
-    """
-    {
-      "request": "sendjob",
-      "priority": 1,
-      "taskrevision": "7156",
-      "tags": "",
-      "jobname": "101",
-      "jobdata": "{\"taskPath\":\"$ROOT_PATH/FranceIOI/Contests/2018/Algorea_finale/plateau\",\"extraParams\":{\"solutionFilename\":\"101.py\",\"solutionContent\":\"print('ici')\",\"solutionLanguage\":\"python3\",\"solutionDependencies\":\"@defaultDependencies-python3\",\"solutionFilterTests\":[\"id-*.in\"],\"solutionId\":\"sol0-101.py\",\"solutionExecId\":\"exec0-101.py\",\"defaultSolutionCompParams\":{\"memoryLimitKb\":131072,\"timeLimitMs\":10000,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]},\"defaultSolutionExecParams\":{\"memoryLimitKb\":64000,\"timeLimitMs\":200,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]}},\"extraTests\":[{\"name\":\"id-10.in\",\"content\":\"test\"},{\"name\":\"id-10.out\",\"content\":\"ici\"}],\"executions\":[{\"id\":\"testExecution\",\"idSolution\":\"@solutionId\",\"filterTests\":[\"id-*.in\"],\"runExecution\":\"@defaultSolutionExecParams\"}],\"options\":{\"locale\":\"fr\"}}",
-      "jobusertaskid": "1000-103-1",
-      "debugPassword": "test"
-    }
-    """
+      """
+      {
+        "request": "sendjob",
+        "priority": 1,
+        "taskrevision": "7156",
+        "tags": "",
+        "jobname": "101",
+        "jobdata": "{\"taskPath\":\"$ROOT_PATH/FranceIOI/Contests/2018/Algorea_finale/plateau\",\"extraParams\":{\"solutionFilename\":\"101.py\",\"solutionContent\":\"print('ici')\",\"solutionLanguage\":\"python3\",\"solutionDependencies\":\"@defaultDependencies-python3\",\"solutionFilterTests\":[\"id-*.in\"],\"solutionId\":\"sol0-101.py\",\"solutionExecId\":\"exec0-101.py\",\"defaultSolutionCompParams\":{\"memoryLimitKb\":131072,\"timeLimitMs\":10000,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]},\"defaultSolutionExecParams\":{\"memoryLimitKb\":64000,\"timeLimitMs\":200,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]}},\"extraTests\":[{\"name\":\"id-10.in\",\"content\":\"test\"},{\"name\":\"id-10.out\",\"content\":\"ici\"}],\"executions\":[{\"id\":\"testExecution\",\"idSolution\":\"@solutionId\",\"filterTests\":[\"id-*.in\"],\"runExecution\":\"@defaultSolutionExecParams\"}],\"options\":{\"locale\":\"fr\"}}",
+        "jobusertaskid": "1000-103-1",
+        "debugPassword": "test"
+      }
+      """
 
   Scenario: Post submission on unknown task
     When I send a POST request to "/submissions" with the following payload:
@@ -178,3 +178,66 @@ Feature: Post submission
         "message": "Error: Invalid task id: 1001"
       }
       """
+
+  Scenario: Post offline submission
+    Given "taskToken" is a token signed by the platform with the following payload:
+      """
+      {
+        "bSubmissionPossible": true,
+        "date": "10-04-2024",
+        "idUser": "1",
+        "itemUrl": "https://codecast.france-ioi.org/next/task?taskId=1000",
+        "nbHintsGiven": "0",
+        "platformName": "codecast-test"
+      }
+      """
+    And I setup a mock API answering any POST request to "/answers" with the following payload:
+      """
+      {
+        "success": true,
+        "data": {
+          "answer_token": "fake_answer_token"
+        }
+      }
+      """
+    When I send a POST request to "/submissions-offline" with the following payload:
+      """
+      {
+        "token": "{{taskToken}}",
+        "answer": {
+          "language": "python",
+          "fileName": "Code 5",
+          "sourceCode": "print('test')"
+        },
+        "sLocale": "fr",
+        "platform": "codecast-test"
+      }
+      """
+    Then the response status code should be 200
+    And the response body should be the following JSON:
+      """
+      {
+        "submissionId": "101",
+        "success": true
+      }
+      """
+    And the table "tm_submissions" should be:
+      | ID   | idUser    | idPlatform  | idTask     | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | bConfirmed | sMode     | iChecksum | iVersion   |
+      | 101  | 1         | 1           | 1000       | 100          | 0                 | 0        | 0            | 0             | 0      | 0            | 0          | 0          | Submitted | 0         | 2147483647 |
+    And the table "tm_source_codes" should be:
+      | ID   | idUser    | idPlatform  | idTask     | sParams                | sName  | sSource       | bEditable | bSubmission | sType | bActive | iRank | iVersion   |
+      | 100  | 1         | 1           | 1000       | {"sLangProg":"python"} | Code 5 | print('test') | 0         | 1           | User  | 0       | 0     | 2147483647 |
+    And the grader queue should have received the following request:
+      """
+      {
+        "request": "sendjob",
+        "priority": 1,
+        "taskrevision": "7156",
+        "tags": "",
+        "jobname": "101",
+        "jobdata": "{\"taskPath\":\"$ROOT_PATH/FranceIOI/Contests/2018/Algorea_finale/plateau\",\"extraParams\":{\"solutionFilename\":\"101.py\",\"solutionContent\":\"print('test')\",\"solutionLanguage\":\"python3\",\"solutionDependencies\":\"@defaultDependencies-python3\",\"solutionFilterTests\":\"@defaultFilterTests-python3\",\"solutionId\":\"sol0-101.py\",\"solutionExecId\":\"exec0-101.py\",\"defaultSolutionCompParams\":{\"memoryLimitKb\":131072,\"timeLimitMs\":10000,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]},\"defaultSolutionExecParams\":{\"memoryLimitKb\":64000,\"timeLimitMs\":200,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]}},\"options\":{\"locale\":\"fr\"}}",
+        "jobusertaskid": "1000-103-1",
+        "debugPassword": "test"
+      }
+      """
+    And the mock API should have received the expected request

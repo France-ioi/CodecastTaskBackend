@@ -20,12 +20,25 @@ Feature: Post task grader webhook by the grader queue
       | 5001 | 1000      | 4000       | Evaluation     | 1     | 1       | s1-t2 | 10     | 15      | 2147483647 |
       | 5002 | 1000      | 4001       | Evaluation     | 2     | 1       | s2-t1 | 15     | 10      | 2147483647 |
     And the database has the following table "tm_platforms":
-      | ID   | name          | public_key |
-      | 1    | codecast-test |            |
+      | ID   | name          | public_key | api_url             |
+      | 1    | codecast-test |            | https://mockapi.com |
     And the database has the following table "tm_submissions":
       | ID   | idUser    | idPlatform  | idTask     | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | bConfirmed | sMode     | iChecksum | iVersion   |
-      | 101  | 1         | 1           | 1000       | 100          | 0                 | 0        | 0            | 0             | 0      | 0            | 0          | 0          | Submitted | 0         | 2147483647 |
+      | 101  | 1         | 1           | 1000       | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 0          | 0          | Submitted | 0         | 2147483647 |
+    And the database has the following table "tm_source_codes":
+      | ID   | idUser | idPlatform | idTask | sDate      | sParams                | sName              | sSource      | bEditable | bSubmission | sType | bActive | iRank | iVersion   |
+      | 7001 | 1      | 1          | 1000   | 2023-04-03 | {"sLangProg":"python"} | 485380303499640413 | print("ici") | 0         | 1           | User  | 0       | 0     | 2147483647 |
     And I seed the ID generator to 200
+    And I setup a mock API answering any POST request to "/items/save-grade" with the following payload:
+      """
+      {
+          "success": true,
+          "message": "created",
+          "data": {
+              "validated": false
+          }
+      }
+      """
 
   Scenario: Partial success (1 test passing out of 3)
     When I send a POST request to "/task-grader-webhook" with the following payload:
@@ -43,7 +56,7 @@ Feature: Post task grader webhook by the grader queue
       """
     And the table "tm_submissions" should be:
       | ID   | idUser    | idPlatform  | idTask     | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | bConfirmed | sMode     | iChecksum | iVersion   |
-      | 101  | 1         | 1           | 1000       | 100          | 0                 | 0        | 3            | 1             | 50     | 0            | 1          | 0          | Submitted | 0         | 2147483647 |
+      | 101  | 1         | 1           | 1000       | 7001         | 0                 | 0        | 3            | 1             | 50     | 0            | 1          | 0          | Submitted | 0         | 2147483647 |
     And the table "tm_submissions_subtasks" should be:
       | ID   | bSuccess | iScore | idSubtask | idSubmission |
       | 200  | 0        | 0      | 4000      | 101          |
@@ -53,6 +66,8 @@ Feature: Post task grader webhook by the grader queue
       | 203  | 101          | 202    | 0      | 16      | 7888      | 1          | 15      |                 |           | {"msg": "Answer mismatch at line 1, character 1", "solutionOutputLength": 5, "diffRow": 1, "diffCol": 1, "displayedSolutionOutput": "15\\n", "displayedExpectedOutput": "8\\n", "truncatedBefore": false, "truncatedAfter": false, "excerptRow": 1, "excerptCol": 1}\n | 0           | []     | 200                 |
       | 205  | 101          | 204    | 0      | 16      | 7828      | 1          | 15      |                 |           |                                                                                                                                                                                                                                                                        | 1           | []     | 200                 |
       | 207  | 101          | 206    | 100    | 44      | 7816      | 0          | 15      |                 |           |                                                                                                                                                                                                                                                                        | 0           | []     | 201                 |
+    And the mock API should have received the expected request
+
 
   Scenario: Total success (3 tests passing)
     When I send a POST request to "/task-grader-webhook" with the following payload:
@@ -70,7 +85,7 @@ Feature: Post task grader webhook by the grader queue
       """
     And the table "tm_submissions" should be:
       | ID   | idUser    | idPlatform  | idTask     | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | bConfirmed | sMode     | iChecksum | iVersion   |
-      | 101  | 1         | 1           | 1000       | 100          | 0                 | 1        | 3            | 3             | 100    | 0            | 1          | 0          | Submitted | 0         | 2147483647 |
+      | 101  | 1         | 1           | 1000       | 7001         | 0                 | 1        | 3            | 3             | 100    | 0            | 1          | 0          | Submitted | 0         | 2147483647 |
     And the table "tm_submissions_subtasks" should be:
       | ID   | bSuccess | iScore | idSubtask | idSubmission |
       | 200  | 1        | 50     | 4000      | 101          |
@@ -80,3 +95,4 @@ Feature: Post task grader webhook by the grader queue
       | 203  | 101          | 202    | 100    | 16      | 7888      | 0          | 15      |                 |           |      | 0           | []     | 200                 |
       | 205  | 101          | 204    | 100    | 16      | 7828      | 0          | 15      |                 |           |      | 0           | []     | 200                 |
       | 207  | 101          | 206    | 100    | 44      | 7816      | 0          | 15      |                 |           |      | 0           | []     | 201                 |
+    And the mock API should have received the expected request

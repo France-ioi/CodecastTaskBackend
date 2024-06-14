@@ -2,75 +2,54 @@ import {Platform} from './db_models';
 import * as jose from 'jose';
 import {KeyLike} from 'jose/dist/types/types';
 import moment from 'moment';
-import appConfig from './config';
+import {JwesDecoder} from './crypto/jwes_decoder';
+import {InvalidInputError} from './error_handler';
+import * as Db from './db';
 
-export interface PlatformTokenParameters {
-    idUser: string|null,
-    bSubmissionPossible?: boolean,
-    bAllowGrading?: boolean,
-    idTaskLocal: string,
-    itemUrl: string|null,
-    bAccessSolutions: boolean,
-    nbHintsGiven: number,
-    idPlatform?: string,
-    idItem?: string,
-    idUserAnswer?: string,
-    sAnswer?: string,
-    returnUrl?: string,
+export interface PlatformGenericTokenPayload {
+  idUser: string|null,
+  itemUrl: string|null,
+  nbHintsGiven: number,
+  idItem?: string,
+  platformName?: string,
+  type?: string,
+  secret?: string,
+  idAttempt?: string,
+  idItemLocal?: string,
 }
 
-function getTestTokenParameters(taskId: string): PlatformTokenParameters {
-  return {
-    idUser: appConfig.testMode.userId ? appConfig.testMode.userId : null,
-    bSubmissionPossible: true,
-    idTaskLocal: taskId,
-    itemUrl: appConfig.baseUrl ? appConfig.baseUrl + '?taskId=' + taskId : null,
-    bAccessSolutions: appConfig.testMode.accessSolutions,
-    nbHintsGiven: appConfig.testMode.nbHintsGiven,
-  };
+export interface PlatformTaskTokenPayload extends PlatformGenericTokenPayload {
+  bSubmissionPossible?: boolean,
+  bAllowGrading?: boolean,
+  bAccessSolutions: boolean,
 }
 
-// eslint-disable-next-line
-export function decodePlatformToken(token: string|null|undefined, platformKey: string, keyName: string, askedTaskId: string, platform: Platform): PlatformTokenParameters {
-  // const JWKS = jose.createLocalJWKSet({
-  //     keys: [
-  //         {
-  //             kty: 'RSA',
-  //             e: 'AQAB',
-  //             n: '12oBZRhCiZFJLcPg59LkZZ9mdhSMTKAQZYq32k_ti5SBB6jerkh-WzOMAO664r_qyLkqHUSp3u5SbXtseZEpN3XPWGKSxjsy-1JyEFTdLSYe6f9gfrmxkUF_7DTpq0gn6rntP05g2-wFW50YO7mosfdslfrTJYWHFhJALabAeYirYD7-9kqq9ebfFMF4sRRELbv9oi36As6Q9B3Qb5_C1rAzqfao_PCsf9EPsTZsVVVkA5qoIAr47lo1ipfiBPxUCCNSdvkmDTYgvvRm6ZoMjFbvOtgyts55fXKdMWv7I9HMD5HwE9uW839PWA514qhbcIsXEYSFMPMV6fnlsiZvQQ',
-  //             alg: 'PS256',
-  //         },
-  //         {
-  //             crv: 'P-256',
-  //             kty: 'EC',
-  //             x: 'ySK38C1jBdLwDsNWKzzBHqKYEE5Cgv-qjWvorUXk9fw',
-  //             y: '_LeQBw07cf5t57Iavn4j-BqJsAD1dpoz8gokd3sBsOo',
-  //             alg: 'ES256',
-  //         },
-  //     ],
-  // })
+export interface PlatformAnswerTokenPayload extends PlatformGenericTokenPayload {
+  idUserAnswer?: string,
+  sAnswer?: string,
+}
 
-  // const { payload, protectedHeader } = await jose.jwtVerify(token, JWKS, {
-  //     issuer: 'urn:example:issuer',
-  //     audience: 'urn:example:audience',
-  // })
-  // console.log(protectedHeader)
-  // console.log(payload)
+export async function decodePlatformTaskToken<T extends PlatformGenericTokenPayload>(token: string|null|undefined, platform: Platform): Promise<T> {
+  const jwesDecoder = new JwesDecoder();
+  await jwesDecoder.setKeys(platform.public_key);
+  const tokenParams = await jwesDecoder.checkJwsSignature(token!) as T;
+  if ('long' === tokenParams?.type) {
+    await checkLongToken(tokenParams, platform);
+  }
 
-  try {
-    // TODO: implement token parsing
-    //     $params = $tokenParser->decodeJWS($sToken);
-    //     if (isset($params['type']) && $params['type'] == 'long') {
-    //         checkLongToken($params, $sPlatform['ID']);
-    //     }
+  return tokenParams;
+}
 
-    throw new Error('Reading token is not implemented yet');
-  } catch (e) {
-    if (appConfig.testMode.enabled) {
-      return getTestTokenParameters(askedTaskId);
-    } else {
-      throw e;
-    }
+async function checkLongToken(params: PlatformGenericTokenPayload, platform: Platform): Promise<void> {
+  const remoteSecret = await Db.querySingleScalarResult<string>(
+    'SELECT sRemoteSecret from tm_remote_secret WHERE idUser = ? and idPlatform = ?',
+    [params.idUser, platform.ID]
+  );
+  if (!remoteSecret) {
+    throw new InvalidInputError(`Cannot find secret for user ${String(params.idUser)} and platform ${platform.ID}`);
+  }
+  if (remoteSecret !== params.secret) {
+    throw new InvalidInputError(`Remote secret does not match for user ${String(params.idUser)} and platform ${platform.ID}`);
   }
 }
 
@@ -84,13 +63,23 @@ export class TokenGenerator {
   public algorithm = 'ES256';
 
   // Own private key to sign for JWS, recipient public key to encrypt for JWE
-  public async setKeys(jwsKey: string|undefined, jweKey: string|undefined): Promise<void> {
-    if (!jwsKey || !jweKey) {
+  public async setKeys(jwsKey: string, jweKey: string|undefined = undefined): Promise<void> {
+    await this.setJwsKey(jwsKey);
+
+    if (jweKey) {
+      await this.setJweKey(jweKey);
+    }
+  }
+
+  public async setJwsKey(jwsKey: string): Promise<void> {
+    if (!jwsKey) {
       throw new Error('A valid JWS key and a valid JWE key must be fulfilled');
     }
-    // console.log({jwsKey, jweKey});
 
     this.jwsKey = await jose.importPKCS8(jwsKey, this.algorithm);
+  }
+
+  public async setJweKey(jweKey: string): Promise<void> {
     this.jweKey = await jose.importSPKI(jweKey, this.algorithm);
   }
 

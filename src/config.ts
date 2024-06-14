@@ -1,6 +1,12 @@
 import path from 'path';
 import * as dotenv from 'dotenv';
-dotenv.config({path: path.resolve(__dirname, '../.env.' + ('test' === process.env['NODE_ENV'] ? 'test' : 'local'))});
+
+let nodeEnv = String(process.env['NODE_ENV']);
+if ('cucumber-js' === path.basename(process.argv[1])) {
+  nodeEnv = 'test';
+}
+
+dotenv.config({path: path.resolve(__dirname, '../.env.' + ('test' === nodeEnv ? 'test' : 'local'))});
 dotenv.config({path: path.resolve(__dirname, '../.env')});
 
 interface Config {
@@ -23,6 +29,9 @@ interface Config {
     url: string,
     ownName: string,
   },
+  platform: {
+    ownPrivateKey: string,
+  },
   testMode: {
     enabled: boolean,
     platformName: string|undefined,
@@ -38,7 +47,7 @@ function stringifyIfExists(string: string|undefined): string|undefined {
 }
 
 const appConfig: Config = {
-  nodeEnv: String(process.env['NODE_ENV']),
+  nodeEnv,
   port: process.env['PORT'] ? Number(process.env['PORT']) : null,
   mysqlDatabase: {
     host: String(process.env.MYSQL_DB_HOST),
@@ -56,6 +65,9 @@ const appConfig: Config = {
     debugPassword: stringifyIfExists(process.env.GRADER_QUEUE_DEBUG_PASSWORD),
     url: String(process.env.GRADER_QUEUE_URL),
     ownName: String(process.env.GRADER_QUEUE_OWN_NAME),
+  },
+  platform: {
+    ownPrivateKey: String(process.env.PLATFORM_OWN_PRIVATE_KEY),
   },
   testMode: {
     enabled: '1' === String(process.env.TEST_MODE),

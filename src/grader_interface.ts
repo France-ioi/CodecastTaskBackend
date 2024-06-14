@@ -1,5 +1,5 @@
-import {PlatformTokenParameters, TokenGenerator} from './tokenization';
-import {findSourceCodeById, getPlatformTokenParams, SubmissionParameters} from './submissions';
+import {TokenGenerator} from './tokenization';
+import {findSourceCodeById, SubmissionParameters} from './submissions';
 import * as Db from './db';
 import {findTaskById} from './tasks';
 import {Submission, TaskLimit, TaskLimitModel, TaskTest} from './db_models';
@@ -8,6 +8,10 @@ import got from 'got';
 import log from 'loglevel';
 import {getRandomId} from './util';
 import appConfig from './config';
+import {
+  PlatformAnswerTokenData,
+  PlatformTaskTokenData,
+} from './platform_interface';
 
 function baseLangToJSONLang(baseLang: string): string {
   baseLang = baseLang.toLocaleLowerCase();
@@ -85,8 +89,8 @@ export function setQueueRequestSender(queueRequestSender: (queueRequest: QueueRe
   sendQueueRequestToGraderQueue = queueRequestSender;
 }
 
-export async function sendSubmissionToTaskGrader(submissionId: string, submissionData: SubmissionParameters): Promise<void> {
-  const queueRequest = await generateQueueRequest(submissionId, submissionData);
+export async function sendSubmissionToTaskGrader(submissionId: string, submissionData: SubmissionParameters, taskTokenData: PlatformTaskTokenData, answerTokenData: PlatformAnswerTokenData|null): Promise<void> {
+  const queueRequest = await generateQueueRequest(submissionId, submissionData, taskTokenData, answerTokenData);
 
   let queueAnswer: string;
 
@@ -117,40 +121,19 @@ export interface QueueRequest {
   sPlatform?: string,
 }
 
-export async function generateQueueRequest(submissionId: string, submissionData: SubmissionParameters): Promise<QueueRequest> {
-  const params = await getPlatformTokenParams(submissionData.taskId, submissionData.token, submissionData.platform);
+export async function generateQueueRequest(submissionId: string, submissionData: SubmissionParameters, taskTokenData: PlatformTaskTokenData, answerTokenData: PlatformAnswerTokenData|null): Promise<QueueRequest> {
   let idUserAnswer = null;
-  let answerTokenParams: PlatformTokenParameters|null = null;
-  if (submissionData.answerToken) {
-    answerTokenParams = await getPlatformTokenParams(submissionData.taskId, submissionData.answerToken, submissionData.platform);
-    if (answerTokenParams.idUserAnswer) {
-      idUserAnswer = answerTokenParams.idUserAnswer;
-    }
+  if (answerTokenData?.payload.idUserAnswer) {
+    idUserAnswer = answerTokenData.payload.idUserAnswer;
   }
 
-  if (answerTokenParams && !appConfig.testMode.enabled) {
-    if (answerTokenParams.idUser !== params.idUser || answerTokenParams.itemUrl !== params.itemUrl) {
-      throw new InvalidInputError(`Mismatching tokens idUser or itemUrl, token = ${JSON.stringify(params)}, answerToken = ${JSON.stringify(answerTokenParams)}`);
-    }
-    if (!answerTokenParams.sAnswer) {
-      throw new InvalidInputError('Missing answer in answerToken');
-    }
-    const decodedAnswer = JSON.parse(answerTokenParams.sAnswer) as {idSubmission?: string};
-    if (!('idSubmission' in decodedAnswer) || decodedAnswer['idSubmission'] !== submissionId) {
-      throw new InvalidInputError('Impossible to read submission associated with answer token or submission ID mismatching');
-    }
-    if (false === params.bSubmissionPossible || false === params.bAllowGrading) {
-      throw new InvalidInputError('Token indicates read-only task');
-    }
-  }
-
-  const returnUrl = submissionData?.taskParams?.returnUrl ?? params.returnUrl;
+  const returnUrl = submissionData?.taskParams?.returnUrl;
 
   if (returnUrl || idUserAnswer) {
     await Db.execute('update tm_submissions set sReturnUrl = :returnUrl, idUserAnswer = :idUserAnswer WHERE tm_submissions.`ID` = :idSubmission and tm_submissions.idUser = :idUser and tm_submissions.idPlatform = :idPlatform and tm_submissions.idTask = :idTask;', {
-      idUser: params.idUser,
-      idTask: params.idTaskLocal,
-      idPlatform: params.idPlatform,
+      idUser: taskTokenData.payload.idUser,
+      idTask: taskTokenData.taskId,
+      idPlatform: taskTokenData.platform.ID,
       idSubmission: submissionId,
       returnUrl,
       idUserAnswer,
@@ -165,18 +148,18 @@ WHERE tm_submissions.ID = :idSubmission
   and tm_submissions.idUser = :idUser
   and tm_submissions.idPlatform = :idPlatform
   and tm_submissions.idTask = :idTask;`, {
-    idUser: params.idUser,
-    idTask: params.idTaskLocal,
-    idPlatform: params.idPlatform,
+    idUser: taskTokenData.payload.idUser,
+    idTask: taskTokenData.taskId,
+    idPlatform: taskTokenData.platform.ID,
     idSubmission: submissionId,
   });
   if (null === submission) {
     throw new InvalidInputError('Cannot find submission ' + submissionId);
   }
 
-  const task = await findTaskById(params.idTaskLocal);
+  const task = await findTaskById(taskTokenData.taskId);
   if (null === task) {
-    throw new InvalidInputError(`Cannot find task with id ${params.idTaskLocal}`);
+    throw new InvalidInputError(`Cannot find task with id ${taskTokenData.taskId}`);
   }
   const sourceCode = await findSourceCodeById(submission.idSourceCode);
   if (null === sourceCode) {
@@ -190,9 +173,9 @@ WHERE tm_submissions.ID = :idSubmission
   let tests: TaskTest[] = [];
   if ('UserTest' === submission.sMode) {
     tests = await Db.execute<TaskTest[]>('SELECT tm_tasks_tests.* FROM tm_tasks_tests WHERE idUser = :idUser and idPlatform = :idPlatform and idTask = :idTask and idSubmission = :idSubmission ORDER BY iRank ASC', {
-      idUser: params.idUser,
-      idTask: params.idTaskLocal,
-      idPlatform: params.idPlatform,
+      idUser: taskTokenData.payload.idUser,
+      idTask: taskTokenData.taskId,
+      idPlatform: taskTokenData.platform.ID,
       idSubmission: submissionId,
     });
   }
@@ -275,7 +258,7 @@ WHERE tm_submissions.ID = :idSubmission
 
   jobData['taskPath'] = task.sTaskPath;
   jobData['options'] = {
-    locale: submissionData.sLocale,
+    locale: submissionData.sLocale ?? 'fr',
   };
 
   // When this is a test user, avoid blocking the grader queue because several people use

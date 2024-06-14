@@ -8,6 +8,7 @@ import {TaskSubtask, TaskTest} from './db_models';
 import {findTaskById} from './tasks';
 import {longPollingHandler} from './long_polling';
 import appConfig from './config';
+import {sendSubmissionResultToPlatform} from './platform_interface';
 
 export const taskGraderWebhookPayloadDecoder = pipe(
   D.struct({
@@ -438,4 +439,6 @@ ${thisCompilMsg}`;
   }
 
   longPollingHandler.fireEvent('evaluation-' + submission.ID);
+
+  await sendSubmissionResultToPlatform(submission, iScore);
 }

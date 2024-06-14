@@ -67,4 +67,9 @@ To build a new version of the back-end, use:
 yarn build
 ```
 
+### Generate a pair of public/private keys
 
+```
+openssl genrsa -out key.pem 2048
+openssl rsa -in key.pem -outform PEM -pubout -out public.pem
+```

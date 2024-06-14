@@ -6,10 +6,16 @@ import {ServerInjectResponse} from '@hapi/hapi';
 import {testServer} from '../support/hooks';
 import * as ws from 'ws';
 import {remoteExecutionProxyHandler} from '../../src/remote_execution_proxy';
+import nock from 'nock';
 
 interface ServerStepsContext {
   response: ServerInjectResponse,
   responsePromise: Promise<ServerInjectResponse>,
+  [key: string]: any,
+}
+
+function injectVariables(context: {[key: string]: string}, payload: string): string {
+  return payload.replace(/\{\{(\w+)}}/g, (replacement, contents: string) => context[contents]);
 }
 
 When(/^I send a GET request to "([^"]*)"$/, async function (this: ServerStepsContext, url: string) {
@@ -35,7 +41,7 @@ When(/^I send a POST request to "([^"]*)" with the following payload:$/, async f
   this.response = await testServer.inject({
     method: 'POST',
     url,
-    payload,
+    payload: injectVariables(this, payload),
   });
 });
 
@@ -154,4 +160,14 @@ Then(/^the "([^"]*)" WS server should have received the following JSON:$/, funct
   const expectedResponse: unknown = JSON.parse(expectedJson);
   const lastMessage: unknown = openServers[serverName].lastMessages.shift();
   expect(lastMessage).to.deep.equal(expectedResponse);
+});
+
+Given(/^I setup a mock API answering any POST request to "([^"]*)" with the following payload:$/, function (this: ServerStepsContext, endpoint: string, mockPayload: string) {
+  nock('https://mockapi.com')
+    .post(endpoint)
+    .reply(200, JSON.parse(mockPayload) as Record<string, any>);
+});
+
+Then(/^the mock API should have received the expected request$/, function () {
+  expect(nock.isDone()).to.be.true;
 });

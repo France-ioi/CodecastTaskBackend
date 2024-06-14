@@ -212,7 +212,8 @@ CREATE TABLE `history_tm_submissions` (
   `iChecksum` int NOT NULL DEFAULT '0',
   `iVersion` int NOT NULL,
   `iNextVersion` int DEFAULT NULL,
-  `bDeleted` tinyint(1) NOT NULL
+  `bDeleted` tinyint(1) NOT NULL,
+  `sParams` tinytext DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
@@ -599,7 +600,8 @@ DELIMITER ;
 CREATE TABLE `tm_platforms` (
   `ID` bigint NOT NULL,
   `name` varchar(255) NOT NULL,
-  `public_key` varchar(500) NOT NULL
+  `public_key` varchar(500) NOT NULL,
+  `api_url` varchar(200) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
@@ -795,18 +797,19 @@ CREATE TABLE `tm_submissions` (
   `sReturnUrl` varchar(255) DEFAULT NULL,
   `idUserAnswer` varchar(50) DEFAULT NULL,
   `iChecksum` int NOT NULL DEFAULT '0',
-  `iVersion` int NOT NULL DEFAULT '0'
+  `iVersion` int NOT NULL DEFAULT '0',
+  `sParams` tinytext DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 --
 -- Triggers `tm_submissions`
 --
 DELIMITER $$
-CREATE TRIGGER `after_insert_tm_submissions` AFTER INSERT ON `tm_submissions` FOR EACH ROW BEGIN INSERT INTO `history_tm_submissions` (`ID`,`iVersion`,`idUser`,`idTask`,`idPlatform`,`sDate`,`idSourceCode`,`bManualCorrection`,`bSuccess`,`nbTestsTotal`,`nbTestsPassed`,`iScore`,`bCompilError`,`sCompilMsg`,`sErrorMsg`,`sMetadata`,`sFirstUserOutput`,`sFirstExpectedOutput`,`sManualScoreDiffComment`,`bEvaluated`,`sMode`,`sReturnUrl`,`idUserAnswer`,`iChecksum`) VALUES (NEW.`ID`,@curVersion,NEW.`idUser`,NEW.`idTask`,NEW.`idPlatform`,NEW.`sDate`,NEW.`idSourceCode`,NEW.`bManualCorrection`,NEW.`bSuccess`,NEW.`nbTestsTotal`,NEW.`nbTestsPassed`,NEW.`iScore`,NEW.`bCompilError`,NEW.`sCompilMsg`,NEW.`sErrorMsg`,NEW.`sMetadata`,NEW.`sFirstUserOutput`,NEW.`sFirstExpectedOutput`,NEW.`sManualScoreDiffComment`,NEW.`bEvaluated`,NEW.`sMode`,NEW.`sReturnUrl`,NEW.`idUserAnswer`,NEW.`iChecksum`); END
+CREATE TRIGGER `after_insert_tm_submissions` AFTER INSERT ON `tm_submissions` FOR EACH ROW BEGIN INSERT INTO `history_tm_submissions` (`ID`,`iVersion`,`idUser`,`idTask`,`idPlatform`,`sDate`,`idSourceCode`,`bManualCorrection`,`bSuccess`,`nbTestsTotal`,`nbTestsPassed`,`iScore`,`bCompilError`,`sCompilMsg`,`sErrorMsg`,`sMetadata`,`sFirstUserOutput`,`sFirstExpectedOutput`,`sManualScoreDiffComment`,`bEvaluated`,`sMode`,`sReturnUrl`,`idUserAnswer`,`iChecksum`,`sParams`) VALUES (NEW.`ID`,@curVersion,NEW.`idUser`,NEW.`idTask`,NEW.`idPlatform`,NEW.`sDate`,NEW.`idSourceCode`,NEW.`bManualCorrection`,NEW.`bSuccess`,NEW.`nbTestsTotal`,NEW.`nbTestsPassed`,NEW.`iScore`,NEW.`bCompilError`,NEW.`sCompilMsg`,NEW.`sErrorMsg`,NEW.`sMetadata`,NEW.`sFirstUserOutput`,NEW.`sFirstExpectedOutput`,NEW.`sManualScoreDiffComment`,NEW.`bEvaluated`,NEW.`sMode`,NEW.`sReturnUrl`,NEW.`idUserAnswer`,NEW.`iChecksum`,NEW.`sParams`); END
 $$
 DELIMITER ;
 DELIMITER $$
-CREATE TRIGGER `before_delete_tm_submissions` BEFORE DELETE ON `tm_submissions` FOR EACH ROW BEGIN SELECT (UNIX_TIMESTAMP() * 10) INTO @curVersion; UPDATE `history_tm_submissions` SET `iNextVersion` = @curVersion WHERE `ID` = OLD.`ID` AND `iNextVersion` IS NULL; INSERT INTO `history_tm_submissions` (`ID`,`iVersion`,`idUser`,`idTask`,`idPlatform`,`sDate`,`idSourceCode`,`bManualCorrection`,`bSuccess`,`nbTestsTotal`,`nbTestsPassed`,`iScore`,`bCompilError`,`sCompilMsg`,`sErrorMsg`,`sMetadata`,`sFirstUserOutput`,`sFirstExpectedOutput`,`sManualScoreDiffComment`,`bEvaluated`,`sMode`,`sReturnUrl`,`idUserAnswer`,`iChecksum`, `bDeleted`) VALUES (OLD.`ID`,@curVersion,OLD.`idUser`,OLD.`idTask`,OLD.`idPlatform`,OLD.`sDate`,OLD.`idSourceCode`,OLD.`bManualCorrection`,OLD.`bSuccess`,OLD.`nbTestsTotal`,OLD.`nbTestsPassed`,OLD.`iScore`,OLD.`bCompilError`,OLD.`sCompilMsg`,OLD.`sErrorMsg`,OLD.`sMetadata`,OLD.`sFirstUserOutput`,OLD.`sFirstExpectedOutput`,OLD.`sManualScoreDiffComment`,OLD.`bEvaluated`,OLD.`sMode`,OLD.`sReturnUrl`,OLD.`idUserAnswer`,OLD.`iChecksum`, 1); END
+CREATE TRIGGER `before_delete_tm_submissions` BEFORE DELETE ON `tm_submissions` FOR EACH ROW BEGIN SELECT (UNIX_TIMESTAMP() * 10) INTO @curVersion; UPDATE `history_tm_submissions` SET `iNextVersion` = @curVersion WHERE `ID` = OLD.`ID` AND `iNextVersion` IS NULL; INSERT INTO `history_tm_submissions` (`ID`,`iVersion`,`idUser`,`idTask`,`idPlatform`,`sDate`,`idSourceCode`,`bManualCorrection`,`bSuccess`,`nbTestsTotal`,`nbTestsPassed`,`iScore`,`bCompilError`,`sCompilMsg`,`sErrorMsg`,`sMetadata`,`sFirstUserOutput`,`sFirstExpectedOutput`,`sManualScoreDiffComment`,`bEvaluated`,`sMode`,`sReturnUrl`,`idUserAnswer`,`iChecksum`, `sParams`, `bDeleted`) VALUES (OLD.`ID`,@curVersion,OLD.`idUser`,OLD.`idTask`,OLD.`idPlatform`,OLD.`sDate`,OLD.`idSourceCode`,OLD.`bManualCorrection`,OLD.`bSuccess`,OLD.`nbTestsTotal`,OLD.`nbTestsPassed`,OLD.`iScore`,OLD.`bCompilError`,OLD.`sCompilMsg`,OLD.`sErrorMsg`,OLD.`sMetadata`,OLD.`sFirstUserOutput`,OLD.`sFirstExpectedOutput`,OLD.`sManualScoreDiffComment`,OLD.`bEvaluated`,OLD.`sMode`,OLD.`sReturnUrl`,OLD.`idUserAnswer`,OLD.`iChecksum`, OLD.`sParams`, 1); END
 $$
 DELIMITER ;
 DELIMITER $$
@@ -814,7 +817,7 @@ CREATE TRIGGER `before_insert_tm_submissions` BEFORE INSERT ON `tm_submissions` 
 $$
 DELIMITER ;
 DELIMITER $$
-CREATE TRIGGER `before_update_tm_submissions` BEFORE UPDATE ON `tm_submissions` FOR EACH ROW BEGIN IF NEW.iVersion <> OLD.iVersion THEN SET @curVersion = NEW.iVersion; ELSE SELECT (UNIX_TIMESTAMP() * 10) INTO @curVersion; END IF; IF NOT (OLD.`ID` = NEW.`ID` AND OLD.`idUser` <=> NEW.`idUser` AND OLD.`idTask` <=> NEW.`idTask` AND OLD.`idPlatform` <=> NEW.`idPlatform` AND OLD.`sDate` <=> NEW.`sDate` AND OLD.`idSourceCode` <=> NEW.`idSourceCode` AND OLD.`bManualCorrection` <=> NEW.`bManualCorrection` AND OLD.`bSuccess` <=> NEW.`bSuccess` AND OLD.`nbTestsTotal` <=> NEW.`nbTestsTotal` AND OLD.`nbTestsPassed` <=> NEW.`nbTestsPassed` AND OLD.`iScore` <=> NEW.`iScore` AND OLD.`bCompilError` <=> NEW.`bCompilError` AND OLD.`sCompilMsg` <=> NEW.`sCompilMsg` AND OLD.`sErrorMsg` <=> NEW.`sErrorMsg` AND OLD.`sMetadata` <=> NEW.`sMetadata` AND OLD.`sFirstUserOutput` <=> NEW.`sFirstUserOutput` AND OLD.`sFirstExpectedOutput` <=> NEW.`sFirstExpectedOutput` AND OLD.`sManualScoreDiffComment` <=> NEW.`sManualScoreDiffComment` AND OLD.`bEvaluated` <=> NEW.`bEvaluated` AND OLD.`sMode` <=> NEW.`sMode` AND OLD.`sReturnUrl` <=> NEW.`sReturnUrl` AND OLD.`idUserAnswer` <=> NEW.`idUserAnswer` AND OLD.`iChecksum` <=> NEW.`iChecksum`) THEN   SET NEW.iVersion = @curVersion;   UPDATE `history_tm_submissions` SET `iNextVersion` = @curVersion WHERE `ID` = OLD.`ID` AND `iNextVersion` IS NULL;   INSERT INTO `history_tm_submissions` (`ID`,`iVersion`,`idUser`,`idTask`,`idPlatform`,`sDate`,`idSourceCode`,`bManualCorrection`,`bSuccess`,`nbTestsTotal`,`nbTestsPassed`,`iScore`,`bCompilError`,`sCompilMsg`,`sErrorMsg`,`sMetadata`,`sFirstUserOutput`,`sFirstExpectedOutput`,`sManualScoreDiffComment`,`bEvaluated`,`sMode`,`sReturnUrl`,`idUserAnswer`,`iChecksum`)       VALUES (NEW.`ID`,@curVersion,NEW.`idUser`,NEW.`idTask`,NEW.`idPlatform`,NEW.`sDate`,NEW.`idSourceCode`,NEW.`bManualCorrection`,NEW.`bSuccess`,NEW.`nbTestsTotal`,NEW.`nbTestsPassed`,NEW.`iScore`,NEW.`bCompilError`,NEW.`sCompilMsg`,NEW.`sErrorMsg`,NEW.`sMetadata`,NEW.`sFirstUserOutput`,NEW.`sFirstExpectedOutput`,NEW.`sManualScoreDiffComment`,NEW.`bEvaluated`,NEW.`sMode`,NEW.`sReturnUrl`,NEW.`idUserAnswer`,NEW.`iChecksum`) ; END IF; END
+CREATE TRIGGER `before_update_tm_submissions` BEFORE UPDATE ON `tm_submissions` FOR EACH ROW BEGIN IF NEW.iVersion <> OLD.iVersion THEN SET @curVersion = NEW.iVersion; ELSE SELECT (UNIX_TIMESTAMP() * 10) INTO @curVersion; END IF; IF NOT (OLD.`ID` = NEW.`ID` AND OLD.`idUser` <=> NEW.`idUser` AND OLD.`idTask` <=> NEW.`idTask` AND OLD.`idPlatform` <=> NEW.`idPlatform` AND OLD.`sDate` <=> NEW.`sDate` AND OLD.`idSourceCode` <=> NEW.`idSourceCode` AND OLD.`bManualCorrection` <=> NEW.`bManualCorrection` AND OLD.`bSuccess` <=> NEW.`bSuccess` AND OLD.`nbTestsTotal` <=> NEW.`nbTestsTotal` AND OLD.`nbTestsPassed` <=> NEW.`nbTestsPassed` AND OLD.`iScore` <=> NEW.`iScore` AND OLD.`bCompilError` <=> NEW.`bCompilError` AND OLD.`sCompilMsg` <=> NEW.`sCompilMsg` AND OLD.`sErrorMsg` <=> NEW.`sErrorMsg` AND OLD.`sMetadata` <=> NEW.`sMetadata` AND OLD.`sFirstUserOutput` <=> NEW.`sFirstUserOutput` AND OLD.`sFirstExpectedOutput` <=> NEW.`sFirstExpectedOutput` AND OLD.`sManualScoreDiffComment` <=> NEW.`sManualScoreDiffComment` AND OLD.`bEvaluated` <=> NEW.`bEvaluated` AND OLD.`sMode` <=> NEW.`sMode` AND OLD.`sReturnUrl` <=> NEW.`sReturnUrl` AND OLD.`idUserAnswer` <=> NEW.`idUserAnswer` AND OLD.`iChecksum` <=> NEW.`iChecksum` AND OLD.`sParams` <=> NEW.`sParams`) THEN   SET NEW.iVersion = @curVersion;   UPDATE `history_tm_submissions` SET `iNextVersion` = @curVersion WHERE `ID` = OLD.`ID` AND `iNextVersion` IS NULL;   INSERT INTO `history_tm_submissions` (`ID`,`iVersion`,`idUser`,`idTask`,`idPlatform`,`sDate`,`idSourceCode`,`bManualCorrection`,`bSuccess`,`nbTestsTotal`,`nbTestsPassed`,`iScore`,`bCompilError`,`sCompilMsg`,`sErrorMsg`,`sMetadata`,`sFirstUserOutput`,`sFirstExpectedOutput`,`sManualScoreDiffComment`,`bEvaluated`,`sMode`,`sReturnUrl`,`idUserAnswer`,`iChecksum`, `sParams`)       VALUES (NEW.`ID`,@curVersion,NEW.`idUser`,NEW.`idTask`,NEW.`idPlatform`,NEW.`sDate`,NEW.`idSourceCode`,NEW.`bManualCorrection`,NEW.`bSuccess`,NEW.`nbTestsTotal`,NEW.`nbTestsPassed`,NEW.`iScore`,NEW.`bCompilError`,NEW.`sCompilMsg`,NEW.`sErrorMsg`,NEW.`sMetadata`,NEW.`sFirstUserOutput`,NEW.`sFirstExpectedOutput`,NEW.`sManualScoreDiffComment`,NEW.`bEvaluated`,NEW.`sMode`,NEW.`sReturnUrl`,NEW.`idUserAnswer`,NEW.`iChecksum`, NEW.`sParams`) ; END IF; END
 $$
 DELIMITER ;
 
