@@ -6,7 +6,7 @@ import got from 'got';
 import stream from 'stream';
 import path from 'path';
 
-const OPENCV_IMAGE = 'hdgigante/python-opencv:4.8.1-alpine';
+const OPENCV_IMAGE = 'hdgigante/python-opencv:4.9.0-alpine';
 const CACHE_FOLDER = 'cache';
 
 export class ImageCache {
@@ -45,17 +45,20 @@ export class OpenCvLib extends RemoteLib {
 
     const dockerInstance = this.dockerInstance as Docker;
 
-    // await dockerInstance.pull(OPENCV_IMAGE, {});
-
-    // console.log('time1', performance.now() - timing);
+    const images = await dockerInstance.listImages();
+    if (!images.find(image => image.RepoTags && image.RepoTags.includes(OPENCV_IMAGE))) {
+      await new Promise(resolve => {
+        void dockerInstance.pull(OPENCV_IMAGE, (err: any, stream: NodeJS.ReadableStream) => {
+          dockerInstance.modem.followProgress(stream, resolve);
+        });
+      });
+    }
 
     const resultImageName = imageCache.generateIdentifier();
 
     const program = `import cv2
 result = cv2.${callName}(${await this.formatArguments(args)})
 cv2.imwrite('${resultImageName}', result)`;
-
-    // console.log(program);
 
     fs.writeFileSync(`${CACHE_FOLDER}/app.py`, program);
 
