@@ -22,6 +22,7 @@ export class ImageCache {
 interface FileArg {
   fileType: string,
   fileName: string,
+  fileUrl: string,
 }
 
 function isFileArg(arg: any): arg is FileArg {
@@ -88,9 +89,15 @@ cv2.imwrite('${resultImageName}', result)`;
 
     //TODO: cleanup?
 
+    const originalName = args[0] as FileArg|string;
+    const newName = [
+      ...('imread' === callName ? [] : [callName]),
+      'object' === typeof originalName && 'fileName' in originalName ? originalName.fileName : originalName,
+    ].join('-');
+
     return {
       fileType: 'image',
-      fileName: resultImageName,
+      fileName: newName,
       fileUrl: '/image-cache/' + resultImageName,
     };
   }
@@ -106,7 +113,7 @@ cv2.imwrite('${resultImageName}', result)`;
 
   async convertArgument(arg: any): Promise<string> {
     if ('object' === typeof arg && isFileArg(arg)) {
-      return `cv2.imread("${arg.fileName}")`;
+      return `cv2.imread("${arg.fileUrl.split('/').pop() ?? ''}")`;
     }
     if ('string' === typeof arg) {
       if (this.isImageUrl(arg)) {
