@@ -19,6 +19,16 @@ export class ImageCache {
   }
 }
 
+interface FileArg {
+  fileType: string,
+  fileName: string,
+}
+
+function isFileArg(arg: any): arg is FileArg {
+  return 'object' === typeof arg && null !== arg && 'fileType' in arg;
+}
+
+
 const imageCache = new ImageCache();
 
 class EchoStream extends stream.Writable {
@@ -73,12 +83,16 @@ cv2.imwrite('${resultImageName}', result)`;
     }) as {StatusCode: number}[];
 
     if (0 !== data[0].StatusCode) {
-      throw new Error(outputStream.getContent().split('Traceback (')[0].trim());
+      throw new Error(outputStream.getContent().trim());
     }
 
     //TODO: cleanup?
 
-    return `image:${resultImageName}`;
+    return {
+      fileType: 'image',
+      fileName: resultImageName,
+      fileUrl: '/image-cache/' + resultImageName,
+    };
   }
 
   async formatArguments(args: any[]): Promise<string> {
@@ -91,10 +105,11 @@ cv2.imwrite('${resultImageName}', result)`;
   }
 
   async convertArgument(arg: any): Promise<string> {
+    if ('object' === typeof arg && isFileArg(arg)) {
+      return `cv2.imread("${arg.fileName}")`;
+    }
     if ('string' === typeof arg) {
-      if ('image' === arg.split(':')[0]) {
-        return `cv2.imread("${arg.split(':')[1]}")`;
-      } else if (this.isImageUrl(arg)) {
+      if (this.isImageUrl(arg)) {
         const imagePath = imageCache.generateIdentifier();
         // console.log('image url', imagePath);
         await this.downloadImage(arg, imageCache.getCachePath(imagePath));
@@ -103,6 +118,14 @@ cv2.imwrite('${resultImageName}', result)`;
       }
 
       return `"${arg}"`;
+    }
+    if (Array.isArray(arg)) {
+      const convertedArgs = [];
+      for (const element of arg) {
+        convertedArgs.push(await this.convertArgument(element));
+      }
+
+      return `(${convertedArgs.join(', ')})`;
     }
 
     return String(arg);
