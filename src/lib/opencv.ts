@@ -21,7 +21,6 @@ export class ImageCache {
 
 interface FileArg {
   fileType: string,
-  fileName: string,
   fileUrl: string,
 }
 
@@ -89,15 +88,8 @@ cv2.imwrite('${resultImageName}', result)`;
 
     //TODO: cleanup?
 
-    const originalName = args[0] as FileArg|string;
-    const newName = [
-      ...('imread' === callName ? [] : [callName]),
-      'object' === typeof originalName && 'fileName' in originalName ? originalName.fileName : originalName,
-    ].join('-');
-
     return {
       fileType: 'image',
-      fileName: newName,
       fileUrl: '/image-cache/' + resultImageName,
     };
   }
