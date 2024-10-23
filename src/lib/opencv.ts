@@ -36,7 +36,6 @@ class EchoStream extends stream.Writable {
   _write(chunk: any, encoding: BufferEncoding, callback: (error?: Error | null) => void): void {
     // eslint-disable-next-line
     this.content += chunk.toString();
-    // console.log(chunk.toString());
     callback();
   }
 
@@ -86,8 +85,6 @@ cv2.imwrite('${resultImageName}', result)`;
       throw new Error(outputStream.getContent().trim());
     }
 
-    //TODO: cleanup?
-
     return {
       fileType: 'image',
       fileUrl: '/image-cache/' + resultImageName,
@@ -110,7 +107,6 @@ cv2.imwrite('${resultImageName}', result)`;
     if ('string' === typeof arg) {
       if (this.isImageUrl(arg)) {
         const imagePath = imageCache.generateIdentifier();
-        // console.log('image url', imagePath);
         await this.downloadImage(arg, imageCache.getCachePath(imagePath));
 
         return `"${imagePath}"`;
