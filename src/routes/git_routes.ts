@@ -2,6 +2,8 @@ import {Server} from '@hapi/hapi';
 import {
   getGitRepositoryBranches,
   getGitRepositoryFolderContent,
+  gitPull,
+  gitPullDecoder,
   gitRepositoryBranchesDecoder,
   gitRepositoryFolderContentDecoder
 } from '../git_sync';
@@ -45,6 +47,30 @@ export function addGitRoutes(server: Server): void {
             content,
           });
         } catch (e) {
+          throw new NotFoundError('Unable to fetch repository content, check that you can access this repository');
+        }
+      }
+    }
+  });
+
+  server.route({
+    method: 'POST',
+    path: '/git/pull',
+    options: {
+      handler: async (request, h) => {
+        const parameters = decode(gitPullDecoder)(request.payload);
+
+        try {
+          const pullResult = await gitPull(parameters.repository, parameters.branch, parameters.file, parameters.source);
+
+          return h.response({
+            success: true,
+            content: pullResult.content,
+            revision: pullResult.revision,
+          });
+        } catch (e) {
+          // eslint-disable-next-line
+          console.error(e);
           throw new NotFoundError('Unable to fetch repository content, check that you can access this repository');
         }
       }

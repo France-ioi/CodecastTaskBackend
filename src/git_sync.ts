@@ -20,6 +20,17 @@ export const gitRepositoryFolderContentDecoder = pipe(
   })),
 );
 
+export const gitPullDecoder = pipe(
+  D.struct({
+    repository: D.string,
+    branch: D.string,
+    file: D.string,
+  }),
+  D.intersect(D.partial({
+    source: D.string,
+  })),
+);
+
 const gitSyncCachePool = new CachePool();
 
 export async function getGitRepositoryBranches(repository: string) {
@@ -93,4 +104,31 @@ async function initGitRepository(repository: string): Promise<SimpleGit> {
 
 function getGitRepositoryPath(repository: string) {
   return process.cwd() + '/cache/' + repository;
+}
+
+export async function gitPull(repository: string, branch: string, file: string, source?: string) {
+  const git = await initGitRepository(repository);
+
+  await gitSyncCachePool.get(`fetch:${repository}:${branch}`, 60, async () => {
+    await git.fetch('origin', branch);
+  });
+
+  await git.checkout(branch, ['-f']);
+
+  await git.pull('origin', branch, ['--rebase']);
+
+  const repoPath = getGitRepositoryPath(repository);
+  const filePath = repoPath + '/' + file;
+
+  if (!fs.existsSync(filePath)) {
+    throw new TypeError(`This file does not exist on the repository: ${file}`);
+  }
+
+  const fileContent = fs.readFileSync(filePath, 'utf-8');
+  const currentRevision = await git.revparse(['HEAD']);
+
+  return {
+    content: fileContent,
+    revision: currentRevision,
+  };
 }
