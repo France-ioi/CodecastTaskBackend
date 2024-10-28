@@ -3,3 +3,5 @@
 node_modules
 dist
 cache
+key.pem
+public.pem
