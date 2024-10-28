@@ -8,6 +8,7 @@ import path from 'path';
 
 const OPENCV_IMAGE = 'hdgigante/python-opencv:4.9.0-alpine';
 const CACHE_FOLDER = 'cache';
+const ALLOWED_CALLS = ['imread', 'cvtColor', 'flip', 'rotate', 'blur', 'resize', 'Canny', 'imwrite'];
 
 export class ImageCache {
   generateIdentifier(): string {
@@ -28,7 +29,6 @@ function isFileArg(arg: any): arg is FileArg {
   return 'object' === typeof arg && null !== arg && 'fileType' in arg;
 }
 
-
 const imageCache = new ImageCache();
 
 class EchoStream extends stream.Writable {
@@ -48,6 +48,10 @@ export class OpenCvLib extends RemoteLib {
   private dockerInstance: Docker|null = null;
 
   async executeRemoteCall(callName: string, args: any[]): Promise<any> {
+    if (-1 === ALLOWED_CALLS.indexOf(callName)) {
+      throw new TypeError(`Unauthorized OpenCV call name: ${callName}`);
+    }
+
     if (!this.dockerInstance) {
       this.initDockerInstance();
     }
@@ -102,7 +106,12 @@ cv2.imwrite('${resultImageName}', result)`;
 
   async convertArgument(arg: any): Promise<string> {
     if ('object' === typeof arg && isFileArg(arg)) {
-      return `cv2.imread("${arg.fileUrl.split('/').pop() ?? ''}")`;
+      const fileName = arg.fileUrl.split('/').pop() ?? '';
+      if (!fileName.match(/^[a-zA-Z0-9-]+\.[a-z]+$/)) {
+        throw new TypeError(`File name "${fileName}" does not match the required pattern`);
+      }
+
+      return `cv2.imread("${fileName ?? ''}")`;
     }
     if ('string' === typeof arg) {
       if (this.isImageUrl(arg)) {
@@ -112,8 +121,12 @@ cv2.imwrite('${resultImageName}', result)`;
         return `"${imagePath}"`;
       }
 
-      return `"${arg}"`;
+      // eslint-disable-next-line
+      arg = arg.replace(/"/g, '\\\"');
+
+      return `"${String(arg)}"`;
     }
+
     if (Array.isArray(arg)) {
       const convertedArgs = [];
       for (const element of arg) {
@@ -122,8 +135,11 @@ cv2.imwrite('${resultImageName}', result)`;
 
       return `(${convertedArgs.join(', ')})`;
     }
+    if ('number' === typeof arg) {
+      return `${Number(arg)}`;
+    }
 
-    return String(arg);
+    throw new TypeError(`Unaccepted argument type: ${String(arg)}`);
   }
 
   isImageUrl(arg: any): boolean {
