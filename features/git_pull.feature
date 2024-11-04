@@ -1,12 +1,15 @@
 Feature: Pull Git repository
 
+  Background: Init fake repo
+    Given there is a fake Git repository
+
   Scenario: Pull known repository
     When I send a POST request to "/git/pull" with the following payload:
       """
       {
-        "repository": "git@github.com:France-ioi/alkindi-task-50-messages.git",
+        "repository": "/tmp/git-repo-test",
         "branch": "master",
-        "file": ".gitignore"
+        "file": "test.txt"
       }
       """
 
@@ -15,7 +18,19 @@ Feature: Pull Git repository
       """
       {
         "success": true,
-        "content": "/node_modules\n",
-        "revision": "e91d63f1e2fa42dfe7bc943d73ef4f872f2137ab"
+        "content": "Test\nGit\nFile\nSample",
+        "revision": "{{currentRevisionNumber}}"
       }
       """
+
+  Scenario: Pull unknown repository
+    When I send a POST request to "/git/pull" with the following payload:
+      """
+      {
+        "repository": "/tmp/git-repo-test-unknown",
+        "branch": "master",
+        "file": "test.txt"
+      }
+      """
+
+    Then the response status code should be 404

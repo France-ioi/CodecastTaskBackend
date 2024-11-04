@@ -1,7 +1,10 @@
 Feature: Get Git repository branches
 
+  Background: Init fake repo
+    Given there is a fake Git repository
+
   Scenario: Get known repository
-    When I send a GET request to "/git/repository-folder-content?repository=git%40github.com%3AFrance-ioi%2Falkindi-task-50-messages.git&branch=master"
+    When I send a GET request to "/git/repository-folder-content?repository=/tmp/git-repo-test&branch=master"
     Then the response status code should be 200
     And the response body should be the following JSON:
       """
@@ -10,54 +13,18 @@ Feature: Get Git repository branches
         "content": [
           {
             "directory": true,
-            "name": "bebras-modules"
-          },
-          {
-            "directory": true,
-            "name": "server-modules"
-          },
-          {
-            "directory": true,
-            "name": "src"
+            "name": "subfolder"
           },
           {
             "directory": false,
-            "name": ".eslintrc"
-          },
-          {
-            "directory": false,
-            "name": ".gitignore"
-          },
-          {
-            "directory": false,
-            "name": ".gitmodules"
-          },
-          {
-            "directory": false,
-            "name": "README.md"
-          },
-          {
-            "directory": false,
-            "name": "index.html"
-          },
-          {
-            "directory": false,
-            "name": "package-lock.json"
-          },
-          {
-            "directory": false,
-            "name": "package.json"
-          },
-          {
-            "directory": false,
-            "name": "webpack.config.js"
+            "name": "test.txt"
           }
        ]
       }
       """
 
   Scenario: Get known repository subfolder
-    When I send a GET request to "/git/repository-folder-content?repository=git%40github.com%3AFrance-ioi%2Falkindi-task-50-messages.git&branch=master&folder=server-modules"
+    When I send a GET request to "/git/repository-folder-content?repository=/tmp/git-repo-test&branch=master&folder=subfolder"
     Then the response status code should be 200
     And the response body should be the following JSON:
       """
@@ -66,36 +33,36 @@ Feature: Get Git repository branches
         "content": [
           {
             "directory": false,
-            "name": "index.js"
-          },
-          {
-            "directory": false,
-            "name": "sentences.js"
+            "name": "subfile.txt"
           }
        ]
       }
       """
 
   Scenario: Get known repository subfolder for another branch
-    When I send a GET request to "/git/repository-folder-content?repository=git%40github.com%3AFrance-ioi%2Falkindi-task-50-messages.git&branch=substitution_task&folder=server-modules"
+    When I send a GET request to "/git/repository-folder-content?repository=/tmp/git-repo-test&branch=other"
     Then the response status code should be 200
     And the response body should be the following JSON:
       """
       {
         "success": true,
         "content": [
-          {
-            "directory": false,
-            "name": "generator.js"
+         {
+            "directory": true,
+            "name": "subfolder"
           },
           {
             "directory": false,
-            "name": "index.js"
+            "name": "test.txt"
+          },
+          {
+            "directory": false,
+            "name": "test2.txt"
           }
        ]
       }
       """
 
   Scenario: Get unknown repository
-    When I send a GET request to "/git/repository-branches?repository=git%40github.com%3AUnknown%2FUnknown-repository.git"
+    When I send a GET request to "/git/repository-branches?repository=/tmp/git-repo-test-unknown"
     Then the response status code should be 404

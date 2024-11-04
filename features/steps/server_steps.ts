@@ -60,7 +60,7 @@ Then(/^the response body should be the content of this file: "([^"]*)"$/, async 
 });
 
 Then(/^the response body should be the following JSON:$/, function (this: ServerStepsContext, expectedJson: string) {
-  const expectedResponse: unknown = JSON.parse(expectedJson);
+  const expectedResponse: unknown = JSON.parse(injectVariables(this, expectedJson));
   const payload: unknown = JSON.parse(this.response.payload);
   expect(payload).to.deep.equal(expectedResponse);
 });

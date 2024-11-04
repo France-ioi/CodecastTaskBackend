@@ -3,9 +3,9 @@ import {
   getGitRepositoryBranches,
   getGitRepositoryFolderContent,
   gitPull,
-  gitPullDecoder,
+  gitPullDecoder, gitPush, gitPushDecoder,
   gitRepositoryBranchesDecoder,
-  gitRepositoryFolderContentDecoder
+  gitRepositoryFolderContentDecoder, NotUpToDateError
 } from '../git_sync';
 import {decode} from '../util';
 import {NotFoundError} from '../error_handler';
@@ -61,7 +61,7 @@ export function addGitRoutes(server: Server): void {
         const parameters = decode(gitPullDecoder)(request.payload);
 
         try {
-          const pullResult = await gitPull(parameters.repository, parameters.branch, parameters.file, parameters.source);
+          const pullResult = await gitPull(parameters.repository, parameters.branch, parameters.file, parameters.revision, parameters.source);
 
           return h.response({
             success: true,
@@ -69,8 +69,34 @@ export function addGitRoutes(server: Server): void {
             revision: pullResult.revision,
           });
         } catch (e) {
-          // eslint-disable-next-line
-          console.error(e);
+          throw new NotFoundError('Unable to fetch repository content, check that you can access this repository');
+        }
+      }
+    }
+  });
+
+  server.route({
+    method: 'POST',
+    path: '/git/push',
+    options: {
+      handler: async (request, h) => {
+        const parameters = decode(gitPushDecoder)(request.payload);
+
+        try {
+          const pushResult = await gitPush(parameters);
+
+          return h.response({
+            success: true,
+            revision: pushResult.revision,
+          });
+        } catch (e) {
+          if (e instanceof NotUpToDateError) {
+            return h.response({
+              success: false,
+              error: 'not_up_to_date',
+            }).code(400);
+          }
+
           throw new NotFoundError('Unable to fetch repository content, check that you can access this repository');
         }
       }

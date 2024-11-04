@@ -1,16 +1,19 @@
 Feature: Get Git repository branches
 
+  Background: Init fake repo
+    Given there is a fake Git repository
+
   Scenario: Get known repository
-    When I send a GET request to "/git/repository-branches?repository=git%40github.com%3AFrance-ioi%2Falkindi-task-50-messages.git"
+    When I send a GET request to "/git/repository-branches?repository=/tmp/git-repo-test"
     Then the response status code should be 200
     And the response body should be the following JSON:
       """
       {
         "success": true,
-        "branches": ["master", "substitution_task"]
+        "branches": ["master", "other"]
       }
       """
 
   Scenario: Get unknown repository
-    When I send a GET request to "/git/repository-branches?repository=git%40github.com%3AUnknown%2FUnknown-repository.git"
+    When I send a GET request to "/git/repository-branches?repository=/tmp/git-repo-test-unknown"
     Then the response status code should be 404
