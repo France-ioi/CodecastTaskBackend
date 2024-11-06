@@ -18,6 +18,6 @@ Given(/^I seed the ID generator to (\d+)$/, function (seed: number) {
 Given(/^"([^"]*)" is a token signed by the platform with the following payload:$/, async function (this, tokenName: string, payload: string) {
   const tokenGenerator = new TokenGenerator();
   await tokenGenerator.setKeys(appConfig.platform.ownPrivateKey);
-  const parsedPayload = JSON.parse(payload) as Record<string, any>;
+  const parsedPayload = JSON.parse(payload) as Record<string, unknown>;
   this[tokenName] = await tokenGenerator.jwsSignPayload(parsedPayload);
 });

@@ -3,16 +3,22 @@ import * as D from "io-ts/Decoder";
 import {ResetMode, simpleGit, SimpleGit, SimpleGitOptions} from 'simple-git';
 import * as fs from 'fs';
 import {CachePool} from "./caching";
+import appConfig from "./config";
+
+const repositoryDecoder = pipe(
+  D.string,
+  D.refine((str): str is string => 'test' !== appConfig.nodeEnv ? /[a-z0-9]+@.+\.git/.test(str) : true, 'valid_repository_format')
+);
 
 export const gitRepositoryBranchesDecoder = pipe(
   D.struct({
-    repository: D.string,
+    repository: repositoryDecoder,
   }),
 );
 
 export const gitRepositoryFolderContentDecoder = pipe(
   D.struct({
-    repository: D.string,
+    repository: repositoryDecoder,
     branch: D.string,
   }),
   D.intersect(D.partial({
@@ -22,7 +28,7 @@ export const gitRepositoryFolderContentDecoder = pipe(
 
 export const gitPullDecoder = pipe(
   D.struct({
-    repository: D.string,
+    repository: repositoryDecoder,
     branch: D.string,
     file: D.string,
   }),
@@ -34,16 +40,34 @@ export const gitPullDecoder = pipe(
 
 export const gitPushDecoder = pipe(
   D.struct({
-    repository: D.string,
+    repository: repositoryDecoder,
     branch: D.string,
     file: D.string,
     revision: D.string,
     source: D.string,
     username: D.string,
+    commitMessage: D.string,
   }),
 );
 
 export class NotUpToDateError extends Error {
+}
+
+export class GitConflictError extends Error {
+  public conflictSource: string|undefined;
+  public conflictRevision: string|undefined;
+
+  setConflictSource(conflictSource: string): this {
+    this.conflictSource = conflictSource;
+
+    return this;
+  }
+
+  setConflictRevision(conflictRevision: string): this {
+    this.conflictRevision = conflictRevision;
+
+    return this;
+  }
 }
 
 const gitSyncCachePool = new CachePool();
@@ -133,10 +157,14 @@ async function initGitRepository(repository: string, gitUsername?: string): Prom
   const GIT_SSH_COMMAND = `ssh -i ${keyFilePath} -o IdentitiesOnly=yes`;
   git.env('GIT_SSH_COMMAND', GIT_SSH_COMMAND);
 
-  if (gitUsername) {
-    git
-      .addConfig('user.name', gitUsername)
-      .addConfig('user.email', 'git-sync@france-ioi.org');
+  git
+    .addConfig('user.name', gitUsername ?? 'Git Sync')
+    .addConfig('user.email', 'git-sync@france-ioi.org');
+
+  // If there is a rebase, abort it
+  try {
+    await git.rebase(['--abort']);
+  } catch (e) {
   }
 
   return git;
@@ -147,6 +175,9 @@ function getGitRepositoryPath(repository: string) {
 }
 
 export async function gitPull(repository: string, branch: string, file: string, revision?: string, source?: string) {
+  const repoPath = getGitRepositoryPath(repository);
+  const filePath = repoPath + '/' + file;
+
   const git = await initGitRepository(repository);
 
   await git.fetch('origin', branch);
@@ -158,21 +189,39 @@ export async function gitPull(repository: string, branch: string, file: string, 
     await git.reset(ResetMode.HARD, [`origin/${branch}`]);
   }
 
-  await git.pull('origin', branch, ['--rebase']);
-
-  const repoPath = getGitRepositoryPath(repository);
-  const filePath = repoPath + '/' + file;
-
   if (!fs.existsSync(filePath)) {
     throw new TypeError(`This file does not exist on the repository: ${file}`);
   }
 
+  if (undefined !== source) {
+    fs.writeFileSync(filePath, source);
+  }
+
+  await git.commit('Before pull rebase', [filePath]);
+
+  try {
+    await git.pull('origin', branch, ['--rebase']);
+  } catch (e: unknown) {
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
+
+    if (e instanceof Error && -1 !== e?.message.indexOf('CONFLICT')) {
+      const lastRevision = await getRemoteLastRevision(git, repository, branch);
+
+      const annotatedSource = fileContent
+        .replace(/<<<<<<< HEAD/g, '<<<<<<< Remote changes')
+        .replace(/>>>>>>> [a-z0-9]+ \(Before pull rebase\)/g, '>>>>>>> Your changes')
+      throw (new GitConflictError())
+        .setConflictSource(annotatedSource)
+        .setConflictRevision(lastRevision!)
+    }
+  }
+
   const fileContent = fs.readFileSync(filePath, 'utf-8');
-  const currentRevision = await git.revparse(['HEAD']);
+  const lastRevision = await getRemoteLastRevision(git, repository, branch);
 
   return {
     content: fileContent,
-    revision: currentRevision,
+    revision: lastRevision,
   };
 }
 
@@ -199,7 +248,7 @@ export async function gitPush(parameters: D.TypeOf<typeof gitPushDecoder>) {
 
   fs.writeFileSync(filePath, source);
 
-  await git.commit('TODO change this', filePath);
+  await git.commit(parameters.commitMessage, filePath);
 
   await git.push('origin', branch);
 

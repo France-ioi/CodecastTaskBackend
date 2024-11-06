@@ -2,10 +2,14 @@ import {Server} from '@hapi/hapi';
 import {
   getGitRepositoryBranches,
   getGitRepositoryFolderContent,
+  GitConflictError,
   gitPull,
-  gitPullDecoder, gitPush, gitPushDecoder,
+  gitPullDecoder,
+  gitPush,
+  gitPushDecoder,
   gitRepositoryBranchesDecoder,
-  gitRepositoryFolderContentDecoder, NotUpToDateError
+  gitRepositoryFolderContentDecoder,
+  NotUpToDateError,
 } from '../git_sync';
 import {decode} from '../util';
 import {NotFoundError} from '../error_handler';
@@ -69,6 +73,16 @@ export function addGitRoutes(server: Server): void {
             revision: pullResult.revision,
           });
         } catch (e) {
+          if (e instanceof GitConflictError) {
+            return h.response({
+              success: false,
+              error: 'conflict',
+              conflict_source: e.conflictSource,
+              conflict_revision: e.conflictRevision,
+            }).code(400);
+          }
+
+          console.error(e);
           throw new NotFoundError('Unable to fetch repository content, check that you can access this repository');
         }
       }

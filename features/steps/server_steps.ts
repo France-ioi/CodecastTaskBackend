@@ -11,11 +11,11 @@ import nock from 'nock';
 interface ServerStepsContext {
   response: ServerInjectResponse,
   responsePromise: Promise<ServerInjectResponse>,
-  [key: string]: any,
+  [key: string]: unknown,
 }
 
-function injectVariables(context: {[key: string]: string}, payload: string): string {
-  return payload.replace(/\{\{(\w+)}}/g, (replacement, contents: string) => context[contents]);
+function injectVariables(context: {[key: string]: unknown}, payload: string): string {
+  return payload.replace(/\{\{(\w+)}}/g, (replacement, contents: string) => String(context[contents]));
 }
 
 When(/^I send a GET request to "([^"]*)"$/, async function (this: ServerStepsContext, url: string) {
@@ -82,8 +82,8 @@ interface WebSocketData {
   port: number,
   wss: ws.WebSocketServer,
   activeConnections: ws.WebSocket[],
-  ctx: Record<string, any>,
-  lastMessages: any[],
+  ctx: Record<string, unknown>,
+  lastMessages: unknown[],
 }
 
 const openServers: {[key: string]: WebSocketData} = {};
@@ -165,7 +165,7 @@ Then(/^the "([^"]*)" WS server should have received the following JSON:$/, funct
 Given(/^I setup a mock API answering any POST request to "([^"]*)" with the following payload:$/, function (this: ServerStepsContext, endpoint: string, mockPayload: string) {
   nock('https://mockapi.com')
     .post(endpoint)
-    .reply(200, JSON.parse(mockPayload) as Record<string, any>);
+    .reply(200, JSON.parse(mockPayload) as Record<string, unknown>);
 });
 
 Then(/^the mock API should have received the expected request$/, function () {

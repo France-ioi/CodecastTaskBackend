@@ -12,7 +12,8 @@ Feature: Push Git repository
         "file": "test.txt",
         "source": "Test\nGit\nFile\nSample",
         "revision": "{{currentRevisionNumber}}",
-        "username": "Test User"
+        "username": "Test User",
+        "commitMessage": "Test commit message"
       }
       """
 
@@ -37,7 +38,8 @@ Feature: Push Git repository
         "file": "test.txt",
         "source": "Test\nGit\nFile\nSample",
         "revision": "{{currentRevisionNumber}}",
-        "username": "Test User"
+        "username": "Test User",
+        "commitMessage": "Test commit message"
       }
       """
 
@@ -59,7 +61,8 @@ Feature: Push Git repository
         "file": "test.txt",
         "source": "Test\nGit\nFile\nSample",
         "revision": "{{currentRevisionNumber}}",
-        "username": "Test User"
+        "username": "Test User",
+        "commitMessage": "Test commit message"
       }
       """
 
