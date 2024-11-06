@@ -121,6 +121,7 @@ cv2.imwrite('${resultImageName}', result)`;
         return `"${imagePath}"`;
       }
 
+      // Escape quotes to prevent Python custom code injection
       // eslint-disable-next-line
       arg = arg.replace(/"/g, '\\\"');
 
