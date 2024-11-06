@@ -16,7 +16,7 @@ export const remoteCallPayloadDecoder = pipe(
   }),
 );
 
-export async function executeRemoteCall(libraryName: string, callName: string, args: any[]): Promise<unknown> {
+export async function executeRemoteCall(libraryName: string, callName: string, args: unknown[]): Promise<unknown> {
   if (!(libraryName in availableLibraries)) {
     throw new Error(`Unknown remote lib name: ${libraryName}`);
   }

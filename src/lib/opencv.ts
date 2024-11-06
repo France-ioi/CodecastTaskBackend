@@ -25,7 +25,7 @@ interface FileArg {
   fileUrl: string,
 }
 
-function isFileArg(arg: any): arg is FileArg {
+function isFileArg(arg: unknown): arg is FileArg {
   return 'object' === typeof arg && null !== arg && 'fileType' in arg;
 }
 
@@ -47,7 +47,7 @@ class EchoStream extends stream.Writable {
 export class OpenCvLib extends RemoteLib {
   private dockerInstance: Docker|null = null;
 
-  async executeRemoteCall(callName: string, args: any[]): Promise<any> {
+  async executeRemoteCall(callName: string, args: unknown[]): Promise<{fileType: 'image', fileUrl: string}> {
     if (-1 === ALLOWED_CALLS.indexOf(callName)) {
       throw new TypeError(`Unauthorized OpenCV call name: ${callName}`);
     }
@@ -61,7 +61,7 @@ export class OpenCvLib extends RemoteLib {
     const images = await dockerInstance.listImages();
     if (!images.find(image => image.RepoTags && image.RepoTags.includes(OPENCV_IMAGE))) {
       await new Promise(resolve => {
-        void dockerInstance.pull(OPENCV_IMAGE, (err: any, stream: NodeJS.ReadableStream) => {
+        void dockerInstance.pull(OPENCV_IMAGE, (err: unknown, stream: NodeJS.ReadableStream) => {
           dockerInstance.modem.followProgress(stream, resolve);
         });
       });
@@ -95,7 +95,7 @@ cv2.imwrite('${resultImageName}', result)`;
     };
   }
 
-  async formatArguments(args: any[]): Promise<string> {
+  async formatArguments(args: unknown[]): Promise<string> {
     const argsString = [];
     for (const arg of args) {
       argsString.push(await this.convertArgument(arg));
@@ -104,7 +104,7 @@ cv2.imwrite('${resultImageName}', result)`;
     return `${argsString.join(', ')}`;
   }
 
-  async convertArgument(arg: any): Promise<string> {
+  async convertArgument(arg: unknown): Promise<string> {
     if ('object' === typeof arg && isFileArg(arg)) {
       const fileName = arg.fileUrl.split('/').pop() ?? '';
       if (!fileName.match(/^[a-zA-Z0-9-]+\.[a-z]+$/)) {
@@ -128,10 +128,7 @@ cv2.imwrite('${resultImageName}', result)`;
     }
 
     if (Array.isArray(arg)) {
-      const convertedArgs = [];
-      for (const element of arg) {
-        convertedArgs.push(await this.convertArgument(element));
-      }
+      const convertedArgs = await Promise.all(arg.map(element => this.convertArgument(element)));
 
       return `(${convertedArgs.join(', ')})`;
     }
@@ -142,7 +139,7 @@ cv2.imwrite('${resultImageName}', result)`;
     throw new TypeError(`Unaccepted argument type: ${String(arg)}`);
   }
 
-  isImageUrl(arg: any): boolean {
+  isImageUrl(arg: unknown): boolean {
     return 'string' === typeof arg && !!arg.match(/^https?:\/\/.+\.(jpg|png|gif|webp|avi)$/);
   }
 
