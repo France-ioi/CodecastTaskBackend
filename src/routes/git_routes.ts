@@ -1,5 +1,6 @@
 import {Server} from '@hapi/hapi';
 import {
+  getGitPublicKeyContent,
   getGitRepositoryBranches,
   getGitRepositoryFolderContent,
   GitConflictError,
@@ -30,7 +31,11 @@ export function addGitRoutes(server: Server): void {
             branches,
           });
         } catch (e) {
-          throw new NotFoundError('Unable to fetch repository branches, check that you can access this repository');
+          return h.response({
+            error: 'Unable to fetch repository branches, check that you can access this repository',
+            publicKey: getGitPublicKeyContent(),
+          })
+            .code(404);
         }
       }
     }
@@ -82,7 +87,6 @@ export function addGitRoutes(server: Server): void {
             }).code(400);
           }
 
-          console.error(e);
           throw new NotFoundError('Unable to fetch repository content, check that you can access this repository');
         }
       }

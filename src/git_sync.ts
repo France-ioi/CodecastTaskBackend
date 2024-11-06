@@ -5,6 +5,8 @@ import * as fs from 'fs';
 import {CachePool} from "./caching";
 import appConfig from "./config";
 
+const keyFilePath = process.cwd() + '/keys/git_sync';
+
 const repositoryDecoder = pipe(
   D.string,
   D.refine((str): str is string => 'test' !== appConfig.nodeEnv ? /[a-z0-9]+@.+\.git/.test(str) : true, 'valid_repository_format')
@@ -131,13 +133,9 @@ export async function getGitRepositoryFolderContent(repository: string, branch: 
 }
 
 async function initGitRepository(repository: string, gitUsername?: string): Promise<SimpleGit> {
-  const keyFilePath = process.cwd() + '/keys/git_sync';
-  if (!fs.existsSync(keyFilePath)) {
-    throw new Error("There is no SSH key to interact with the Git client. Create one following the README of this project.")
-  }
+  assertGitKeysExistence();
 
   const repoPath = getGitRepositoryPath(repository);
-
   const options: Partial<SimpleGitOptions> = {
     baseDir: repoPath,
   };
@@ -230,7 +228,6 @@ export async function gitPush(parameters: D.TypeOf<typeof gitPushDecoder>) {
   const git = await initGitRepository(repository, username);
 
   const lastRevision = await getRemoteLastRevision(git, repository, branch);
-  console.log({lastRevision, revision})
   if (null === lastRevision || lastRevision !== revision) {
     throw new NotUpToDateError(`You are not up to date, your revision is ${revision} and last revision is ${lastRevision}`);
   }
@@ -257,4 +254,16 @@ export async function gitPush(parameters: D.TypeOf<typeof gitPushDecoder>) {
   return {
     revision: currentRevision,
   };
+}
+
+export function getGitPublicKeyContent() {
+  assertGitKeysExistence();
+
+  return fs.readFileSync(keyFilePath + '.pub', 'utf-8');
+}
+
+export function assertGitKeysExistence() {
+  if (!fs.existsSync(keyFilePath)) {
+    throw new Error("There is no SSH key to interact with the Git client. Create one following the README of this project.")
+  }
 }
