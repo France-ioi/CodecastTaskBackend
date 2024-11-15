@@ -8,12 +8,23 @@ interface GitStepsContext {
   currentRevisionNumber: string,
 }
 
+async function initGitRepository(): Promise<SimpleGit> {
+  const options: Partial<SimpleGitOptions> = {
+    baseDir: FAKE_GIT_REPO_PATH,
+  };
+
+  const git: SimpleGit = simpleGit(options);
+  await git.init();
+
+  await git
+    .addConfig('user.name', 'Git Sync')
+    .addConfig('user.email', 'git-sync@france-ioi.org');
+
+  return git;
+}
+
 Given(/^there is a fake Git repository$/, async function (this: GitStepsContext) {
   const repoPath = FAKE_GIT_REPO_PATH;
-
-  const options: Partial<SimpleGitOptions> = {
-    baseDir: repoPath,
-  };
 
   const doesFolderExist = fs.existsSync(repoPath + '/.git');
   if (doesFolderExist) {
@@ -21,8 +32,7 @@ Given(/^there is a fake Git repository$/, async function (this: GitStepsContext)
   }
   fs.mkdirSync(repoPath, {recursive: true});
 
-  const git: SimpleGit = simpleGit(options);
-  await git.init();
+  const git = await initGitRepository();
 
   fs.writeFileSync(`${repoPath}/test.txt`, `Test
 Git
@@ -30,6 +40,10 @@ File
 Sample`);
   fs.mkdirSync(`${repoPath}/subfolder`);
   fs.writeFileSync(`${repoPath}/subfolder/subfile.txt`, 'Test');
+
+  await git
+    .addConfig('user.name', 'Git Sync')
+    .addConfig('user.email', 'git-sync@france-ioi.org');
 
   await git.add(['test.txt', 'subfolder/subfile.txt']);
   await git.commit('Commit');
@@ -47,23 +61,15 @@ Changed`);
   this.currentRevisionNumber = await git.revparse(['HEAD']);
 });
 
-Then(/^I update the current revision number of the repository at "([^"]*)"$/, async function (this: GitStepsContext, repoPath: string) {
-  const options: Partial<SimpleGitOptions> = {
-    baseDir: repoPath,
-  };
-  const git: SimpleGit = simpleGit(options);
+Then(/^I update the current revision number of the repository at "([^"]*)"$/, async function (this: GitStepsContext) {
+  const git = await initGitRepository();
 
   this.currentRevisionNumber = await git.revparse(['HEAD']);
 });
 
 Given(/^I make a commit on the fake Git repository changing the file "([^"]*)" to this content: "([^"]*)"$/, async function (this: GitStepsContext, file: string, content: string) {
-  const repoPath = FAKE_GIT_REPO_PATH;
-  const options: Partial<SimpleGitOptions> = {
-    baseDir: repoPath,
-  };
+  const git = await initGitRepository();
 
-  const git: SimpleGit = simpleGit(options);
-
-  fs.writeFileSync(`${repoPath}/${file}`, content);
-  await git.commit('Change content', [`${repoPath}/${file}`]);
+  fs.writeFileSync(`${FAKE_GIT_REPO_PATH}/${file}`, content);
+  await git.commit('Change content', [`${FAKE_GIT_REPO_PATH}/${file}`]);
 });
