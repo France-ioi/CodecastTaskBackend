@@ -115,7 +115,11 @@ export function addGitRoutes(server: Server): void {
             }).code(400);
           }
 
-          throw new NotFoundError('Unable to fetch repository content, check that you can access this repository');
+          return h.response({
+            error: 'Unable to fetch repository branches, check that you can access this repository',
+            publicKey: getGitPublicKeyContent(),
+          })
+            .code(404);
         }
       }
     }
