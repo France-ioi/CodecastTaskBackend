@@ -37,7 +37,7 @@ Feature: Pull Git repository
       """
 
     Then the response status code should be 400
-    And I update the current revision number of the repository at "/tmp/git-repo-test"
+    And I update the current revision number of the fake repository
     And the response body should be the following JSON:
       """
       {

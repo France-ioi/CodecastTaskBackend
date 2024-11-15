@@ -41,10 +41,6 @@ Sample`);
   fs.mkdirSync(`${repoPath}/subfolder`);
   fs.writeFileSync(`${repoPath}/subfolder/subfile.txt`, 'Test');
 
-  await git
-    .addConfig('user.name', 'Git Sync')
-    .addConfig('user.email', 'git-sync@france-ioi.org');
-
   await git.add(['test.txt', 'subfolder/subfile.txt']);
   await git.commit('Commit');
 
@@ -61,7 +57,7 @@ Changed`);
   this.currentRevisionNumber = await git.revparse(['HEAD']);
 });
 
-Then(/^I update the current revision number of the repository at "([^"]*)"$/, async function (this: GitStepsContext) {
+Then(/^I update the current revision number of the fake repository$/, async function (this: GitStepsContext) {
   const git = await initGitRepository();
 
   this.currentRevisionNumber = await git.revparse(['HEAD']);

@@ -18,7 +18,7 @@ Feature: Push Git repository
       """
 
     Then the response status code should be 200
-    And I update the current revision number of the repository at "/tmp/git-repo-test"
+    And I update the current revision number of the fake repository
     And the response body should be the following JSON:
       """
       {
@@ -28,7 +28,7 @@ Feature: Push Git repository
       """
 
   Scenario: Push to known repository but there has been changes
-    Given I update the current revision number of the repository at "/tmp/git-repo-test"
+    Given I update the current revision number of the fake repository
     And I make a commit on the fake Git repository changing the file "test.txt" to this content: "Test\nGit\nFile\nSample"
     When I send a POST request to "/git/push" with the following payload:
       """
