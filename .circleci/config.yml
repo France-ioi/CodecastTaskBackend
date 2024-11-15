@@ -40,6 +40,11 @@ jobs:
             sudo apt install -y mysql-client
             mysql -h 127.0.0.1 -u root -pcodecast task_platform < schema.sql
       - run:
+          name: Create SSH key for Git interaction
+          command: |
+            mkdir keys
+            ssh-keygen -t ed25519 -f keys/git_sync -N ""
+      - run:
           name: Run tests
           command: yarn run test
 
