@@ -13,12 +13,12 @@ export class InvalidInputError extends Error {
 export class PlatformInteractionError extends Error {
 }
 
-export function isResponseBoom(response: any): response is Boom {
+export function isResponseBoom(response: unknown): response is Boom {
   return (response as Boom).isBoom && (response as Boom).isServer;
 }
 
 export class ErrorHandler {
-  public handleError(e: any, h: Hapi.ResponseToolkit): ResponseValue {
+  public handleError(e: unknown, h: Hapi.ResponseToolkit): ResponseValue {
     if (e instanceof InvalidInputError) {
       return h
         .response({error: 'Incorrect input arguments.', message: String(e)})

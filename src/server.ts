@@ -14,9 +14,11 @@ import {receiveSubmissionResultsFromTaskGrader} from './grader_webhook';
 import {longPollingHandler} from './long_polling';
 import log from 'loglevel';
 import HAPIWebSocket from 'hapi-plugin-websocket';
+import Inert from '@hapi/inert';
 import {remoteExecutionProxyHandler} from './remote_execution_proxy';
 import appConfig from './config';
 import {decode} from './util';
+import {decodeAndExecuteRemoteCall} from './lib/remote_lib_executor';
 
 export async function init(): Promise<Server> {
   const server = Hapi.server({
@@ -30,6 +32,7 @@ export async function init(): Promise<Server> {
   });
 
   await server.register(HAPIWebSocket);
+  await server.register(Inert);
 
   server.route({
     method: 'GET',
@@ -134,6 +137,31 @@ export async function init(): Promise<Server> {
       },
       handler: async request => await remoteExecutionProxyHandler(request.websocket().ws, request.websocket().ctx, request.payload)
     },
+  });
+
+  server.route({
+    method: 'POST',
+    path: '/remote-lib-call',
+    options: {
+      handler: async (request, h) => {
+        const {success, result, error} = await decodeAndExecuteRemoteCall(request.payload);
+
+        return h.response({
+          success,
+          ...(success ? {result} : {error}),
+        });
+      }
+    }
+  });
+
+  server.route({
+    method: 'GET',
+    path: '/image-cache/{param*}',
+    handler: {
+      directory: {
+        path: 'cache'
+      }
+    }
   });
 
   const errorHandler = new ErrorHandler();
