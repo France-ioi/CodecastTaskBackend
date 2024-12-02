@@ -19,6 +19,7 @@ import {remoteExecutionProxyHandler} from './remote_execution_proxy';
 import appConfig from './config';
 import {decode} from './util';
 import {decodeAndExecuteRemoteCall} from './lib/remote_lib_executor';
+import {addGitRoutes} from "./routes/git_routes";
 
 export async function init(): Promise<Server> {
   const server = Hapi.server({
@@ -163,6 +164,8 @@ export async function init(): Promise<Server> {
       }
     }
   });
+
+  addGitRoutes(server);
 
   const errorHandler = new ErrorHandler();
 

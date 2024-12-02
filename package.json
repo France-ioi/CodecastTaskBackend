@@ -13,12 +13,14 @@
     "io-ts": "^2.2.18",
     "jose": "^4.9.0",
     "loglevel": "^1.8.1",
+    "lru-cache": "10",
     "moment": "^2.29.4",
-    "mysql2": "^2.3.3"
+    "mysql2": "^2.3.3",
+    "simple-git": "^3.27.0"
   },
   "scripts": {
     "dev": "NODE_ENV=development ts-node-dev --respawn src/main.ts",
-    "lint": "eslint '{src,features}/**/*.ts'",
+    "lint": "eslint features/**/*.ts src/**/*.ts",
     "start": "NODE_ENV=production ts-node dist/main.js",
     "build": "tsc -p .",
     "test": "NODE_ENV=test cucumber-js"

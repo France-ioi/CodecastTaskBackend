@@ -94,7 +94,7 @@ class RemoteSocketProxyHandler {
   }
 }
 
-export async function remoteExecutionProxyHandler(websocket: ws.WebSocket, webSocketContext: Record<string, any>, clientPayload: unknown): Promise<null> {
+export async function remoteExecutionProxyHandler(websocket: ws.WebSocket, webSocketContext: Record<string, unknown>, clientPayload: unknown): Promise<null> {
   const clientPayloadData: RemoteExecutionClientPayload = decode(remoteExecutionClientDecoder)(clientPayload);
 
   if (undefined === webSocketContext.proxyId) {
