@@ -13,6 +13,7 @@
     "io-ts": "^2.2.18",
     "jose": "^4.9.0",
     "loglevel": "^1.8.1",
+    "lru-cache": "10",
     "moment": "^2.29.4",
     "mysql2": "^2.3.3",
     "simple-git": "^3.27.0"

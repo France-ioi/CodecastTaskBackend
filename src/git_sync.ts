@@ -2,8 +2,8 @@ import {pipe} from "fp-ts/function";
 import * as D from "io-ts/Decoder";
 import {ResetMode, simpleGit, SimpleGit, SimpleGitOptions} from 'simple-git';
 import * as fs from 'fs';
-import {CachePool} from "./caching";
 import appConfig from "./config";
+import {LRUCache} from 'lru-cache';
 
 const keyFilePath = process.cwd() + '/keys/git_sync';
 
@@ -72,7 +72,11 @@ export class GitConflictError extends Error {
   }
 }
 
-const gitSyncCachePool = new CachePool();
+const options = {
+  max: 100,
+}
+
+const gitSyncCachePool = new LRUCache(options)
 
 export async function getGitRepositoryBranches(repository: string) {
   const git = await initGitRepository(repository);
@@ -97,9 +101,11 @@ export async function getRemoteLastRevision(git: SimpleGit, repository: string, 
 export async function getGitRepositoryFolderContent(repository: string, branch: string, folder?: string) {
   const git = await initGitRepository(repository);
 
-  await gitSyncCachePool.get(`fetch:${repository}:${branch}`, 60, async () => {
+  const cacheKey = `fetch:${repository}:${branch}`;
+  if (!gitSyncCachePool.has(cacheKey)) {
     await git.fetch('origin', branch);
-  });
+    gitSyncCachePool.set(cacheKey, 'fetched', {ttl: 60*1000}); // cached for a minute
+  }
 
   await git.checkout(branch);
   await git.reset(ResetMode.HARD, [`origin/${branch}`]);
