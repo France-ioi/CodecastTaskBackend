@@ -1,6 +1,6 @@
 import Hapi, {Lifecycle} from '@hapi/hapi';
 import {Server} from '@hapi/hapi';
-import {getTask} from './tasks';
+import {getTask, taskQueryDecoder, TaskQueryParameters} from './tasks';
 import {
   createOfflineSubmission,
   createSubmission,
@@ -40,7 +40,9 @@ export async function init(): Promise<Server> {
     path: '/tasks/{taskId}',
     options: {
       handler: async (request, h) => {
-        const taskData = await getTask(String(request.params.taskId));
+        const taskQueryParameters: TaskQueryParameters = decode(taskQueryDecoder)(request.query);
+
+        const taskData = await getTask(String(request.params.taskId), taskQueryParameters);
         if (null === taskData) {
           throw new NotFoundError(`Task not found with this id: ${String(request.params.taskId)}`);
         }

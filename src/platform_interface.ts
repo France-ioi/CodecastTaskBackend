@@ -11,6 +11,7 @@ import * as Db from './db';
 import {Platform, SourceCode, Submission} from './db_models';
 import {InvalidInputError, NotFoundError, PlatformInteractionError} from './error_handler';
 import log from 'loglevel';
+import * as jose from "jose";
 
 export interface PlatformTaskTokenData {
   payload: PlatformTaskTokenPayload,
@@ -32,6 +33,15 @@ export async function extractPlatformTaskTokenData(token: string|null|undefined,
   } catch (e) {
     if (appConfig.testMode.enabled && null !== taskId) {
       payload = getTestTokenParameters(taskId);
+
+      // Try to supplement the test token parameters with real token data
+      try {
+        payload = {
+          ...payload,
+          ...(await jose.decodeJwt(token!)),
+        }
+      } catch (e) {
+      }
     } else {
       throw e;
     }

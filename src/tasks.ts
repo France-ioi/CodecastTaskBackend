@@ -1,5 +1,8 @@
 import * as Db from './db';
 import {Task, TaskString, TaskSubtask, TaskTest, TaskLimitModel} from './db_models';
+import {extractPlatformTaskTokenData} from "./platform_interface";
+import {pipe} from "fp-ts/function";
+import * as D from "io-ts/Decoder";
 
 export interface TaskNormalized {
   id: string,
@@ -27,7 +30,7 @@ export interface TaskStringNormalized {
   language: string,
   title: string,
   statement: string,
-  solution: string|null,
+  solution?: string|null,
 }
 
 export interface TaskSubtaskNormalized {
@@ -61,7 +64,16 @@ export interface TaskOutput extends TaskNormalized {
   strings: TaskStringNormalized[],
   subTasks: TaskSubtaskNormalized[],
   tests: TaskTestNormalized[],
+  solution?: string,
 }
+
+export const taskQueryDecoder = pipe(
+  D.partial({
+    token: D.nullable(D.string),
+    platform: D.nullable(D.string),
+  })
+);
+export type TaskQueryParameters = D.TypeOf<typeof taskQueryDecoder>;
 
 function normalizeTask(task: Task): TaskNormalized {
   return {
@@ -87,14 +99,14 @@ function normalizeTaskLimit(taskLimit: TaskLimitModel): TaskLimitNormalized {
   };
 }
 
-function normalizeTaskString(taskString: TaskString): TaskStringNormalized {
+function normalizeTaskString(taskString: TaskString, accessSolution: boolean): TaskStringNormalized {
   return {
     id: taskString.ID,
     taskId: taskString.idTask,
     language: taskString.sLanguage,
     title: taskString.sTitle,
     statement: taskString.sStatement,
-    solution: taskString.sSolution,
+    ...(accessSolution ? {solution: taskString.sSolution} : {}),
   };
 }
 
@@ -132,7 +144,7 @@ export async function findTaskById(taskId: string): Promise<Task|null> {
   return await Db.querySingleResult<Task>('SELECT * FROM tm_tasks WHERE ID = ?', [taskId]);
 }
 
-export async function getTask(taskId: string): Promise<TaskOutput|null> {
+export async function getTask(taskId: string, taskParameters: TaskQueryParameters): Promise<TaskOutput|null> {
   const task = await findTaskById(taskId);
   if (null === task) {
     return null;
@@ -143,10 +155,18 @@ export async function getTask(taskId: string): Promise<TaskOutput|null> {
   const taskSubtasks = await Db.execute<TaskSubtask[]>('SELECT * FROM tm_tasks_subtasks WHERE idTask = ?', [taskId]);
   const tasksTests = await Db.execute<TaskTest[]>('SELECT * FROM tm_tasks_tests WHERE idTask = ?', [taskId]);
 
+  let accessSolution = false;
+  if (taskParameters?.token) {
+    const taskTokenData = await extractPlatformTaskTokenData(taskParameters.token, taskParameters.platform, taskId);
+    if (taskTokenData.payload.bAccessSolutions) {
+      accessSolution = true;
+    }
+  }
+
   return {
     ...normalizeTask(task),
     limits: taskLimits.map(normalizeTaskLimit),
-    strings: taskStrings.map(normalizeTaskString),
+    strings: taskStrings.map(taskString => normalizeTaskString(taskString, accessSolution)),
     subTasks: taskSubtasks.map(normalizeTaskSubtask),
     tests: tasksTests.map(normalizeTaskTest),
   };

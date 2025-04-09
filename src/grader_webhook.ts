@@ -4,7 +4,7 @@ import {pipe} from 'fp-ts/function';
 import * as D from 'io-ts/Decoder';
 import {JwesDecoder} from './crypto/jwes_decoder';
 import * as Db from './db';
-import {TaskSubtask, TaskTest} from './db_models';
+import {Submission, Task, TaskSubtask, TaskTest} from './db_models';
 import {findTaskById} from './tasks';
 import {longPollingHandler} from './long_polling';
 import appConfig from './config';
@@ -122,6 +122,29 @@ export async function receiveSubmissionResultsFromTaskGrader(taskGraderWebhookPa
     throw new Error(`Cannot find task ${submission.idTask}`);
   }
 
+  let score = 0;
+  try {
+    score = await storeResultsInDatabase(submission, task, tokenParams);
+  } catch (e) {
+    await Db.execute('UPDATE tm_submissions SET nbTestsPassed = :nbTestsPassed, iScore = :iScore, nbTestsTotal = :nbTestsTotal, bCompilError = :bCompilError, bSuccess = :bSuccess, sCompilMsg = :sCompilMsg, sErrorMsg = :sErrorMsg, sMetadata = :sMetadata, bEvaluated = \'1\' WHERE id = :sName', {
+      sName: tokenParams.sTaskName,
+      nbTestsPassed: 0,
+      iScore: 0,
+      nbTestsTotal: 0,
+      bCompilError: true,
+      sErrorMsg: null,
+      sCompilMsg: "An error occurred while receiving and storing the results of the evaluation.",
+      sMetadata: null,
+      bSuccess: false,
+    });
+  } finally {
+    longPollingHandler.fireEvent('evaluation-' + submission.ID);
+    await sendSubmissionResultToPlatform(submission, score);
+  }
+}
+
+
+export async function storeResultsInDatabase(submission: Submission, task: Task, tokenParams: TokenParams): Promise<number> {
   const allTests = await Db.execute<TaskTest[]>(`SELECT tm_tasks_tests.sName, tm_tasks_tests.ID, tm_tasks_tests.sGroupType, tm_tasks_tests.iRank, tm_tasks_tests.sOutput from tm_tasks_tests
     JOIN tm_submissions ON tm_submissions.idTask = tm_tasks_tests.idTask
     WHERE tm_submissions.ID = :idSubmission and ((tm_tasks_tests.sGroupType = 'Evaluation' or tm_tasks_tests.sGroupType = 'Submission') or (tm_tasks_tests.sGroupType = 'User' and tm_tasks_tests.idUser = tm_submissions.idUser and tm_tasks_tests.idPlatform = tm_submissions.idPlatform));`,
@@ -438,7 +461,5 @@ ${thisCompilMsg}`;
     });
   }
 
-  longPollingHandler.fireEvent('evaluation-' + submission.ID);
-
-  await sendSubmissionResultToPlatform(submission, iScore);
+  return iScore;
 }
