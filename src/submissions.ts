@@ -120,6 +120,7 @@ export interface SourceCodeNormalized {
   editable: boolean,
   active: boolean,
   rank: number,
+  type: string,
 }
 
 export interface SubmissionOutput extends SubmissionNormalized {
@@ -310,7 +311,7 @@ function normalizeSubmissionTest(submissionTest: SubmissionTest, submissionTests
   };
 }
 
-function normalizeSourceCode(sourceCode: SourceCode): SourceCodeNormalized {
+export function normalizeSourceCode(sourceCode: SourceCode): SourceCodeNormalized {
   return {
     id: sourceCode.ID,
     params: sourceCode.sParams ? JSON.parse(sourceCode.sParams) as SourceCodeParams : null,
@@ -319,6 +320,7 @@ function normalizeSourceCode(sourceCode: SourceCode): SourceCodeNormalized {
     editable: !!sourceCode.bEditable,
     active: !!sourceCode.bActive,
     rank: sourceCode.iRank,
+    type: sourceCode.sType,
   };
 }
 

@@ -161,8 +161,8 @@ CREATE TABLE `history_tm_solutions_strings` (
 CREATE TABLE `history_tm_source_codes` (
   `historyID` bigint NOT NULL,
   `ID` bigint NOT NULL,
-  `idUser` bigint NOT NULL,
-  `idPlatform` bigint NOT NULL,
+  `idUser` bigint DEFAULT NULL,
+  `idPlatform` bigint DEFAULT NULL,
   `idTask` bigint NOT NULL,
   `sDate` datetime NOT NULL,
   `sParams` tinytext,
@@ -731,8 +731,8 @@ DELIMITER ;
 
 CREATE TABLE `tm_source_codes` (
   `ID` bigint NOT NULL,
-  `idUser` bigint NOT NULL,
-  `idPlatform` bigint NOT NULL,
+  `idUser` bigint DEFAULT NULL,
+  `idPlatform` bigint DEFAULT NULL,
   `idTask` bigint NOT NULL,
   `sDate` datetime NOT NULL,
   `sParams` tinytext,

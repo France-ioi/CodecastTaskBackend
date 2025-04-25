@@ -21,7 +21,7 @@ function injectVariables(context: {[key: string]: unknown}, payload: string): st
 When(/^I send a GET request to "([^"]*)"$/, async function (this: ServerStepsContext, url: string) {
   this.response = await testServer.inject({
     method: 'GET',
-    url,
+    url: injectVariables(this, url),
   });
 });
 
@@ -63,6 +63,19 @@ Then(/^the response body should be the following JSON:$/, function (this: Server
   const expectedResponse: unknown = JSON.parse(injectVariables(this, expectedJson));
   const payload: unknown = JSON.parse(this.response.payload);
   expect(payload).to.deep.equal(expectedResponse);
+});
+
+Then(/^the response body content at property path "([^"]*)" should be the following JSON:$/, function (this: ServerStepsContext, propertyPath: string, expectedJson: string) {
+  const expectedResponse: unknown = JSON.parse(injectVariables(this, expectedJson));
+  const payload: unknown = JSON.parse(this.response.payload);
+
+  let payloadProperty = payload;
+  for (const element of propertyPath.split('.')) {
+    // @ts-ignore
+    payloadProperty = payloadProperty[element];
+  }
+
+  expect(payloadProperty).to.deep.equal(expectedResponse);
 });
 
 Then(/^the server must have returned a response within (\d+)ms$/, async function (this: ServerStepsContext, delay: number) {

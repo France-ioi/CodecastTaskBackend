@@ -1,8 +1,9 @@
 import * as Db from './db';
-import {Task, TaskString, TaskSubtask, TaskTest, TaskLimitModel} from './db_models';
-import {extractPlatformTaskTokenData} from "./platform_interface";
+import {Task, TaskString, TaskSubtask, TaskTest, TaskLimitModel, SourceCode} from './db_models';
+import {extractPlatformTaskTokenData, PlatformTaskTokenData} from "./platform_interface";
 import {pipe} from "fp-ts/function";
 import * as D from "io-ts/Decoder";
+import {normalizeSourceCode, SourceCodeNormalized} from "./submissions";
 
 export interface TaskNormalized {
   id: string,
@@ -64,6 +65,7 @@ export interface TaskOutput extends TaskNormalized {
   strings: TaskStringNormalized[],
   subTasks: TaskSubtaskNormalized[],
   tests: TaskTestNormalized[],
+  sourceCodes: SourceCodeNormalized[],
   solution?: string,
 }
 
@@ -153,14 +155,30 @@ export async function getTask(taskId: string, taskParameters: TaskQueryParameter
   const taskLimits = await Db.execute<TaskLimitModel[]>('SELECT * FROM tm_tasks_limits WHERE idTask = ?', [taskId]);
   const taskStrings = await Db.execute<TaskString[]>('SELECT * FROM tm_tasks_strings WHERE idTask = ?', [taskId]);
   const taskSubtasks = await Db.execute<TaskSubtask[]>('SELECT * FROM tm_tasks_subtasks WHERE idTask = ?', [taskId]);
-  const tasksTests = await Db.execute<TaskTest[]>('SELECT * FROM tm_tasks_tests WHERE idTask = ?', [taskId]);
+  const taskTests = await Db.execute<TaskTest[]>('SELECT * FROM tm_tasks_tests WHERE idTask = ?', [taskId]);
 
   let accessSolution = false;
+  let taskSourceCodes: SourceCode[]|null = null;
+  let taskTokenData: PlatformTaskTokenData|null = null;
   if (taskParameters?.token) {
-    const taskTokenData = await extractPlatformTaskTokenData(taskParameters.token, taskParameters.platform, taskId);
+    taskTokenData = await extractPlatformTaskTokenData(taskParameters.token, taskParameters.platform, taskId);
     if (taskTokenData.payload.bAccessSolutions) {
       accessSolution = true;
     }
+    if (taskTokenData.payload) {
+      taskSourceCodes = await Db.execute<SourceCode[]>(
+        'SELECT * FROM tm_source_codes WHERE idTask = ? AND ((idUser = ? and idPlatform = ?) OR  `sType` = \'Task\' OR `sType` = \'Solution\')',
+        [
+          taskId,
+          taskTokenData.payload.idUser,
+          taskTokenData.platform.ID,
+        ]
+      );
+    }
+  }
+
+  if (null === taskSourceCodes) {
+    taskSourceCodes = await Db.execute<SourceCode[]>('SELECT * FROM tm_source_codes WHERE idTask = ? AND (`sType` = \'Task\' OR `sType` = \'Solution\')', [taskId]);
   }
 
   return {
@@ -168,6 +186,7 @@ export async function getTask(taskId: string, taskParameters: TaskQueryParameter
     limits: taskLimits.map(normalizeTaskLimit),
     strings: taskStrings.map(taskString => normalizeTaskString(taskString, accessSolution)),
     subTasks: taskSubtasks.map(normalizeTaskSubtask),
-    tests: tasksTests.map(normalizeTaskTest),
+    tests: taskTests.map(normalizeTaskTest),
+    sourceCodes: taskSourceCodes.map(normalizeSourceCode),
   };
 }
