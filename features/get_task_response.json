@@ -23,8 +23,21 @@
       "language": "fr",
       "title": "Plateau",
       "statement": "<p>Instructions</p>",
-      "taskId": "1000",
-      "solution": null
+      "taskId": "1000"
+    }
+  ],
+  "sourceCodes": [
+    {
+      "id": "7001",
+      "active": true,
+      "editable": false,
+      "name": "defaultSource",
+      "params": {
+        "sLangProg": "python"
+      },
+      "rank": 0,
+      "source": "print(\"ici\")",
+      "type": "Task"
     }
   ],
   "subTasks": [

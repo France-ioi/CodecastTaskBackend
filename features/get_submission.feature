@@ -49,6 +49,7 @@ Feature: Get submission
            "id": "7001",
            "name": "485380303499640413",
            "source": "print(\"ici\")",
+           "type": "User",
            "params": {
              "sLangProg": "python"
            },
@@ -101,6 +102,7 @@ Feature: Get submission
            "id": "7001",
            "name": "485380303499640413",
            "source": "print(\"ici\")",
+           "type": "User",
            "params": {
              "sLangProg": "python"
            },
@@ -220,6 +222,7 @@ Feature: Get submission
            "id": "7001",
            "name": "485380303499640413",
            "source": "print(\"ici\")",
+           "type": "User",
            "params": {
              "sLangProg": "python"
            },
