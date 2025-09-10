@@ -4,6 +4,7 @@ import {extractPlatformTaskTokenData, PlatformTaskTokenData} from "./platform_in
 import {pipe} from "fp-ts/function";
 import * as D from "io-ts/Decoder";
 import {normalizeSourceCode, SourceCodeNormalized} from "./submissions";
+import appConfig from "./config";
 
 export interface TaskNormalized {
   id: string,
@@ -175,6 +176,8 @@ export async function getTask(taskId: string, taskParameters: TaskQueryParameter
         ]
       );
     }
+  } else if (appConfig.testMode.accessSolutions) {
+    accessSolution = true;
   }
 
   if (null === taskSourceCodes) {

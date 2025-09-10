@@ -324,7 +324,7 @@ export function normalizeSourceCode(sourceCode: SourceCode): SourceCodeNormalize
   };
 }
 
-export async function getSubmission(submissionId: string): Promise<SubmissionOutput|null> {
+export async function getSubmission(submissionId: string, withTaskTests: boolean = false): Promise<SubmissionOutput|null> {
   const submission = await findSubmissionById(submissionId);
   if (null === submission) {
     return null;
@@ -341,7 +341,7 @@ export async function getSubmission(submissionId: string): Promise<SubmissionOut
 
   const submissionSubtasks = await Db.execute<SubmissionSubtask[]>('SELECT * FROM tm_submissions_subtasks WHERE idSubmission = ?', [submissionId]);
   const submissionTestResults = await Db.execute<SubmissionTest[]>('SELECT * FROM tm_submissions_tests WHERE idSubmission = ?', [submissionId]);
-  const submissionTests = await Db.execute<TaskTest[]>('SELECT * FROM tm_tasks_tests WHERE idSubmission = ? AND sGroupType = "User"', [submissionId]);
+  const submissionTests = await Db.execute<TaskTest[]>(`SELECT * FROM tm_tasks_tests WHERE (idSubmission = ? AND sGroupType = "User")${withTaskTests ? " OR (idTask = ?)" : ''}`, [submissionId, ...(withTaskTests ? [submission.idTask] : [])]);
 
   return {
     ...normalizeSubmission(submission),
