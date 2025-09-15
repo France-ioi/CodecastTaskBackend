@@ -179,6 +179,169 @@ Feature: Get submission
       }
       """
 
+  Scenario: Get evaluated submission by id with tests
+    Given the database has the following table "tm_submissions":
+      | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | sMetadata        | bConfirmed | sMode     | iChecksum | iVersion   |
+      | 6000 | 1      | 1          | 1000   | 2023-04-03 | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 1          | {"errorline": 5} | 0          | Submitted | 0         | 2147483647 |
+    And the database has the following table "tm_submissions_subtasks":
+      | ID   | bSuccess | iScore | idSubtask | idSubmission | iVersion   |
+      | 7000 | 0        | 50     | 4000      | 6000         | 2147483647 |
+      | 7001 | 1        | 100    | 4001      | 6000         | 2147483647 |
+    And the database has the following table "tm_submissions_tests":
+      | ID   | idSubmission | idTest | iScore | iTimeMs | iMemoryKb | iErrorCode | sOutput | sErrorMsg | sMetadata        | sLog   | bNoFeedback | iVersion   | idSubmissionSubtask |
+      | 8000 | 6000         | 5000   | 100     | 5       | 22       | 0          |         |           | {"errorline": 4} |        | 1           | 2147483647 | 7000                |
+      | 8001 | 6000         | 5001   | 0       | 2       | 25       | 1          |         | Erreur    |                  |        | 1           | 2147483647 | 7000                |
+      | 8002 | 6000         | 5002   | 100     | 3       | 26       | 0          |         |           |                  |        | 1           | 2147483647 | 7001                |
+    And the database has the following table "tm_source_codes":
+      | ID   | idUser | idPlatform | idTask | sDate      | sParams                | sName              | sSource      | bEditable | bSubmission | sType | bActive | iRank | iVersion   |
+      | 7001 | 1      | 1          | 1000   | 2023-04-03 | {"sLangProg":"python"} | 485380303499640413 | print("ici") | 0         | 1           | User  | 0       | 0     | 2147483647 |
+    When I send a GET request to "/submissions/6000?withTests"
+    Then the response status code should be 200
+    And the response body should be the following JSON:
+      """
+      {
+        "id": "6000",
+        "success": false,
+        "totalTestsCount": 0,
+        "passedTestsCount": 0,
+        "score": 0,
+        "compilationError": false,
+        "compilationMessage": null,
+        "errorMessage": null,
+        "evaluated": true,
+        "confirmed": false,
+        "manualCorrection": false,
+        "manualScoreDiffComment": null,
+        "metadata": {
+          "errorline": 5
+        },
+        "mode": "Submitted",
+        "sourceCode": {
+           "id": "7001",
+           "name": "485380303499640413",
+           "source": "print(\"ici\")",
+           "type": "User",
+           "params": {
+             "sLangProg": "python"
+           },
+           "rank": 0,
+           "active": false,
+           "editable": false
+        },
+        "subTasks": [
+          {
+            "id": "7000",
+            "success": false,
+            "score": 50,
+            "subtaskId": "4000"
+          },
+          {
+            "id": "7001",
+            "success": true,
+            "score": 100,
+            "subtaskId": "4001"
+          }
+        ],
+        "tests": [
+          {
+            "id": "8000",
+            "testId": "5000",
+            "score": 100,
+            "timeMs": 5,
+            "memoryKb": 22,
+            "errorCode": 0,
+            "output": "",
+            "expectedOutput": null,
+            "errorMessage": "",
+            "metadata": {
+              "errorline": 4
+            },
+            "log": "",
+            "noFeedback": true,
+            "files": null,
+            "submissionSubtaskId": "7000",
+            "test": {
+              "id": "5000",
+              "submissionId": null,
+              "groupType": "Evaluation",
+              "userId": null,
+              "platformId": null,
+              "rank": 0,
+              "active": true,
+              "name": null,
+              "input": "16",
+              "output": "20",
+              "subtaskId": "4000",
+              "taskId": "1000",
+              "clientId": null
+            }
+          },
+          {
+            "id": "8001",
+            "testId": "5001",
+            "score": 0,
+            "timeMs": 2,
+            "memoryKb": 25,
+            "errorCode": 1,
+            "output": "",
+            "expectedOutput": null,
+            "errorMessage": "Erreur",
+            "metadata": null,
+            "log": "",
+            "noFeedback": true,
+            "files": null,
+            "submissionSubtaskId": "7000",
+            "test": {
+              "id": "5001",
+              "submissionId": null,
+              "groupType": "Evaluation",
+              "userId": null,
+              "platformId": null,
+              "rank": 1,
+              "active": true,
+              "name": null,
+              "input": "10",
+              "output": "15",
+              "subtaskId": "4000",
+              "taskId": "1000",
+              "clientId": null
+            }
+          },
+          {
+            "id": "8002",
+            "testId": "5002",
+            "score": 100,
+            "timeMs": 3,
+            "memoryKb": 26,
+            "errorCode": 0,
+            "output": "",
+            "expectedOutput": null,
+            "errorMessage": "",
+            "metadata": null,
+            "log": "",
+            "noFeedback": true,
+            "files": null,
+            "submissionSubtaskId": "7001",
+            "test": {
+              "id": "5002",
+              "submissionId": null,
+              "groupType": "Evaluation",
+              "userId": null,
+              "platformId": null,
+              "rank": 2,
+              "active": true,
+              "name": null,
+              "input": "15",
+              "output": "10",
+              "subtaskId": "4001",
+              "taskId": "1000",
+              "clientId": null
+            }
+          }
+        ]
+      }
+      """
+
   Scenario: Get evaluating submission by id using longPolling
     Given the database has the following table "tm_submissions":
       | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | bConfirmed | sMode     | iChecksum | iVersion   |

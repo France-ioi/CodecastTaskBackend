@@ -6,7 +6,7 @@ import {
   createSubmission,
   getSubmission, offlineSubmissionDataDecoder, OfflineSubmissionParameters,
   submissionDataDecoder,
-  SubmissionParameters
+  SubmissionParameters,
 } from './submissions';
 import ReturnValue = Lifecycle.ReturnValue;
 import {ErrorHandler, isResponseBoom, NotFoundError} from './error_handler';
@@ -106,18 +106,23 @@ export async function init(): Promise<Server> {
     path: '/submissions/{submissionId}',
     options: {
       handler: async (request, h) => {
-        let submissionData = await getSubmission(String(request.params.submissionId));
+        const submissionQueryParameters = {
+          longPolling: 'longPolling' in request.query,
+          withTests: 'withTests' in request.query,
+        };
+
+        let submissionData = await getSubmission(String(request.params.submissionId), submissionQueryParameters.withTests);
         if (null === submissionData) {
           throw new NotFoundError(`Submission not found with this id: ${String(request.params.submissionId)}`);
         }
-        if (!('longPolling' in request.query) || submissionData.evaluated) {
+        if (!submissionQueryParameters.longPolling || submissionData.evaluated) {
           return h.response(submissionData);
         }
 
         const longPollingResult = await longPollingHandler.waitForEvent('evaluation-' + submissionData.id, 10 * 1000);
         if ('event' === longPollingResult) {
           // Re-fetch submission
-          submissionData = await getSubmission(String(request.params.submissionId));
+          submissionData = await getSubmission(String(request.params.submissionId), submissionQueryParameters.withTests);
           if (null === submissionData) {
             throw new NotFoundError(`Submission not found with this id: ${String(request.params.submissionId)}`);
           }

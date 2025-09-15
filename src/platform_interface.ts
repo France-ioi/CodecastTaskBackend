@@ -171,6 +171,10 @@ export async function sendSubmissionResultToPlatform(submission: Submission, sco
   const scoreToken = await generateScoreToken(submission, score);
 
   const platform = await getPlatformById(submission.idPlatform);
+  if (!platform.api_url) {
+    return;
+  }
+
   const platformUrl = `${platform.api_url}/items/save-grade`;
 
   const saveGradeRequest = {
