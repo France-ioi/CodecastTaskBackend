@@ -12,6 +12,7 @@ import {
   askPlatformAnswerToken,
   extractPlatformAnswerTaskTokenData,
   extractPlatformTaskTokenData,
+  generateScoreToken,
   PlatformAnswerTokenData,
   PlatformTaskTokenData,
 } from './platform_interface';
@@ -127,6 +128,7 @@ export interface SubmissionOutput extends SubmissionNormalized {
   sourceCode?: SourceCodeNormalized|null,
   subTasks?: SubmissionSubtaskNormalized[],
   tests?: SubmissionTestNormalized[],
+  scoreToken?: string,
 }
 
 export async function createOfflineSubmission(submissionData: OfflineSubmissionParameters): Promise<string> {
@@ -348,5 +350,6 @@ export async function getSubmission(submissionId: string, withTaskTests: boolean
     sourceCode: null !== sourceCode ? normalizeSourceCode(sourceCode) : null,
     subTasks: submissionSubtasks.map(normalizeSubmissionSubtask),
     tests: submissionTestResults.map(test => normalizeSubmissionTest(test, submissionTests)),
+    scoreToken: await generateScoreToken(submission, submission.iScore),
   };
 }
