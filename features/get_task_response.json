@@ -4,6 +4,7 @@
   "supportedLanguages": "python",
   "author": "",
   "showLimits": true,
+  "useLatex": false,
   "userTests": false,
   "isEvaluable": true,
   "scriptAnimation": null,
