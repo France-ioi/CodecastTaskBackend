@@ -1,4 +1,4 @@
-import {KeyLike} from 'jose/dist/types/types';
+import {type JWTPayload, KeyLike} from 'jose/dist/types/types';
 import * as jose from 'jose';
 import moment from 'moment/moment';
 
@@ -76,5 +76,9 @@ export class JwesDecoder {
     const {plaintext} = await jose.compactDecrypt(payload, this.jweKey);
 
     return new TextDecoder().decode(plaintext);
+  }
+
+  decodeJwt(token: string): JWTPayload {
+    return jose.decodeJwt(token);
   }
 }

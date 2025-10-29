@@ -79,7 +79,7 @@ Feature: Get submission
       | 7001 | 1      | 1          | 1000   | 2023-04-03 | {"sLangProg":"python"} | 485380303499640413 | print("ici") | 0         | 1           | User  | 0       | 0     | 2147483647 |
     When I send a GET request to "/submissions/6000"
     Then the response status code should be 200
-    And the response body should be the following JSON:
+    And the response body, after decoding "scoreToken", should be the following JSON:
       """
       {
         "id": "6000",
@@ -87,7 +87,14 @@ Feature: Get submission
         "totalTestsCount": 0,
         "passedTestsCount": 0,
         "score": 0,
-        "scoreToken": "eyJhbGciOiJSUzUxMiJ9.eyJpZFVzZXIiOiIxIiwiaWRJdGVtIjoiMTAwMCIsImlkVXNlckFuc3dlciI6bnVsbCwic0Fuc3dlciI6IntcImlkU3VibWlzc2lvblwiOlwiNjAwMFwiLFwibGFuZ1Byb2dcIjpcInB5dGhvblwiLFwic291cmNlQ29kZVwiOlwicHJpbnQoXFxcImljaVxcXCIpXCJ9Iiwic2NvcmUiOiIwIiwiZGF0ZSI6IjE3LTA5LTIwMjUifQ.tM-g_s0uJohI-lHA6vXa4RRYt8WFWD-IboJmHdHW0FcMyZs2S93Jv9MOygOarFFnH8piT1plafqXti1MPnOfStg3yveluQXVXBd-xBqxCsaIvBfr4O21yjq18gJP7kz2bTZ8Ndi0Y8mSz7iKU-2EF6Jq9N7UQIF2CBM7p8dvrmjavlUfR1OTchdxYbuF9S6nPAzOq43Es29BEolmZbL-PfY55S-UOsiP7o6NUpvTEMuTwiWd0StpCRx4-bmBrwNSwhHDIAWKV8dDtclZqsUH232NJF4eguD4EFT6VSruWdV8wvHnQz29kbUWyFEO-RrasqN7pMCEPdi_RkwcmUZUdA",
+        "scoreToken": {
+          "date": "{{currentDateTokenFormat}}",
+          "idItem": "1000",
+          "idUser": "1",
+          "idUserAnswer": null,
+          "sAnswer": "{\"idSubmission\":\"6000\",\"langProg\":\"python\",\"sourceCode\":\"print(\\\"ici\\\")\"}",
+          "score": "0"
+        },
         "compilationError": false,
         "compilationMessage": null,
         "errorMessage": null,
@@ -198,7 +205,7 @@ Feature: Get submission
       | 7001 | 1      | 1          | 1000   | 2023-04-03 | {"sLangProg":"python"} | 485380303499640413 | print("ici") | 0         | 1           | User  | 0       | 0     | 2147483647 |
     When I send a GET request to "/submissions/6000?withTests"
     Then the response status code should be 200
-    And the response body should be the following JSON:
+    And the response body, after decoding "scoreToken", should be the following JSON:
       """
       {
         "id": "6000",
@@ -206,7 +213,14 @@ Feature: Get submission
         "totalTestsCount": 0,
         "passedTestsCount": 0,
         "score": 0,
-        "scoreToken": "eyJhbGciOiJSUzUxMiJ9.eyJpZFVzZXIiOiIxIiwiaWRJdGVtIjoiMTAwMCIsImlkVXNlckFuc3dlciI6bnVsbCwic0Fuc3dlciI6IntcImlkU3VibWlzc2lvblwiOlwiNjAwMFwiLFwibGFuZ1Byb2dcIjpcInB5dGhvblwiLFwic291cmNlQ29kZVwiOlwicHJpbnQoXFxcImljaVxcXCIpXCJ9Iiwic2NvcmUiOiIwIiwiZGF0ZSI6IjE3LTA5LTIwMjUifQ.tM-g_s0uJohI-lHA6vXa4RRYt8WFWD-IboJmHdHW0FcMyZs2S93Jv9MOygOarFFnH8piT1plafqXti1MPnOfStg3yveluQXVXBd-xBqxCsaIvBfr4O21yjq18gJP7kz2bTZ8Ndi0Y8mSz7iKU-2EF6Jq9N7UQIF2CBM7p8dvrmjavlUfR1OTchdxYbuF9S6nPAzOq43Es29BEolmZbL-PfY55S-UOsiP7o6NUpvTEMuTwiWd0StpCRx4-bmBrwNSwhHDIAWKV8dDtclZqsUH232NJF4eguD4EFT6VSruWdV8wvHnQz29kbUWyFEO-RrasqN7pMCEPdi_RkwcmUZUdA",
+        "scoreToken": {
+          "date": "{{currentDateTokenFormat}}",
+          "idItem": "1000",
+          "idUser": "1",
+          "idUserAnswer": null,
+          "sAnswer": "{\"idSubmission\":\"6000\",\"langProg\":\"python\",\"sourceCode\":\"print(\\\"ici\\\")\"}",
+          "score": "0"
+        },
         "compilationError": false,
         "compilationMessage": null,
         "errorMessage": null,
