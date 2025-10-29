@@ -7,6 +7,7 @@ import {testServer} from '../support/hooks';
 import * as ws from 'ws';
 import {remoteExecutionProxyHandler} from '../../src/remote_execution_proxy';
 import nock from 'nock';
+import {JwesDecoder} from '../../src/crypto/jwes_decoder';
 
 interface ServerStepsContext {
   response: ServerInjectResponse,
@@ -62,6 +63,20 @@ Then(/^the response body should be the content of this file: "([^"]*)"$/, async 
 Then(/^the response body should be the following JSON:$/, function (this: ServerStepsContext, expectedJson: string) {
   const expectedResponse: unknown = JSON.parse(injectVariables(this, expectedJson));
   const payload: unknown = JSON.parse(this.response.payload);
+  expect(payload).to.deep.equal(expectedResponse);
+});
+
+Then(/^the response body, after decoding "([^"]*)", should be the following JSON:$/, function (this: ServerStepsContext, tokenToBeDecoded: string, expectedJson: string) {
+  const expectedResponse: unknown = JSON.parse(injectVariables(this, expectedJson));
+  const payload = JSON.parse(this.response.payload) as Record<string, unknown>;
+  const tokensToBeDecoded: string[] = tokenToBeDecoded ? tokenToBeDecoded.split(',') : [];
+  for (const token of tokensToBeDecoded) {
+    if (token in payload) {
+      const jwesDecoder = new JwesDecoder();
+      payload[token] = jwesDecoder.decodeJwt(payload[token] as string);
+    }
+  }
+
   expect(payload).to.deep.equal(expectedResponse);
 });
 

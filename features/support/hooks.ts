@@ -8,6 +8,7 @@ import chaiSubset from 'chai-subset';
 import {setRandomIdGenerator} from '../../src/util';
 import {closeOpenServers} from '../steps/server_steps';
 import appConfig from '../../src/config';
+import moment from 'moment/moment';
 chai.use(chaiSubset);
 
 let testServer: Server;
@@ -42,6 +43,8 @@ BeforeAll(async function () {
 });
 
 Before(async function () {
+  this.currentDateTokenFormat = moment().format('DD-MM-YYYY');
+
   await cleanDatabase();
 });
 
