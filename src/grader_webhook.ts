@@ -139,7 +139,10 @@ export async function receiveSubmissionResultsFromTaskGrader(taskGraderWebhookPa
     });
   } finally {
     longPollingHandler.fireEvent('evaluation-' + submission.ID);
-    await sendSubmissionResultToPlatform(submission, score);
+
+    if (submission.bOffline) {
+      await sendSubmissionResultToPlatform(submission, score);
+    }
   }
 }
 
