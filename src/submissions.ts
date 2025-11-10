@@ -41,7 +41,8 @@ export const submissionDataDecoder = pipe(
     taskParams: D.struct({
       returnUrl: D.string,
     }),
-  }))
+    offline: D.boolean,
+  })),
 );
 export type SubmissionParameters = D.TypeOf<typeof submissionDataDecoder>;
 
@@ -147,6 +148,7 @@ export async function createOfflineSubmission(submissionData: OfflineSubmissionP
     answerToken,
     answer: submissionData.answer,
     sLocale: submissionData.sLocale ?? 'fr',
+    offline: true,
   };
 
   return await createSubmission(submissionParameters);
@@ -206,7 +208,7 @@ export async function createSubmission(submissionData: SubmissionParameters): Pr
       sSource: submissionData.answer.sourceCode
     });
 
-    await Db.executeInConnection(connection, 'insert into tm_submissions (ID, idUser, idPlatform, idTask, sDate, idSourceCode, sMode, sParams) values(:idSubmission, :idUser, :idPlatform, :idTask, NOW(), :idSourceCode, :sMode, :sParams);', {
+    await Db.executeInConnection(connection, 'insert into tm_submissions (ID, idUser, idPlatform, idTask, sDate, idSourceCode, sMode, sParams, bOffline) values(:idSubmission, :idUser, :idPlatform, :idTask, NOW(), :idSourceCode, :sMode, :sParams, :bOffline);', {
       idSubmission,
       idUser: taskTokenData.payload.idUser,
       idPlatform: taskTokenData.platform.ID,
@@ -214,6 +216,7 @@ export async function createSubmission(submissionData: SubmissionParameters): Pr
       idSourceCode: idNewSourceCode,
       sMode: mode,
       sParams: Object.keys(submissionParams).length ? JSON.stringify(submissionParams) : null,
+      bOffline: !!submissionData.offline,
     });
 
     const testPrefixId = getRandomId().slice(0, -2);
