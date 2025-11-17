@@ -7,7 +7,7 @@ import {InvalidInputError} from './error_handler';
 import * as Db from './db';
 
 export interface PlatformGenericTokenPayload {
-  idUser: string|null,
+  idUser: string|number|null,
   itemUrl: string|null,
   nbHintsGiven: number,
   idItem?: string,

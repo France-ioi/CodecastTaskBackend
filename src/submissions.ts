@@ -168,9 +168,13 @@ export async function createSubmission(submissionData: SubmissionParameters): Pr
     throw new InvalidInputError(`Invalid task id: ${taskTokenData.taskId}`);
   }
 
+  const mode = submissionData.userTests && submissionData.userTests.length ? SubmissionMode.UserTest : SubmissionMode.Submitted;
+
   let answerTokenData: PlatformAnswerTokenData|null = null;
   if (submissionData.answerToken) {
     answerTokenData = await extractPlatformAnswerTaskTokenData(submissionData.answerToken, submissionData.platform, submissionData.taskId);
+  } else if (!appConfig.testMode.enabled && 'UserTest' !== mode && '0' !== String(taskTokenData.payload.idUser)) {
+    throw new InvalidInputError('Missing answerToken, required for this type of submission');
   }
 
   const submissionParamsKeys: (keyof PlatformTaskTokenPayload)[] = [
@@ -187,8 +191,6 @@ export async function createSubmission(submissionData: SubmissionParameters): Pr
   }
 
   checkAnswerTokenValid(answerTokenData, taskTokenData);
-
-  const mode = submissionData.userTests && submissionData.userTests.length ? SubmissionMode.UserTest : SubmissionMode.Submitted;
 
   // save source code (with bSubmission = 1)
   const idNewSourceCode = getRandomId();
