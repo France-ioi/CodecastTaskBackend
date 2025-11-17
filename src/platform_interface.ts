@@ -49,7 +49,7 @@ export async function extractPlatformTaskTokenData(token: string|null|undefined,
     }
   }
 
-  if (!payload.idUser || (!payload.idItem && !payload.itemUrl)) {
+  if (undefined === payload.idUser || null === payload.idUser || (!payload.idItem && !payload.itemUrl)) {
     throw new InvalidInputError('Missing idUser or idItem in token');
   }
 
