@@ -166,10 +166,6 @@ WHERE tm_submissions.ID = :idSubmission
     throw new InvalidInputError('Cannot find source code associated with this submission');
   }
 
-  if (!submissionData.answerToken && !appConfig.testMode.enabled && 'UserTest' !== submission.sMode) {
-    throw new InvalidInputError('Missing answerToken, required for this type of submission');
-  }
-
   let tests: TaskTest[] = [];
   if ('UserTest' === submission.sMode) {
     tests = await Db.execute<TaskTest[]>('SELECT tm_tasks_tests.* FROM tm_tasks_tests WHERE idUser = :idUser and idPlatform = :idPlatform and idTask = :idTask and idSubmission = :idSubmission ORDER BY iRank ASC', {
