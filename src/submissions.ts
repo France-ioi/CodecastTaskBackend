@@ -20,7 +20,6 @@ import {PlatformTaskTokenPayload} from './tokenization';
 
 export const submissionDataDecoder = pipe(
   D.struct({
-    taskId: D.string,
     answer: D.struct({
       sourceCode: D.string,
       fileName: D.nullable(D.string),
@@ -38,6 +37,7 @@ export const submissionDataDecoder = pipe(
       output: D.string,
       clientId: D.nullable(D.string),
     })),
+    taskId: D.string, // Optional, needed only for test, otherwise it's extracted from the token
     taskParams: D.struct({
       returnUrl: D.string,
     }),

@@ -1,6 +1,7 @@
 import {type JWTPayload, KeyLike} from 'jose/dist/types/types';
 import * as jose from 'jose';
 import moment from 'moment/moment';
+import {InvalidInputError} from '../error_handler';
 
 /**
  * JWE key is our private key used for decryption
@@ -43,18 +44,24 @@ export class JwesDecoder {
       throw new Error('JWS key must be fulfilled to do decryption');
     }
 
-    const {payload: validatedContent} = await jose.compactVerify(payload, this.jwsKey);
+    let validatedContent;
+    try {
+      const verification = await jose.compactVerify(payload, this.jwsKey);
+      validatedContent = verification.payload;
+    } catch (e) {
+      throw new InvalidInputError('Token cannot be decrypted, please check your SSL keys');
+    }
 
     const result = new TextDecoder().decode(validatedContent);
     let params: {date?: string, type?: string} = {};
     try {
       params = JSON.parse(result) as {date?: string, type?: string};
     } catch (e) {
-      throw new Error('Token cannot be decrypted, please check your SSL keys');
+      throw new InvalidInputError('Token cannot be decrypted, please check your SSL keys');
     }
 
     if (!params['date']) {
-      throw new Error(`Invalid Task token, unable to decrypt: ${result}`);
+      throw new InvalidInputError(`Invalid Task token, unable to decrypt: ${result}`);
     }
 
     const yesterdayDate = moment().subtract(1, 'day').format('DD-MM-YYYY');
@@ -62,7 +69,7 @@ export class JwesDecoder {
     const tomorrowDate = moment().add(1, 'day').format('DD-MM-YYYY');
 
     if ((!params['type'] || params['type'] !== 'long') && params['date'] !== yesterdayDate && params['date'] !== todayDate && params['date'] !== tomorrowDate) {
-      throw new Error(`API token expired: ${params['date']}`);
+      throw new InvalidInputError(`API token expired: ${params['date']}`);
     }
 
     return params;
