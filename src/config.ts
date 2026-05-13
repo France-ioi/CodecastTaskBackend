@@ -11,6 +11,7 @@ dotenv.config({path: path.resolve(__dirname, '../.env')});
 
 interface Config {
   nodeEnv: string,
+  development: boolean,
   port: number|null,
   mysqlDatabase: {
     host: string,
@@ -48,6 +49,7 @@ function stringifyIfExists(string: string|undefined): string|undefined {
 
 const appConfig: Config = {
   nodeEnv,
+  development: 'test' === nodeEnv || 'development' === nodeEnv,
   port: process.env['PORT'] ? Number(process.env['PORT']) : null,
   mysqlDatabase: {
     host: String(process.env.MYSQL_DB_HOST),

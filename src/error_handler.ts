@@ -35,13 +35,13 @@ export class ErrorHandler {
       }
 
       return h
-        .response({error: 'A database error has occurred.', ...(appConfig.testMode.enabled ? {details: String(e), query: e.query, databaseError: e.error} : {})})
+        .response({error: 'A database error has occurred.', ...(appConfig.development ? {details: String(e), query: e.query, databaseError: e.error} : {})})
         .code(500);
     }
 
     if (e instanceof NotFoundError) {
       return h
-        .response({error: 'Not found', ...(appConfig.testMode.enabled ? {details: String(e)} : {})})
+        .response({error: 'Not found', ...(appConfig.development ? {details: String(e)} : {})})
         .code(404);
     }
 
@@ -60,7 +60,7 @@ export class ErrorHandler {
       console.error({url, error});
 
       return h
-        .response({error: 'Error during external API call', ...(appConfig.testMode.enabled ? {url, details: parsedError} : {})})
+        .response({error: 'Error during external API call', ...(appConfig.development ? {url, details: parsedError} : {})})
         .code(500);
     }
 
@@ -68,7 +68,7 @@ export class ErrorHandler {
     console.error(e);
 
     return h
-      .response({error: 'An internal server error occurred', ...(appConfig.testMode.enabled ? {details: String(e)} : {})})
+      .response({error: 'An internal server error occurred', ...(appConfig.development ? {details: String(e)} : {})})
       .code(500);
   }
 }

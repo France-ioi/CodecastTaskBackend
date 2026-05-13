@@ -46,6 +46,21 @@ export const submissionDataDecoder = pipe(
 );
 export type SubmissionParameters = D.TypeOf<typeof submissionDataDecoder>;
 
+const booleanFlag = pipe(
+  D.union(D.boolean, D.string),
+  D.map(v => v !== null && v !== undefined),
+);
+
+export const submissionQueryDecoder = pipe(
+  D.partial({
+    token: D.nullable(D.string),
+    platform: D.nullable(D.string),
+    longPolling: booleanFlag,
+    withTests: booleanFlag,
+  }),
+);
+export type SubmissionQueryParameters = D.TypeOf<typeof submissionQueryDecoder>;
+
 export const offlineSubmissionDataDecoder = pipe(
   D.struct({
     token: D.string,
@@ -84,6 +99,7 @@ export interface SubmissionNormalized {
   manualCorrection: boolean,
   manualScoreDiffComment: string|null,
   mode: SubmissionMode,
+  date: string,
 }
 
 export interface SubmissionSubtaskNormalized {
@@ -284,6 +300,7 @@ function normalizeSubmission(submission: Submission): SubmissionNormalized {
     manualCorrection: !!submission.bManualCorrection,
     manualScoreDiffComment: submission.sManualScoreDiffComment,
     mode: submission.sMode,
+    date: submission.sDate,
   };
 }
 
@@ -331,11 +348,13 @@ export function normalizeSourceCode(sourceCode: SourceCode): SourceCodeNormalize
   };
 }
 
-export async function getSubmission(submissionId: string, withTaskTests: boolean = false): Promise<SubmissionOutput|null> {
+export async function getSubmission(submissionId: string, submissionQueryParameters: SubmissionQueryParameters): Promise<SubmissionOutput|null> {
   const submission = await findSubmissionById(submissionId);
   if (null === submission) {
     return null;
   }
+
+  await checkAuthorizedToGetSubmission(submissionQueryParameters, submission);
 
   const sourceCode = await findSourceCodeById(submission.idSourceCode);
 
@@ -348,7 +367,7 @@ export async function getSubmission(submissionId: string, withTaskTests: boolean
 
   const submissionSubtasks = await Db.execute<SubmissionSubtask[]>('SELECT * FROM tm_submissions_subtasks WHERE idSubmission = ?', [submissionId]);
   const submissionTestResults = await Db.execute<SubmissionTest[]>('SELECT * FROM tm_submissions_tests WHERE idSubmission = ?', [submissionId]);
-  const submissionTests = await Db.execute<TaskTest[]>(`SELECT * FROM tm_tasks_tests WHERE (idSubmission = ? AND sGroupType = "User")${withTaskTests ? " OR (idTask = ?)" : ''}`, [submissionId, ...(withTaskTests ? [submission.idTask] : [])]);
+  const submissionTests = await Db.execute<TaskTest[]>(`SELECT * FROM tm_tasks_tests WHERE (idSubmission = ? AND sGroupType = "User")${submissionQueryParameters.withTests ? " OR (idTask = ?)" : ''}`, [submissionId, ...(submissionQueryParameters.withTests ? [submission.idTask] : [])]);
 
   return {
     ...normalizeSubmission(submission),
@@ -357,4 +376,26 @@ export async function getSubmission(submissionId: string, withTaskTests: boolean
     tests: submissionTestResults.map(test => normalizeSubmissionTest(test, submissionTests)),
     scoreToken: await generateScoreToken(submission, submission.iScore),
   };
+}
+
+async function checkAuthorizedToGetSubmission(submissionQueryParameters: SubmissionQueryParameters, submission: Submission) {
+  if (!appConfig.testMode.enabled && (!submissionQueryParameters.token || !submissionQueryParameters.platform)) {
+    throw new InvalidInputError('Missing token or platform POST variable');
+  }
+
+  const taskTokenData = await extractPlatformTaskTokenData(submissionQueryParameters.token, submissionQueryParameters.platform, submission.idTask);
+
+  // Check task token data match submission data
+  if (submission.idTask !== taskTokenData.taskId) {
+    throw new InvalidInputError(`Task id mismatch between submission data and provided task id from the token: ${taskTokenData.taskId}`);
+  }
+  if (submission.idUser !== taskTokenData.payload.idUser) {
+    throw new InvalidInputError(`User id mismatch between submission data and provided user id from the token: ${taskTokenData.payload.idUser}`);
+  }
+  if (submission.idPlatform !== taskTokenData.platform.ID) {
+    throw new InvalidInputError(`Platform id mismatch between submission data and provided platform from the token: ${taskTokenData.platform.name}`);
+  }
+  if (taskTokenData.payload.idUserAnswer && taskTokenData.payload.idUserAnswer !== submission.idUserAnswer) {
+    throw new InvalidInputError(`User answer id mismatch between submission data and provided idUserAnswer from the token: ${taskTokenData.payload.idUserAnswer}`);
+  }
 }

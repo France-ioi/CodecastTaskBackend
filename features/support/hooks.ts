@@ -37,6 +37,7 @@ function randomIdGenerator(): string {
 }
 
 BeforeAll(async function () {
+  process.env.TZ = 'UTC';
   Db.init();
   setRandomIdGenerator(randomIdGenerator);
   testServer = await init();
