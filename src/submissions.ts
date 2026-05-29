@@ -284,6 +284,10 @@ export async function findSubmissionById(submissionId: string): Promise<Submissi
   return await Db.querySingleResult<Submission>('SELECT * FROM tm_submissions WHERE ID = ?', [submissionId]);
 }
 
+export async function findSubmissionByUserAnswerId(userAnswerId: string): Promise<Submission|null> {
+  return await Db.querySingleResult<Submission>('SELECT * FROM tm_submissions WHERE idUserAnswer = ?', [userAnswerId]);
+}
+
 function normalizeSubmission(submission: Submission): SubmissionNormalized {
   return {
     id: submission.ID,
@@ -348,13 +352,29 @@ export function normalizeSourceCode(sourceCode: SourceCode): SourceCodeNormalize
   };
 }
 
+export async function getSubmissionByUserAnswer(userAnswerId: string, submissionQueryParameters: SubmissionQueryParameters): Promise<SubmissionOutput|null> {
+  return await exportSubmission(submissionQueryParameters, () => findSubmissionByUserAnswerId(userAnswerId));
+}
+
 export async function getSubmission(submissionId: string, submissionQueryParameters: SubmissionQueryParameters): Promise<SubmissionOutput|null> {
-  const submission = await findSubmissionById(submissionId);
+  return await exportSubmission(submissionQueryParameters, () => findSubmissionById(submissionId));
+}
+
+async function exportSubmission(submissionQueryParameters: SubmissionQueryParameters, getSubmission: () => Promise<Submission|null>) {
+  if (!appConfig.testMode.enabled && (!submissionQueryParameters.token || !submissionQueryParameters.platform)) {
+    throw new InvalidInputError('Missing token or platform parameters');
+  }
+
+  const taskTokenData = await extractPlatformTaskTokenData(submissionQueryParameters.token, submissionQueryParameters.platform, async () => {
+    return (await getSubmission())?.idTask || null;
+  });
+
+  const submission = await getSubmission();
   if (null === submission) {
     return null;
   }
 
-  await checkAuthorizedToGetSubmission(submissionQueryParameters, submission);
+  await checkAuthorizedToGetSubmission(taskTokenData, submission);
 
   const sourceCode = await findSourceCodeById(submission.idSourceCode);
 
@@ -365,9 +385,9 @@ export async function getSubmission(submissionId: string, submissionQueryParamet
     };
   }
 
-  const submissionSubtasks = await Db.execute<SubmissionSubtask[]>('SELECT * FROM tm_submissions_subtasks WHERE idSubmission = ?', [submissionId]);
-  const submissionTestResults = await Db.execute<SubmissionTest[]>('SELECT * FROM tm_submissions_tests WHERE idSubmission = ?', [submissionId]);
-  const submissionTests = await Db.execute<TaskTest[]>(`SELECT * FROM tm_tasks_tests WHERE (idSubmission = ? AND sGroupType = "User")${submissionQueryParameters.withTests ? " OR (idTask = ?)" : ''}`, [submissionId, ...(submissionQueryParameters.withTests ? [submission.idTask] : [])]);
+  const submissionSubtasks = await Db.execute<SubmissionSubtask[]>('SELECT * FROM tm_submissions_subtasks WHERE idSubmission = ?', [submission.ID]);
+  const submissionTestResults = await Db.execute<SubmissionTest[]>('SELECT * FROM tm_submissions_tests WHERE idSubmission = ?', [submission.ID]);
+  const submissionTests = await Db.execute<TaskTest[]>(`SELECT * FROM tm_tasks_tests WHERE (idSubmission = ? AND sGroupType = "User")${submissionQueryParameters.withTests ? " OR (idTask = ?)" : ''}`, [submission.ID, ...(submissionQueryParameters.withTests ? [submission.idTask] : [])]);
 
   return {
     ...normalizeSubmission(submission),
@@ -378,13 +398,7 @@ export async function getSubmission(submissionId: string, submissionQueryParamet
   };
 }
 
-async function checkAuthorizedToGetSubmission(submissionQueryParameters: SubmissionQueryParameters, submission: Submission) {
-  if (!appConfig.testMode.enabled && (!submissionQueryParameters.token || !submissionQueryParameters.platform)) {
-    throw new InvalidInputError('Missing token or platform parameters');
-  }
-
-  const taskTokenData = await extractPlatformTaskTokenData(submissionQueryParameters.token, submissionQueryParameters.platform, submission.idTask);
-
+async function checkAuthorizedToGetSubmission(taskTokenData: PlatformTaskTokenData, submission: Submission) {
   // Check task token data match submission data
   if (submission.idTask !== taskTokenData.taskId) {
     throw new AccessDeniedError(`Task id mismatch between submission data and provided task id from the token: ${taskTokenData.taskId}`);

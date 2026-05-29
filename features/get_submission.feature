@@ -544,3 +544,45 @@ Feature: Get submission
         "message": "Error: User answer id mismatch between submission data and provided idUserAnswer from the token: 999999"
       }
       """
+
+  Scenario: Get submission by user answer id
+    Given the database has the following table "tm_submissions":
+      | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | bConfirmed | sMode     | idUserAnswer | iChecksum | iVersion   |
+      | 6000 | 1      | 1          | 1000   | 2023-04-03 | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 0          | 0          | Submitted | 1            | 0         | 2147483647 |
+    And the database has the following table "tm_source_codes":
+      | ID   | idUser | idPlatform | idTask | sDate      | sParams                | sName              | sSource      | bEditable | bSubmission | sType | bActive | iRank | iVersion   |
+      | 7001 | 1      | 1          | 1000   | 2023-04-03 | {"sLangProg":"python"} | 485380303499640413 | print("ici") | 0         | 1           | User  | 0       | 0     | 2147483647 |
+    When I send a GET request to "/submissions/user-answer/1?token={{taskToken}}&platform=codecast-test"
+    Then the response status code should be 200
+    And the response body should be the following JSON:
+      """
+      {
+        "id": "6000",
+        "success": false,
+        "totalTestsCount": 0,
+        "passedTestsCount": 0,
+        "score": 0,
+        "compilationError": false,
+        "compilationMessage": null,
+        "date": "2023-04-03T00:00:00.000Z",
+        "errorMessage": null,
+        "evaluated": false,
+        "confirmed": false,
+        "manualCorrection": false,
+        "manualScoreDiffComment": null,
+        "metadata": null,
+        "sourceCode": {
+           "id": "7001",
+           "name": "485380303499640413",
+           "source": "print(\"ici\")",
+           "type": "User",
+           "params": {
+             "sLangProg": "python"
+           },
+           "rank": 0,
+           "active": false,
+           "editable": false
+        },
+        "mode": "Submitted"
+      }
+      """
