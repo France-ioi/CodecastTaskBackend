@@ -444,7 +444,7 @@ Feature: Get submission
       """
       {
         "error": "Incorrect input arguments.",
-        "message": "Error: Missing token or platform POST variable"
+        "message": "Error: Missing token or platform parameters"
       }
       """
 
@@ -463,11 +463,11 @@ Feature: Get submission
       }
       """
     When I send a GET request to "/submissions/6000?token={{fakeTaskToken}}&platform=codecast-test"
-    Then the response status code should be 400
+    Then the response status code should be 401
     And the response body should be the following JSON:
       """
       {
-        "error": "Incorrect input arguments.",
+        "error": "Access denied.",
         "message": "Error: User id mismatch between submission data and provided user id from the token: 999999"
       }
       """
@@ -487,11 +487,11 @@ Feature: Get submission
       }
       """
     When I send a GET request to "/submissions/6000?token={{fakeTaskToken}}&platform=codecast-test"
-    Then the response status code should be 400
+    Then the response status code should be 401
     And the response body should be the following JSON:
       """
       {
-        "error": "Incorrect input arguments.",
+        "error": "Access denied.",
         "message": "Error: Task id mismatch between submission data and provided task id from the token: 999999"
       }
       """
@@ -511,11 +511,11 @@ Feature: Get submission
       }
       """
     When I send a GET request to "/submissions/6000?token={{fakeTaskToken}}&platform=codecast-test"
-    Then the response status code should be 400
+    Then the response status code should be 401
     And the response body should be the following JSON:
       """
       {
-        "error": "Incorrect input arguments.",
+        "error": "Access denied.",
         "message": "Error: Platform id mismatch between submission data and provided platform from the token: codecast-test"
       }
       """
@@ -536,11 +536,11 @@ Feature: Get submission
       }
       """
     When I send a GET request to "/submissions/6000?token={{fakeTaskToken}}&platform=codecast-test"
-    Then the response status code should be 400
+    Then the response status code should be 401
     And the response body should be the following JSON:
       """
       {
-        "error": "Incorrect input arguments.",
+        "error": "Access denied.",
         "message": "Error: User answer id mismatch between submission data and provided idUserAnswer from the token: 999999"
       }
       """

@@ -3,7 +3,7 @@ import {SourceCode, Submission, SubmissionSubtask, SubmissionTest, TaskTest,} fr
 import {getRandomId} from './util';
 import * as D from 'io-ts/Decoder';
 import {pipe} from 'fp-ts/function';
-import {InvalidInputError} from './error_handler';
+import {AccessDeniedError, InvalidInputError} from './error_handler';
 import {sendSubmissionToTaskGrader} from './grader_interface';
 import {findTaskById, normalizeTaskTest} from './tasks';
 import {ProgramExecutionResultMetadata} from './grader_webhook';
@@ -47,8 +47,8 @@ export const submissionDataDecoder = pipe(
 export type SubmissionParameters = D.TypeOf<typeof submissionDataDecoder>;
 
 const booleanFlag = pipe(
-  D.union(D.boolean, D.string),
-  D.map(v => v !== null && v !== undefined),
+  D.string,
+  D.map(v => '1' === v || 'true' === v || '' === v),
 );
 
 export const submissionQueryDecoder = pipe(
@@ -175,7 +175,7 @@ export async function createOfflineSubmission(submissionData: OfflineSubmissionP
 //   - or the test mode is enabled
 export async function createSubmission(submissionData: SubmissionParameters): Promise<string> {
   if (!appConfig.testMode.enabled && (!submissionData.token || !submissionData.platform)) {
-    throw new InvalidInputError('Missing token or platform POST variable');
+    throw new InvalidInputError('Missing token or platform parameters');
   }
 
   const taskTokenData = await extractPlatformTaskTokenData(submissionData.token, submissionData.platform, submissionData.taskId);
@@ -380,22 +380,22 @@ export async function getSubmission(submissionId: string, submissionQueryParamet
 
 async function checkAuthorizedToGetSubmission(submissionQueryParameters: SubmissionQueryParameters, submission: Submission) {
   if (!appConfig.testMode.enabled && (!submissionQueryParameters.token || !submissionQueryParameters.platform)) {
-    throw new InvalidInputError('Missing token or platform POST variable');
+    throw new InvalidInputError('Missing token or platform parameters');
   }
 
   const taskTokenData = await extractPlatformTaskTokenData(submissionQueryParameters.token, submissionQueryParameters.platform, submission.idTask);
 
   // Check task token data match submission data
   if (submission.idTask !== taskTokenData.taskId) {
-    throw new InvalidInputError(`Task id mismatch between submission data and provided task id from the token: ${taskTokenData.taskId}`);
+    throw new AccessDeniedError(`Task id mismatch between submission data and provided task id from the token: ${taskTokenData.taskId}`);
   }
   if (submission.idUser !== taskTokenData.payload.idUser) {
-    throw new InvalidInputError(`User id mismatch between submission data and provided user id from the token: ${taskTokenData.payload.idUser}`);
+    throw new AccessDeniedError(`User id mismatch between submission data and provided user id from the token: ${taskTokenData.payload.idUser}`);
   }
   if (submission.idPlatform !== taskTokenData.platform.ID) {
-    throw new InvalidInputError(`Platform id mismatch between submission data and provided platform from the token: ${taskTokenData.platform.name}`);
+    throw new AccessDeniedError(`Platform id mismatch between submission data and provided platform from the token: ${taskTokenData.platform.name}`);
   }
   if (taskTokenData.payload.idUserAnswer && taskTokenData.payload.idUserAnswer !== submission.idUserAnswer) {
-    throw new InvalidInputError(`User answer id mismatch between submission data and provided idUserAnswer from the token: ${taskTokenData.payload.idUserAnswer}`);
+    throw new AccessDeniedError(`User answer id mismatch between submission data and provided idUserAnswer from the token: ${taskTokenData.payload.idUserAnswer}`);
   }
 }

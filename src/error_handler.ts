@@ -10,6 +10,9 @@ export class NotFoundError extends Error {
 export class InvalidInputError extends Error {
 }
 
+export class AccessDeniedError extends Error {
+}
+
 export class PlatformInteractionError extends Error {
 }
 
@@ -23,6 +26,12 @@ export class ErrorHandler {
       return h
         .response({error: 'Incorrect input arguments.', message: String(e)})
         .code(400);
+    }
+
+    if (e instanceof AccessDeniedError) {
+      return h
+        .response({error: 'Access denied.', message: String(e)})
+        .code(401);
     }
 
     if (e instanceof DatabaseError) {
