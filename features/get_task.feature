@@ -23,8 +23,8 @@ Feature: Get task
       | 5001 | 1000      | 4000       | Evaluation     | 1     | 1       | s1-t2 | 10     | 15      | 2147483647 |
       | 5002 | 1000      | 4001       | Evaluation     | 2     | 1       | s2-t1 | 15     | 10      | 2147483647 |
     And the database has the following table "tm_platforms":
-      | ID   | name          | public_key |
-      | 1    | codecast-test |            |
+      | ID   | name          | public_key | api_url |
+      | 1    | codecast-test | -----BEGIN PUBLIC KEY----- MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt8dBg+ojFTrgFeDxoGqqBSQkW/BDSl/H+qzpIpZTCj4mw7zyrIeV7zaaPuA/8g8WVPDjliuVxLwOnX6p8bT0ZEgsyo4/nql2VEI1cLBqSowQ3VoICqeRYHqgv+8g/B4mFxvRRpNNWiM9aE80KtjXBesi7GjULjg6Jnpqfn1UAGrx4AlnbuabH50/xQoQMWLHSpSVhnpEV5XrUPvzHGbkW51/HRRMEF9Fj5SSPs8vQPbA5ZO8H7NgHwN+8fyNuyVtm9DwY9QZVp2mYlbLlV/+y8xrd5TKf/aGyMjVr3du5YwfosrlrnTAJ+DgoxuZRw77DKaiATxSpEiQRH/C208mOwIDAQAB -----END PUBLIC KEY----- | https://mockapi.com |
   Scenario: Get task by id
     When I send a GET request to "/tasks/1000"
     Then the response status code should be 200
@@ -35,10 +35,11 @@ Feature: Get task
       """
       {
         "bAccessSolutions": true,
-        "itemUrl": "https://codecast.france-ioi.org/next/task?taskId=1000"
+        "itemUrl": "https://codecast.france-ioi.org/next/task?taskId=1000",
+        "idUser": "1"
       }
       """
-    When I send a GET request to "/tasks/1000?token={{taskToken}}"
+    When I send a GET request to "/tasks/1000?token={{taskToken}}&platform=codecast-test"
     Then the response status code should be 200
     And the response body content at property path "strings.0" should be the following JSON:
       """

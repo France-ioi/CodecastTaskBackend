@@ -29,9 +29,8 @@ export function init(): void {
       namedPlaceholders: true,
       supportBigNumbers: true,
       bigNumberStrings: true,
+      timezone: 'test' === appConfig.nodeEnv ? '+00:00' : undefined,
     });
-
-    // TODO: set timezone?
   } catch (error) {
     throw new DatabaseError('Failed to initialized pool', undefined, error);
   }

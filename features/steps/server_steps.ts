@@ -29,7 +29,7 @@ When(/^I send a GET request to "([^"]*)"$/, async function (this: ServerStepsCon
 When(/^I asynchronously send a GET request to "([^"]*)"$/, function (this: ServerStepsContext, url: string) {
   this.responsePromise = testServer.inject({
     method: 'GET',
-    url,
+    url: injectVariables(this, url),
   })
     .then((response: ServerInjectResponse): ServerInjectResponse => {
       this.response = response;
@@ -41,7 +41,7 @@ When(/^I asynchronously send a GET request to "([^"]*)"$/, function (this: Serve
 When(/^I send a POST request to "([^"]*)" with the following payload:$/, async function (this: ServerStepsContext, url: string, payload: string) {
   this.response = await testServer.inject({
     method: 'POST',
-    url,
+    url: injectVariables(this, url),
     payload: injectVariables(this, payload),
   });
 });
@@ -193,7 +193,7 @@ Then(/^the "([^"]*)" WS server should have received the following JSON:$/, funct
 Given(/^I setup a mock API answering any POST request to "([^"]*)" with the following payload:$/, function (this: ServerStepsContext, endpoint: string, mockPayload: string) {
   nock('https://mockapi.com')
     .post(endpoint)
-    .reply(200, JSON.parse(mockPayload) as Record<string, unknown>);
+    .reply(200, JSON.parse(injectVariables(this, mockPayload)) as Record<string, unknown>);
 });
 
 Then(/^the mock API should have received the expected request$/, function () {

@@ -22,6 +22,7 @@ export interface PlatformTaskTokenPayload extends PlatformGenericTokenPayload {
   bSubmissionPossible?: boolean,
   bAllowGrading?: boolean,
   bAccessSolutions: boolean,
+  idUserAnswer?: string,
 }
 
 export interface PlatformAnswerTokenPayload extends PlatformGenericTokenPayload {

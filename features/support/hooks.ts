@@ -37,6 +37,7 @@ function randomIdGenerator(): string {
 }
 
 BeforeAll(async function () {
+  process.env.TZ = 'UTC';
   Db.init();
   setRandomIdGenerator(randomIdGenerator);
   testServer = await init();
@@ -55,7 +56,7 @@ AfterAll(async function () {
 });
 
 async function cleanDatabase(): Promise<void> {
-  if (!appConfig.testMode.enabled) {
+  if ('test' !== appConfig.nodeEnv) {
     throw new Error('Database cannot be cleaned while not in test environment.');
   }
 

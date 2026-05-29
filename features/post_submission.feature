@@ -24,13 +24,32 @@ Feature: Post submission
       | 1    | codecast-test | -----BEGIN PUBLIC KEY----- MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt8dBg+ojFTrgFeDxoGqqBSQkW/BDSl/H+qzpIpZTCj4mw7zyrIeV7zaaPuA/8g8WVPDjliuVxLwOnX6p8bT0ZEgsyo4/nql2VEI1cLBqSowQ3VoICqeRYHqgv+8g/B4mFxvRRpNNWiM9aE80KtjXBesi7GjULjg6Jnpqfn1UAGrx4AlnbuabH50/xQoQMWLHSpSVhnpEV5XrUPvzHGbkW51/HRRMEF9Fj5SSPs8vQPbA5ZO8H7NgHwN+8fyNuyVtm9DwY9QZVp2mYlbLlV/+y8xrd5TKf/aGyMjVr3du5YwfosrlrnTAJ+DgoxuZRw77DKaiATxSpEiQRH/C208mOwIDAQAB -----END PUBLIC KEY----- | https://mockapi.com |
     And I seed the ID generator to 100
     And I mock the graderqueue
+    And "taskToken" is a token signed by the platform with the following payload:
+      """
+      {
+        "bSubmissionPossible": true,
+        "date": "10-04-2024",
+        "idUser": "1",
+        "itemUrl": "https://codecast.france-ioi.org/next/task?taskId=1000"
+      }
+      """
+    And "answerToken" is a token signed by the platform with the following payload:
+      """
+      {
+        "itemUrl": "https://codecast.france-ioi.org/next/task?taskId=1000",
+        "idUser": "1",
+        "randomSeed": "6",
+        "sHintsRequested": "[]",
+        "sAnswer": "print('ici')"
+      }
+      """
 
   Scenario: Post submission
     When I send a POST request to "/submissions" with the following payload:
       """
       {
-        "token": null,
-        "answerToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpdGVtVXJsIjoiaHR0cDovL2x2aC5tZTo4MDAxL25leHQvdGFzaz90YXNrSUQ9bnVsbCZ2ZXJzaW9uPXVuZGVmaW5lZCIsInJhbmRvbVNlZWQiOiI2Iiwic0hpbnRzUmVxdWVzdGVkIjoiW10iLCJzQW5zd2VyIjoiXCJcXFwiYWFhXFxcIlwiIiwiaWF0IjoxNjgyMzQxMTQxfQ.vNA9EgZkGboNS7aGzFJRo60JdrQX-APIOHnf313ESzA",
+        "token": "{{taskToken}}",
+        "answerToken": "{{answerToken}}",
         "answer": {
           "language": "python",
           "fileName": "Code 5",
@@ -38,7 +57,7 @@ Feature: Post submission
         },
         "userTests": [],
         "sLocale": "fr",
-        "platform": null,
+        "platform": "codecast-test",
         "taskId": "1000",
         "taskParams": {
           "minScore": 0,
@@ -73,7 +92,7 @@ Feature: Post submission
       "tags": "",
       "jobname": "101",
       "jobdata": "{\"taskPath\":\"$ROOT_PATH/FranceIOI/Contests/2018/Algorea_finale/plateau\",\"extraParams\":{\"solutionFilename\":\"101.py\",\"solutionContent\":\"print('ici')\",\"solutionLanguage\":\"python3\",\"solutionDependencies\":\"@defaultDependencies-python3\",\"solutionFilterTests\":\"@defaultFilterTests-python3\",\"solutionId\":\"sol0-101.py\",\"solutionExecId\":\"exec0-101.py\",\"defaultSolutionCompParams\":{\"memoryLimitKb\":131072,\"timeLimitMs\":10000,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]},\"defaultSolutionExecParams\":{\"memoryLimitKb\":64000,\"timeLimitMs\":200,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]}},\"options\":{\"locale\":\"fr\"}}",
-      "jobusertaskid": "1000-103-1",
+      "jobusertaskid": "1000-1-1",
       "debugPassword": "test"
     }
     """
@@ -82,8 +101,8 @@ Feature: Post submission
     When I send a POST request to "/submissions" with the following payload:
       """
       {
-        "token": null,
-        "answerToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpdGVtVXJsIjoiaHR0cDovL2x2aC5tZTo4MDAxL25leHQvdGFzaz90YXNrSUQ9bnVsbCZ2ZXJzaW9uPXVuZGVmaW5lZCIsInJhbmRvbVNlZWQiOiI2Iiwic0hpbnRzUmVxdWVzdGVkIjoiW10iLCJzQW5zd2VyIjoiXCJcXFwiYWFhXFxcIlwiIiwiaWF0IjoxNjgyMzQxMTQxfQ.vNA9EgZkGboNS7aGzFJRo60JdrQX-APIOHnf313ESzA",
+        "token": "{{taskToken}}",
+        "answerToken": "{{answerToken}}",
         "answer": {
           "language": "python",
           "fileName": "Code 5",
@@ -98,7 +117,7 @@ Feature: Post submission
           }
         ],
         "sLocale": "fr",
-        "platform": null,
+        "platform": "codecast-test",
         "taskId": "1000",
         "taskParams": {
           "minScore": 0,
@@ -140,17 +159,26 @@ Feature: Post submission
         "tags": "",
         "jobname": "101",
         "jobdata": "{\"taskPath\":\"$ROOT_PATH/FranceIOI/Contests/2018/Algorea_finale/plateau\",\"extraParams\":{\"solutionFilename\":\"101.py\",\"solutionContent\":\"print('ici')\",\"solutionLanguage\":\"python3\",\"solutionDependencies\":\"@defaultDependencies-python3\",\"solutionFilterTests\":[\"id-*.in\"],\"solutionId\":\"sol0-101.py\",\"solutionExecId\":\"exec0-101.py\",\"defaultSolutionCompParams\":{\"memoryLimitKb\":131072,\"timeLimitMs\":10000,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]},\"defaultSolutionExecParams\":{\"memoryLimitKb\":64000,\"timeLimitMs\":200,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]}},\"extraTests\":[{\"name\":\"id-10.in\",\"content\":\"test\"},{\"name\":\"id-10.out\",\"content\":\"ici\"}],\"executions\":[{\"id\":\"testExecution\",\"idSolution\":\"@solutionId\",\"filterTests\":[\"id-*.in\"],\"runExecution\":\"@defaultSolutionExecParams\"}],\"options\":{\"locale\":\"fr\"}}",
-        "jobusertaskid": "1000-103-1",
+        "jobusertaskid": "1000-1-1",
         "debugPassword": "test"
       }
       """
 
   Scenario: Post submission on unknown task
+    Given "unknownTaskToken" is a token signed by the platform with the following payload:
+      """
+      {
+        "bSubmissionPossible": true,
+        "date": "10-04-2024",
+        "idUser": "1",
+        "itemUrl": "https://codecast.france-ioi.org/next/task?taskId=1001"
+      }
+      """
     When I send a POST request to "/submissions" with the following payload:
       """
       {
-        "token": null,
-        "answerToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpdGVtVXJsIjoiaHR0cDovL2x2aC5tZTo4MDAxL25leHQvdGFzaz90YXNrSUQ9bnVsbCZ2ZXJzaW9uPXVuZGVmaW5lZCIsInJhbmRvbVNlZWQiOiI2Iiwic0hpbnRzUmVxdWVzdGVkIjoiW10iLCJzQW5zd2VyIjoiXCJcXFwiYWFhXFxcIlwiIiwiaWF0IjoxNjgyMzQxMTQxfQ.vNA9EgZkGboNS7aGzFJRo60JdrQX-APIOHnf313ESzA",
+        "token": "{{unknownTaskToken}}",
+        "answerToken": "{{answerToken}}",
         "answer": {
           "language": "python",
           "fileName": "Code 5",
@@ -158,8 +186,7 @@ Feature: Post submission
         },
         "userTests": [],
         "sLocale": "fr",
-        "platform": null,
-        "taskId": "1001",
+        "platform": "codecast-test",
         "taskParams": {
           "minScore": 0,
           "maxScore": 100,
@@ -187,8 +214,7 @@ Feature: Post submission
         "date": "10-04-2024",
         "idUser": "1",
         "itemUrl": "https://codecast.france-ioi.org/next/task?taskId=1000",
-        "nbHintsGiven": "0",
-        "platformName": "codecast-test"
+        "nbHintsGiven": "0"
       }
       """
     And I setup a mock API answering any POST request to "/answers" with the following payload:
@@ -196,7 +222,7 @@ Feature: Post submission
       {
         "success": true,
         "data": {
-          "answer_token": "fake_answer_token"
+          "answer_token": "{{answerToken}}"
         }
       }
       """
@@ -236,7 +262,7 @@ Feature: Post submission
         "tags": "",
         "jobname": "101",
         "jobdata": "{\"taskPath\":\"$ROOT_PATH/FranceIOI/Contests/2018/Algorea_finale/plateau\",\"extraParams\":{\"solutionFilename\":\"101.py\",\"solutionContent\":\"print('test')\",\"solutionLanguage\":\"python3\",\"solutionDependencies\":\"@defaultDependencies-python3\",\"solutionFilterTests\":\"@defaultFilterTests-python3\",\"solutionId\":\"sol0-101.py\",\"solutionExecId\":\"exec0-101.py\",\"defaultSolutionCompParams\":{\"memoryLimitKb\":131072,\"timeLimitMs\":10000,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]},\"defaultSolutionExecParams\":{\"memoryLimitKb\":64000,\"timeLimitMs\":200,\"stdoutTruncateKb\":-1,\"stderrTruncateKb\":-1,\"useCache\":true,\"getFiles\":[]}},\"options\":{\"locale\":\"fr\"}}",
-        "jobusertaskid": "1000-103-1",
+        "jobusertaskid": "1000-1-1",
         "debugPassword": "test"
       }
       """

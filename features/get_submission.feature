@@ -19,15 +19,29 @@ Feature: Get submission
       | 5000 | 1000      | 4000       | Evaluation     | 0     | 1       | s1-t1 | 16     | 20      | 2147483647 |
       | 5001 | 1000      | 4000       | Evaluation     | 1     | 1       | s1-t2 | 10     | 15      | 2147483647 |
       | 5002 | 1000      | 4001       | Evaluation     | 2     | 1       | s2-t1 | 15     | 10      | 2147483647 |
+    And the database has the following table "tm_platforms":
+      | ID   | name          | public_key | api_url |
+      | 1    | codecast-test | -----BEGIN PUBLIC KEY----- MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAt8dBg+ojFTrgFeDxoGqqBSQkW/BDSl/H+qzpIpZTCj4mw7zyrIeV7zaaPuA/8g8WVPDjliuVxLwOnX6p8bT0ZEgsyo4/nql2VEI1cLBqSowQ3VoICqeRYHqgv+8g/B4mFxvRRpNNWiM9aE80KtjXBesi7GjULjg6Jnpqfn1UAGrx4AlnbuabH50/xQoQMWLHSpSVhnpEV5XrUPvzHGbkW51/HRRMEF9Fj5SSPs8vQPbA5ZO8H7NgHwN+8fyNuyVtm9DwY9QZVp2mYlbLlV/+y8xrd5TKf/aGyMjVr3du5YwfosrlrnTAJ+DgoxuZRw77DKaiATxSpEiQRH/C208mOwIDAQAB -----END PUBLIC KEY----- | https://mockapi.com |
+    And "taskToken" is a token signed by the platform with the following payload:
+      """
+      {
+        "bSubmissionPossible": true,
+        "date": "10-04-2024",
+        "idUser": "1",
+        "idUserAnswer": "1",
+        "itemUrl": "https://codecast.france-ioi.org/next/task?taskId=1000",
+        "nbHintsGiven": "0"
+      }
+      """
 
   Scenario: Get non-evaluated submission by id
     Given the database has the following table "tm_submissions":
-      | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | bConfirmed | sMode     | iChecksum | iVersion   |
-      | 6000 | 1      | 1          | 1000   | 2023-04-03 | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 0          | 0          | Submitted | 0         | 2147483647 |
+      | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | bConfirmed | sMode     | idUserAnswer | iChecksum | iVersion   |
+      | 6000 | 1      | 1          | 1000   | 2023-04-03 | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 0          | 0          | Submitted | 1            | 0         | 2147483647 |
     And the database has the following table "tm_source_codes":
       | ID   | idUser | idPlatform | idTask | sDate      | sParams                | sName              | sSource      | bEditable | bSubmission | sType | bActive | iRank | iVersion   |
       | 7001 | 1      | 1          | 1000   | 2023-04-03 | {"sLangProg":"python"} | 485380303499640413 | print("ici") | 0         | 1           | User  | 0       | 0     | 2147483647 |
-    When I send a GET request to "/submissions/6000"
+    When I send a GET request to "/submissions/6000?token={{taskToken}}&platform=codecast-test"
     Then the response status code should be 200
     And the response body should be the following JSON:
       """
@@ -39,6 +53,7 @@ Feature: Get submission
         "score": 0,
         "compilationError": false,
         "compilationMessage": null,
+        "date": "2023-04-03T00:00:00.000Z",
         "errorMessage": null,
         "evaluated": false,
         "confirmed": false,
@@ -63,8 +78,8 @@ Feature: Get submission
 
   Scenario: Get evaluated submission by id
     Given the database has the following table "tm_submissions":
-      | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | sMetadata        | bConfirmed | sMode     | iChecksum | iVersion   |
-      | 6000 | 1      | 1          | 1000   | 2023-04-03 | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 1          | {"errorline": 5} | 0          | Submitted | 0         | 2147483647 |
+      | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | sMetadata        | bConfirmed | sMode     | idUserAnswer | iChecksum | iVersion   |
+      | 6000 | 1      | 1          | 1000   | 2023-04-03 | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 1          | {"errorline": 5} | 0          | Submitted | 1            | 0         | 2147483647 |
     And the database has the following table "tm_submissions_subtasks":
       | ID   | bSuccess | iScore | idSubtask | idSubmission | iVersion   |
       | 7000 | 0        | 50     | 4000      | 6000         | 2147483647 |
@@ -77,7 +92,7 @@ Feature: Get submission
     And the database has the following table "tm_source_codes":
       | ID   | idUser | idPlatform | idTask | sDate      | sParams                | sName              | sSource      | bEditable | bSubmission | sType | bActive | iRank | iVersion   |
       | 7001 | 1      | 1          | 1000   | 2023-04-03 | {"sLangProg":"python"} | 485380303499640413 | print("ici") | 0         | 1           | User  | 0       | 0     | 2147483647 |
-    When I send a GET request to "/submissions/6000"
+    When I send a GET request to "/submissions/6000?token={{taskToken}}&platform=codecast-test"
     Then the response status code should be 200
     And the response body, after decoding "scoreToken", should be the following JSON:
       """
@@ -91,12 +106,13 @@ Feature: Get submission
           "date": "{{currentDateTokenFormat}}",
           "idItem": "1000",
           "idUser": "1",
-          "idUserAnswer": null,
+          "idUserAnswer": "1",
           "sAnswer": "{\"idSubmission\":\"6000\",\"langProg\":\"python\",\"sourceCode\":\"print(\\\"ici\\\")\"}",
           "score": "0"
         },
         "compilationError": false,
         "compilationMessage": null,
+        "date": "2023-04-03T00:00:00.000Z",
         "errorMessage": null,
         "evaluated": true,
         "confirmed": false,
@@ -189,8 +205,8 @@ Feature: Get submission
 
   Scenario: Get evaluated submission by id with tests
     Given the database has the following table "tm_submissions":
-      | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | sMetadata        | bConfirmed | sMode     | iChecksum | iVersion   |
-      | 6000 | 1      | 1          | 1000   | 2023-04-03 | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 1          | {"errorline": 5} | 0          | Submitted | 0         | 2147483647 |
+      | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | sMetadata        | bConfirmed | sMode     | idUserAnswer | iChecksum | iVersion   |
+      | 6000 | 1      | 1          | 1000   | 2023-04-03 | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 1          | {"errorline": 5} | 0          | Submitted | 1            | 0         | 2147483647 |
     And the database has the following table "tm_submissions_subtasks":
       | ID   | bSuccess | iScore | idSubtask | idSubmission | iVersion   |
       | 7000 | 0        | 50     | 4000      | 6000         | 2147483647 |
@@ -203,7 +219,7 @@ Feature: Get submission
     And the database has the following table "tm_source_codes":
       | ID   | idUser | idPlatform | idTask | sDate      | sParams                | sName              | sSource      | bEditable | bSubmission | sType | bActive | iRank | iVersion   |
       | 7001 | 1      | 1          | 1000   | 2023-04-03 | {"sLangProg":"python"} | 485380303499640413 | print("ici") | 0         | 1           | User  | 0       | 0     | 2147483647 |
-    When I send a GET request to "/submissions/6000?withTests"
+    When I send a GET request to "/submissions/6000?token={{taskToken}}&platform=codecast-test&withTests"
     Then the response status code should be 200
     And the response body, after decoding "scoreToken", should be the following JSON:
       """
@@ -217,12 +233,13 @@ Feature: Get submission
           "date": "{{currentDateTokenFormat}}",
           "idItem": "1000",
           "idUser": "1",
-          "idUserAnswer": null,
+          "idUserAnswer": "1",
           "sAnswer": "{\"idSubmission\":\"6000\",\"langProg\":\"python\",\"sourceCode\":\"print(\\\"ici\\\")\"}",
           "score": "0"
         },
         "compilationError": false,
         "compilationMessage": null,
+        "date": "2023-04-03T00:00:00.000Z",
         "errorMessage": null,
         "evaluated": true,
         "confirmed": false,
@@ -360,8 +377,8 @@ Feature: Get submission
 
   Scenario: Get evaluating submission by id using longPolling
     Given the database has the following table "tm_submissions":
-      | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | bConfirmed | sMode     | iChecksum | iVersion   |
-      | 6000 | 1      | 1          | 1000   | 2023-04-03 | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 0          | 0          | Submitted | 0         | 2147483647 |
+      | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | bConfirmed | sMode     | idUserAnswer | iChecksum | iVersion   |
+      | 6000 | 1      | 1          | 1000   | 2023-04-03 | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 0          | 0          | Submitted | 1            | 0         | 2147483647 |
     And the database has the following table "tm_submissions_subtasks":
       | ID   | bSuccess | iScore | idSubtask | idSubmission | iVersion   |
       | 7000 | 0        | 50     | 4000      | 6000         | 2147483647 |
@@ -374,7 +391,7 @@ Feature: Get submission
     And the database has the following table "tm_source_codes":
       | ID   | idUser | idPlatform | idTask | sDate      | sParams                | sName              | sSource      | bEditable | bSubmission | sType | bActive | iRank | iVersion   |
       | 7001 | 1      | 1          | 1000   | 2023-04-03 | {"sLangProg":"python"} | 485380303499640413 | print("ici") | 0         | 1           | User  | 0       | 0     | 2147483647 |
-    When I asynchronously send a GET request to "/submissions/6000?longPolling"
+    When I asynchronously send a GET request to "/submissions/6000?token={{taskToken}}&platform=codecast-test&longPolling"
     And I wait 10ms
     Then the server must not have returned a response
     When I fire the event "evaluation-6000" to the longPolling handler
@@ -390,6 +407,7 @@ Feature: Get submission
         "score": 0,
         "compilationError": false,
         "compilationMessage": null,
+        "date": "2023-04-03T00:00:00.000Z",
         "errorMessage": null,
         "evaluated": false,
         "confirmed": false,
@@ -413,5 +431,116 @@ Feature: Get submission
       """
 
   Scenario: Get unknown submission
-    When I send a GET request to "/submissions/999999"
+    When I send a GET request to "/submissions/999999?token={{taskToken}}&platform=codecast-test"
     Then the response status code should be 404
+
+  Scenario: Get submission without token
+    Given the database has the following table "tm_submissions":
+      | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | sMetadata        | bConfirmed | sMode     | iChecksum | iVersion   |
+      | 6000 | 1      | 1          | 1000   | 2023-04-03 | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 1          | {"errorline": 5} | 0          | Submitted | 0         | 2147483647 |
+    When I send a GET request to "/submissions/6000"
+    Then the response status code should be 400
+    And the response body should be the following JSON:
+      """
+      {
+        "error": "Incorrect input arguments.",
+        "message": "Error: Missing token or platform parameters"
+      }
+      """
+
+  Scenario: Get submission with token from another user
+    Given the database has the following table "tm_submissions":
+      | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | sMetadata        | bConfirmed | sMode     | iChecksum | iVersion   |
+      | 6000 | 1      | 1          | 1000   | 2023-04-03 | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 1          | {"errorline": 5} | 0          | Submitted | 0         | 2147483647 |
+    And "fakeTaskToken" is a token signed by the platform with the following payload:
+      """
+      {
+        "bSubmissionPossible": true,
+        "date": "10-04-2024",
+        "idUser": "999999",
+        "itemUrl": "https://codecast.france-ioi.org/next/task?taskId=1000",
+        "nbHintsGiven": "0"
+      }
+      """
+    When I send a GET request to "/submissions/6000?token={{fakeTaskToken}}&platform=codecast-test"
+    Then the response status code should be 401
+    And the response body should be the following JSON:
+      """
+      {
+        "error": "Access denied.",
+        "message": "Error: User id mismatch between submission data and provided user id from the token: 999999"
+      }
+      """
+
+  Scenario: Get submission with token from another task
+    Given the database has the following table "tm_submissions":
+      | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | sMetadata        | bConfirmed | sMode     | iChecksum | iVersion   |
+      | 6000 | 1      | 1          | 1000   | 2023-04-03 | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 1          | {"errorline": 5} | 0          | Submitted | 0         | 2147483647 |
+    And "fakeTaskToken" is a token signed by the platform with the following payload:
+      """
+      {
+        "bSubmissionPossible": true,
+        "date": "10-04-2024",
+        "idUser": "1",
+        "itemUrl": "https://codecast.france-ioi.org/next/task?taskId=999999",
+        "nbHintsGiven": "0"
+      }
+      """
+    When I send a GET request to "/submissions/6000?token={{fakeTaskToken}}&platform=codecast-test"
+    Then the response status code should be 401
+    And the response body should be the following JSON:
+      """
+      {
+        "error": "Access denied.",
+        "message": "Error: Task id mismatch between submission data and provided task id from the token: 999999"
+      }
+      """
+
+  Scenario: Get submission with token from another platform
+    Given the database has the following table "tm_submissions":
+      | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | sMetadata        | bConfirmed | sMode     | iChecksum | iVersion   |
+      | 6000 | 1      | 999999     | 1000   | 2023-04-03 | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 1          | {"errorline": 5} | 0          | Submitted | 0         | 2147483647 |
+    And "fakeTaskToken" is a token signed by the platform with the following payload:
+      """
+      {
+        "bSubmissionPossible": true,
+        "date": "10-04-2024",
+        "idUser": "1",
+        "itemUrl": "https://codecast.france-ioi.org/next/task?taskId=1000",
+        "nbHintsGiven": "0"
+      }
+      """
+    When I send a GET request to "/submissions/6000?token={{fakeTaskToken}}&platform=codecast-test"
+    Then the response status code should be 401
+    And the response body should be the following JSON:
+      """
+      {
+        "error": "Access denied.",
+        "message": "Error: Platform id mismatch between submission data and provided platform from the token: codecast-test"
+      }
+      """
+
+  Scenario: Get submission with token from another idUserAnswer
+    Given the database has the following table "tm_submissions":
+      | ID   | idUser | idPlatform | idTask | sDate      | idSourceCode | bManualCorrection | bSuccess | nbTestsTotal | nbTestsPassed | iScore | bCompilError | bEvaluated | sMetadata        | bConfirmed | sMode     | idUserAnswer | iChecksum | iVersion   |
+      | 6000 | 1      | 1          | 1000   | 2023-04-03 | 7001         | 0                 | 0        | 0            | 0             | 0      | 0            | 1          | {"errorline": 5} | 0          | Submitted | 1            | 0         | 2147483647 |
+    And "fakeTaskToken" is a token signed by the platform with the following payload:
+      """
+      {
+        "bSubmissionPossible": true,
+        "date": "10-04-2024",
+        "idUser": "1",
+        "itemUrl": "https://codecast.france-ioi.org/next/task?taskId=1000",
+        "idUserAnswer": "999999",
+        "nbHintsGiven": "0"
+      }
+      """
+    When I send a GET request to "/submissions/6000?token={{fakeTaskToken}}&platform=codecast-test"
+    Then the response status code should be 401
+    And the response body should be the following JSON:
+      """
+      {
+        "error": "Access denied.",
+        "message": "Error: User answer id mismatch between submission data and provided idUserAnswer from the token: 999999"
+      }
+      """
