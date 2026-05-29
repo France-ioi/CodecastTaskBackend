@@ -4,7 +4,10 @@ import {getTask, taskQueryDecoder, TaskQueryParameters} from './tasks';
 import {
   createOfflineSubmission,
   createSubmission,
-  getSubmission, offlineSubmissionDataDecoder, OfflineSubmissionParameters,
+  getSubmission,
+  getSubmissionByUserAnswer,
+  offlineSubmissionDataDecoder,
+  OfflineSubmissionParameters,
   submissionDataDecoder,
   SubmissionParameters,
   submissionQueryDecoder,
@@ -125,6 +128,23 @@ export async function init(): Promise<Server> {
           if (null === submissionData) {
             throw new NotFoundError(`Submission not found with this id: ${String(request.params.submissionId)}`);
           }
+        }
+
+        return h.response(submissionData);
+      }
+    }
+  });
+
+  server.route({
+    method: 'GET',
+    path: '/submissions/user-answer/{userAnswerId}',
+    options: {
+      handler: async (request, h) => {
+        const submissionQueryParameters: SubmissionQueryParameters = decode(submissionQueryDecoder)(request.query);
+
+        let submissionData = await getSubmissionByUserAnswer(String(request.params.userAnswerId), submissionQueryParameters);
+        if (null === submissionData) {
+          throw new NotFoundError(`Submission not found with this user answer id: ${String(request.params.userAnswerId)}`);
         }
 
         return h.response(submissionData);
