@@ -149,37 +149,62 @@ export async function findTaskById(taskId: string): Promise<Task|null> {
   return await Db.querySingleResult<Task>('SELECT * FROM tm_tasks WHERE ID = ?', [taskId]);
 }
 
+export async function getTaskTests(taskId: string, taskTokenData: PlatformTaskTokenData|null): Promise<TaskTest[]> {
+  if (taskTokenData?.payload.idUser && taskTokenData.platform.ID) {
+    return await Db.execute<TaskTest[]>(`SELECT * FROM tm_tasks_tests
+      WHERE idTask = ?
+        AND (
+          (sGroupType = 'User' and idUser = ? and idPlatform = ?)
+            OR sGroupType IN ('Example', 'Evaluation')
+      )`,
+      [
+        taskId,
+        taskTokenData.payload.idUser,
+        taskTokenData.platform.ID,
+      ]
+    );
+  } else {
+    return await Db.execute<TaskTest[]>(`SELECT * FROM tm_tasks_tests
+      WHERE idTask = ? AND sGroupType IN ('Example', 'Evaluation')`,
+      [
+        taskId,
+      ]
+    );
+  }
+}
+
 export async function getTask(taskId: string, taskParameters: TaskQueryParameters): Promise<TaskOutput|null> {
   const task = await findTaskById(taskId);
   if (null === task) {
     return null;
   }
 
-  const taskLimits = await Db.execute<TaskLimitModel[]>('SELECT * FROM tm_tasks_limits WHERE idTask = ?', [taskId]);
-  const taskStrings = await Db.execute<TaskString[]>('SELECT * FROM tm_tasks_strings WHERE idTask = ?', [taskId]);
-  const taskSubtasks = await Db.execute<TaskSubtask[]>('SELECT * FROM tm_tasks_subtasks WHERE idTask = ?', [taskId]);
-  const taskTests = await Db.execute<TaskTest[]>('SELECT * FROM tm_tasks_tests WHERE idTask = ?', [taskId]);
-
   let accessSolution = false;
-  let taskSourceCodes: SourceCode[]|null = null;
   let taskTokenData: PlatformTaskTokenData|null = null;
   if (taskParameters?.token) {
     taskTokenData = await extractPlatformTaskTokenData(taskParameters.token, taskParameters.platform, taskId);
     if (taskTokenData.payload.bAccessSolutions) {
       accessSolution = true;
     }
-    if (taskTokenData.payload) {
-      taskSourceCodes = await Db.execute<SourceCode[]>(
-        'SELECT * FROM tm_source_codes WHERE idTask = ? AND ((idUser = ? and idPlatform = ?) OR  `sType` = \'Task\' OR `sType` = \'Solution\')',
-        [
-          taskId,
-          taskTokenData.payload.idUser,
-          taskTokenData.platform.ID,
-        ]
-      );
-    }
   } else if (appConfig.testMode.accessSolutions) {
     accessSolution = true;
+  }
+
+  const taskLimits = await Db.execute<TaskLimitModel[]>('SELECT * FROM tm_tasks_limits WHERE idTask = ?', [taskId]);
+  const taskStrings = await Db.execute<TaskString[]>('SELECT * FROM tm_tasks_strings WHERE idTask = ?', [taskId]);
+  const taskSubtasks = await Db.execute<TaskSubtask[]>('SELECT * FROM tm_tasks_subtasks WHERE idTask = ?', [taskId]);
+  const taskTests = await getTaskTests(taskId, taskTokenData);
+
+  let taskSourceCodes: SourceCode[]|null = null;
+  if (taskTokenData?.payload) {
+    taskSourceCodes = await Db.execute<SourceCode[]>(
+      'SELECT * FROM tm_source_codes WHERE idTask = ? AND ((idUser = ? and idPlatform = ?) OR `sType` = \'Task\' OR `sType` = \'Solution\')',
+      [
+        taskId,
+        taskTokenData?.payload.idUser,
+        taskTokenData?.platform.ID,
+      ]
+    );
   }
 
   if (null === taskSourceCodes) {
