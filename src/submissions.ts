@@ -285,7 +285,7 @@ export async function findSubmissionById(submissionId: string): Promise<Submissi
 }
 
 export async function findSubmissionByUserAnswerId(userAnswerId: string): Promise<Submission|null> {
-  return await Db.querySingleResult<Submission>('SELECT * FROM tm_submissions WHERE idUserAnswer = ?', [userAnswerId]);
+  return await Db.querySingleResult<Submission>('SELECT * FROM tm_submissions WHERE idUserAnswer = ? ORDER BY ID DESC LIMIT 1', [userAnswerId]);
 }
 
 function normalizeSubmission(submission: Submission): SubmissionNormalized {
