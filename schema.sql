@@ -1220,6 +1220,7 @@ ALTER TABLE `history_tm_submissions`
   ADD KEY `user` (`idUser`,`idPlatform`),
   ADD KEY `idTask` (`idTask`),
   ADD KEY `userTask` (`idTask`,`idUser`,`idPlatform`),
+  ADD KEY `idUserAnswer` (`idUserAnswer`),
   ADD KEY `idSourceCode` (`idSourceCode`);
 
 --
@@ -1412,7 +1413,8 @@ ALTER TABLE `tm_submissions`
   ADD KEY `idUser` (`idUser`,`idPlatform`),
   ADD KEY `idTask` (`idTask`),
   ADD KEY `userTask` (`idTask`,`idUser`,`idPlatform`),
-  ADD KEY `idSourceCode` (`idSourceCode`);
+  ADD KEY `idSourceCode` (`idSourceCode`),
+  ADD KEY `idUserAnswer` (`idUserAnswer`);
 
 --
 -- Indexes for table `tm_submissions_subtasks`

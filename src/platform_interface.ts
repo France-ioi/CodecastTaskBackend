@@ -26,13 +26,20 @@ export interface PlatformAnswerTokenData {
   platform: Platform,
 }
 
-export async function extractPlatformTaskTokenData(token: string|null|undefined, platformName: string|null|undefined, taskId: string|null = null): Promise<PlatformTaskTokenData> {
+export async function extractPlatformTaskTokenData(token: string|null|undefined, platformName: string|null|undefined, taskId: string|(() => Promise<string|null>)|null = null): Promise<PlatformTaskTokenData> {
   const platformEntity = await getPlatformByName(platformName);
   let payload: PlatformTaskTokenPayload;
   try {
     payload = await decodePlatformTaskToken<PlatformTaskTokenPayload>(token, platformEntity);
   } catch (e) {
     if (appConfig.testMode.enabled && null !== taskId) {
+      if (typeof taskId === 'function') {
+        taskId = await taskId();
+        if (!taskId) {
+          throw e;
+        }
+      }
+
       payload = getTestTokenParameters(taskId);
       const jwesDecoder = new JwesDecoder();
 
