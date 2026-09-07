@@ -6,6 +6,7 @@
   "dependencies": {
     "@hapi/hapi": "^20.2.2",
     "@hapi/inert": "^7.1.0",
+    "diff": "^9.0.0",
     "dockerode": "^4.0.0",
     "fp-ts": "^2.12.3",
     "got": "^11",
