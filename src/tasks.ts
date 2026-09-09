@@ -5,6 +5,7 @@ import {pipe} from "fp-ts/function";
 import * as D from "io-ts/Decoder";
 import {normalizeSourceCode, SourceCodeNormalized} from "./submissions";
 import appConfig from "./config";
+import {EditorStateNormalized, getEditorState} from "./editor_state";
 
 export interface TaskNormalized {
   id: string,
@@ -68,6 +69,9 @@ export interface TaskOutput extends TaskNormalized {
   subTasks: TaskSubtaskNormalized[],
   tests: TaskTestNormalized[],
   sourceCodes: SourceCodeNormalized[],
+  // Last saved state of the editor of the user of the token, null when there is no token or when
+  // this user has never saved anything on this task
+  editorState: EditorStateNormalized|null,
   solution?: string,
 }
 
@@ -211,6 +215,8 @@ export async function getTask(taskId: string, taskParameters: TaskQueryParameter
     taskSourceCodes = await Db.execute<SourceCode[]>('SELECT * FROM tm_source_codes WHERE idTask = ? AND (`sType` = \'Task\' OR `sType` = \'Solution\')', [taskId]);
   }
 
+  const editorState = null !== taskTokenData ? await getEditorState(taskTokenData) : null;
+
   return {
     ...normalizeTask(task),
     limits: taskLimits.map(normalizeTaskLimit),
@@ -218,5 +224,6 @@ export async function getTask(taskId: string, taskParameters: TaskQueryParameter
     subTasks: taskSubtasks.map(normalizeTaskSubtask),
     tests: taskTests.map(normalizeTaskTest),
     sourceCodes: taskSourceCodes.map(normalizeSourceCode),
+    editorState,
   };
 }

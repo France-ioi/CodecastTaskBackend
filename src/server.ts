@@ -25,6 +25,14 @@ import appConfig from './config';
 import {decode} from './util';
 import {decodeAndExecuteRemoteCall} from './lib/remote_lib_executor';
 import {addGitRoutes} from "./routes/git_routes";
+import {
+  editorStateDecoder,
+  EditorStateParameters,
+  editorStateQueryDecoder,
+  EditorStateQueryParameters,
+  getEditorStateHistory,
+  saveEditorState,
+} from './editor_state';
 
 export async function init(): Promise<Server> {
   const server = Hapi.server({
@@ -87,6 +95,36 @@ export async function init(): Promise<Server> {
           success: true,
           submissionId,
         });
+      }
+    }
+  });
+
+  server.route({
+    method: 'POST',
+    path: '/tasks/{taskId}/editor-state',
+    options: {
+      handler: async (request, h) => {
+        const editorStateData: EditorStateParameters = decode(editorStateDecoder)(request.payload);
+
+        await saveEditorState(String(request.params.taskId), editorStateData);
+
+        return h.response({
+          success: true,
+        });
+      }
+    }
+  });
+
+  server.route({
+    method: 'GET',
+    path: '/tasks/{taskId}/editor-state/history',
+    options: {
+      handler: async (request, h) => {
+        const editorStateQueryParameters: EditorStateQueryParameters = decode(editorStateQueryDecoder)(request.query);
+
+        const history = await getEditorStateHistory(String(request.params.taskId), editorStateQueryParameters);
+
+        return h.response(history);
       }
     }
   });

@@ -157,3 +157,14 @@ export interface SourceCode {
   iRank: number,
   iVersion: number,
 }
+
+export interface SourceCodePatch {
+  ID: string,
+  idUser: string,
+  idPlatform: string,
+  idTask: string,
+  idPatch: number,
+  sDate: string,
+  patch: Buffer|null,
+  fullState: Buffer|null,
+}

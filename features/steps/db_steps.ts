@@ -50,3 +50,13 @@ Then(/^the table "([^"]*)" should be:$/, async function (table: string, dataTabl
 
   expect(resultRows).to.deep.equal(objectRows);
 });
+
+// The blob columns hold a content that spans several lines, which cannot be written in the table of
+// the step above, so they are only checked for being set or not
+Then(/^the column "([^"]*)" of the table "([^"]*)" should be set on these rows only:$/, async function (column: string, table: string, dataTable: DataTable) {
+  const expectedIds = dataTable.raw().slice(1).map(row => row[0]);
+
+  const results = await Db.execute<{ID: string}[]>(`SELECT ID FROM ${table} WHERE ${column} IS NOT NULL`);
+
+  expect(results.map(result => String(result.ID)).sort()).to.deep.equal(expectedIds.slice().sort());
+});

@@ -24,6 +24,7 @@ const tablesToClear = [
   'tm_submissions_tests',
   'tm_platforms',
   'tm_source_codes',
+  'tm_source_codes_patches',
 ];
 
 let currentId = 1;

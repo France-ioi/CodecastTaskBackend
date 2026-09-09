@@ -41,6 +41,9 @@ interface Config {
     nbHintsGiven: number,
   },
   codecastDebuggersUrl: string,
+  editorState: {
+    compression: boolean,
+  },
 }
 
 function stringifyIfExists(string: string|undefined): string|undefined {
@@ -79,6 +82,10 @@ const appConfig: Config = {
     nbHintsGiven: process.env.TEST_MODE_NB_HINTS_GIVEN ? Number(process.env.TEST_MODE_NB_HINTS_GIVEN) : 0,
   },
   codecastDebuggersUrl: String(process.env.CODECAST_DEBUGGERS_URL),
+  editorState: {
+    // On by default, set to 0 to store the states and the patches as readable text
+    compression: '0' !== String(process.env.EDITOR_STATE_COMPRESSION),
+  },
 };
 
 export default appConfig;
