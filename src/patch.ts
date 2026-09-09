@@ -1,5 +1,4 @@
 import diff from 'fast-diff';
-import {applyPatch as applyUnifiedDiff} from 'diff';
 
 // A patch is a JSON array of operations that rebuilds a target string from a source string. It is
 // read from left to right with a cursor placed at the beginning of the source:
@@ -12,8 +11,6 @@ import {applyPatch as applyUnifiedDiff} from 'diff';
 // created from, which the reader always has, since it walks the chain of patches from the newest
 // state backwards.
 type PatchOperation = number|string;
-
-const legacyUnifiedDiffPrefix = 'Index:';
 
 /**
  * Builds the patch that rebuilds `target` from `source`.
@@ -39,10 +36,6 @@ export function createPatch(source: string, target: string): string {
 }
 
 export function applyPatch(source: string, patch: string): string {
-  if (patch.startsWith(legacyUnifiedDiffPrefix)) {
-    return applyLegacyUnifiedDiff(source, patch);
-  }
-
   const operations = JSON.parse(patch) as unknown;
   if (!Array.isArray(operations)) {
     throw new Error('Malformed patch: expected an array of operations');
@@ -66,7 +59,7 @@ export function applyPatch(source: string, patch: string): string {
       throw new Error('The patch does not apply: it reads past the end of the source');
     }
 
-    if (operation > 0) {
+    if (0 < operation) {
       target += source.substr(cursor, length);
     }
     cursor += length;
@@ -74,15 +67,6 @@ export function applyPatch(source: string, patch: string): string {
 
   if (cursor !== source.length) {
     throw new Error(`The patch does not apply: it covers ${cursor} of the ${source.length} characters of the source`);
-  }
-
-  return target;
-}
-
-function applyLegacyUnifiedDiff(source: string, patch: string): string {
-  const target = applyUnifiedDiff(source, patch);
-  if (false === target) {
-    throw new Error('The legacy unified diff does not apply');
   }
 
   return target;
