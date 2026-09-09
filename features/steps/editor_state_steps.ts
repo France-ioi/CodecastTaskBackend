@@ -1,7 +1,7 @@
 import {Then} from '@cucumber/cucumber';
 import {expect} from 'chai';
 import {ServerInjectResponse} from '@hapi/hapi';
-import {applyPatch} from 'diff';
+import {applyPatch} from '../../src/patch';
 import {EditorStateHistoryOutput} from '../../src/editor_state';
 
 interface EditorStateStepsContext {
@@ -32,11 +32,7 @@ Then(/^rebuilding the states of the response should give:$/, function (this: Edi
         break;
       }
 
-      const rebuiltState = applyPatch(serializedState, patch.patch);
-      if (false === rebuiltState) {
-        throw new Error(`The patch ${patch.patchId} does not apply`);
-      }
-      serializedState = rebuiltState;
+      serializedState = applyPatch(serializedState, patch.patch);
     }
 
     states.push(JSON.parse(serializedState));

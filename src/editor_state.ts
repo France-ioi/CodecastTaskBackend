@@ -7,7 +7,7 @@ import {AccessDeniedError, InvalidInputError} from './error_handler';
 import {extractPlatformTaskTokenData, PlatformTaskTokenData} from './platform_interface';
 import appConfig from './config';
 import {getRandomId} from './util';
-import {createPatch} from 'diff';
+import {createPatch} from './patch';
 import {compress, decompress} from './compression';
 
 const editorSourceDecoder = pipe(
@@ -117,13 +117,6 @@ interface EditorStateStored {
   sources: EditorSourceStored[],
   tests: EditorTestStored[]|null,
 }
-
-// The state is serialized indented so that each source line, and each field of a tab or of a test,
-// ends up on its own line and can be diffed on its own
-const stateSerializationIndentation = 1;
-
-// Name of the diffed file in the header of the unified diffs, only there to keep them well formed
-const patchFileName = 'state';
 
 // A save can be retried this many times before giving up, see saveEditorState
 const maxSaveAttempts = 3;
@@ -275,7 +268,7 @@ async function insertEditorStatePatch(connection: PoolConnection, taskTokenData:
     // needed to rebuild its own state, and the states are walked backwards from the newest one.
     // Updating by primary key: only that row could still hold a state and lack its patch, the older
     // ones were settled by the saves that followed them, so no range update is needed
-    const patch = createPatch(patchFileName, serializedState, previousSerializedState);
+    const patch = createPatch(serializedState, previousSerializedState);
 
     await Db.executeInConnection(connection, 'UPDATE tm_source_codes_patches SET patch = :patch, fullState = NULL WHERE ID = :id', {
       id: lastPatch.ID,
@@ -331,7 +324,7 @@ function denormalizeState(state: EditorStateStored): EditorStateNormalized {
 }
 
 function serializeState(state: EditorStateStored): string {
-  return JSON.stringify(state, null, stateSerializationIndentation);
+  return JSON.stringify(state);
 }
 
 function parseState(serializedState: string): EditorStateStored {
