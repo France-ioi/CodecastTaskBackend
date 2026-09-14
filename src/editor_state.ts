@@ -38,11 +38,11 @@ export type EditorTest = D.TypeOf<typeof editorTestDecoder>;
 export const editorStateDecoder = pipe(
   D.struct({
     sources: D.array(editorSourceDecoder),
+    tests: D.array(editorTestDecoder),
   }),
   D.intersect(D.partial({
     token: D.nullable(D.string),
     platform: D.nullable(D.string),
-    tests: D.nullable(D.array(editorTestDecoder)),
   })),
 );
 export type EditorStateParameters = D.TypeOf<typeof editorStateDecoder>;
@@ -94,10 +94,7 @@ export interface EditorStateHistoryOutput {
   patches: EditorStatePatchOutput[],
 }
 
-// The editor state as it is stored and diffed: the source of a tab is the array of its lines. The
-// patches are line based, so with a source kept as a single string (its newlines escaped inside the
-// JSON string) the whole program sits on one line and changing one character of it produces a patch
-// containing the whole program.
+// The editor state as it is stored and diffed
 interface EditorSourceStored {
   name: string,
   language: string,
@@ -120,6 +117,8 @@ interface EditorStateStored {
 
 // A save can be retried this many times before giving up, see saveEditorState
 const maxSaveAttempts = 3;
+// The insert of a patch is retried with a new ID this many times before giving up
+const maxIdAttempts = 2;
 
 const ownerCriteria = 'idUser = :idUser AND idTask = :idTask AND idPlatform = :idPlatform';
 
@@ -144,7 +143,7 @@ export async function saveEditorState(taskId: string, editorStateData: EditorSta
       // key makes the second insert fail. Read the chain again and retry from the row the other
       // request inserted. The retry needs its own transaction: in REPEATABLE READ, reading the
       // table again inside the current one would return the same snapshot and never see that row.
-      if (attempt >= maxSaveAttempts || !isDuplicateEntryError(error)) {
+      if (attempt >= maxSaveAttempts || !isDuplicateEntryError(error, 'UserPlatformTaskPatch')) {
         throw error;
       }
     }
@@ -175,7 +174,7 @@ export async function getEditorStateHistory(taskId: string, queryParameters: Edi
   const taskTokenData = await getTaskTokenData(taskId, queryParameters.token, queryParameters.platform);
 
   const patches = await Db.execute<SourceCodePatch[]>(
-    `SELECT * FROM tm_source_codes_patches WHERE ${ownerCriteria} ORDER BY idPatch DESC`,
+    `SELECT idPatch, sDate, patch, fullState FROM tm_source_codes_patches WHERE ${ownerCriteria} ORDER BY idPatch DESC LIMIT 50`,
     getOwnerCriteriaParameters(taskTokenData),
   );
 
@@ -226,41 +225,56 @@ function getOwnerCriteriaParameters(taskTokenData: PlatformTaskTokenData): Recor
   };
 }
 
-async function findLastPatch(taskTokenData: PlatformTaskTokenData, connection?: PoolConnection): Promise<SourceCodePatch|null> {
-  const query = `SELECT * FROM tm_source_codes_patches WHERE ${ownerCriteria} ORDER BY idPatch DESC LIMIT 1`;
+async function findLastPatch(taskTokenData: PlatformTaskTokenData): Promise<SourceCodePatch|null> {
+  const query = `SELECT fullState FROM tm_source_codes_patches WHERE ${ownerCriteria} ORDER BY idPatch DESC LIMIT 1`;
   const parameters = getOwnerCriteriaParameters(taskTokenData);
+  const patches = await Db.execute<SourceCodePatch[]>(query, parameters);
 
-  const patches = undefined !== connection
-    ? await Db.executeInConnection<SourceCodePatch[]>(connection, query, parameters)
-    : await Db.execute<SourceCodePatch[]>(query, parameters);
+  return patches.length ? patches[0] : null;
+}
+
+async function findLastPatchForInsert(taskTokenData: PlatformTaskTokenData, connection: PoolConnection): Promise<SourceCodePatch|null> {
+  const query = `SELECT ID, idPatch, fullState FROM tm_source_codes_patches WHERE ${ownerCriteria} ORDER BY idPatch DESC LIMIT 1 FOR UPDATE`;
+  const parameters = getOwnerCriteriaParameters(taskTokenData);
+  const patches = await Db.executeInConnection<SourceCodePatch[]>(connection, query, parameters);
 
   return patches.length ? patches[0] : null;
 }
 
 async function insertEditorStatePatch(connection: PoolConnection, taskTokenData: PlatformTaskTokenData, editorStateData: EditorStateParameters): Promise<void> {
-  const lastPatch = await findLastPatch(taskTokenData, connection);
+  const lastPatch = await findLastPatchForInsert(taskTokenData, connection);
   const previousSerializedState = lastPatch?.fullState ? decompress(lastPatch.fullState) : null;
   const previousState = null !== previousSerializedState ? parseState(previousSerializedState) : null;
 
-  const state = normalizeState(editorStateData, previousState);
+  const state = normalizeState(editorStateData);
   const serializedState = serializeState(state);
 
-  // The client already avoids sending a state it has just sent, but it does so per session: another
-  // tab, a page reload or another device would send it again. Which tab and which test are active
-  // is not worth a patch of its own either.
-  if (null !== previousState && serializeStateWithoutSelection(state) === serializeStateWithoutSelection(previousState)) {
+  if (null !== previousState && serializedState === previousSerializedState) {
     return;
   }
 
   // The newest row is the only one to keep a state in full, and it needs no patch since nothing
   // newer points at it
-  await Db.executeInConnection(connection, `INSERT INTO tm_source_codes_patches (ID, idUser, idTask, idPlatform, idPatch, sDate, patch, fullState)
-    VALUES (:id, :idUser, :idTask, :idPlatform, :idPatch, NOW(), NULL, :fullState)`, {
+  const insertParameters = {
     ...getOwnerCriteriaParameters(taskTokenData),
-    id: getRandomId(),
     idPatch: (lastPatch?.idPatch ?? 0) + 1,
     fullState: compress(serializedState),
-  });
+  };
+  for (let idAttempt = 1; ; idAttempt++) {
+    try {
+      await Db.executeInConnection(connection, `INSERT INTO tm_source_codes_patches (ID, idUser, idTask, idPlatform, idPatch, sDate, patch, fullState)
+        VALUES (:id, :idUser, :idTask, :idPlatform, :idPatch, NOW(), NULL, :fullState)`, {
+        ...insertParameters,
+        id: getRandomId(),
+      });
+      break;
+    } catch (error) {
+      // The random ID collided with the one of an existing row: draw another one
+      if (idAttempt >= maxIdAttempts || !isDuplicateEntryError(error, 'PRIMARY')) {
+        throw error;
+      }
+    }
+  }
 
   if (null !== lastPatch && null !== previousSerializedState) {
     // The row that just stopped being the newest one gives up its state and receives, in exchange,
@@ -277,13 +291,14 @@ async function insertEditorStatePatch(connection: PoolConnection, taskTokenData:
   }
 }
 
-function isDuplicateEntryError(error: unknown): boolean {
-  const cause: unknown = error instanceof Db.DatabaseError ? error.error : error;
+function isDuplicateEntryError(error: unknown, key: string): boolean {
+  const cause = (error instanceof Db.DatabaseError ? error.error : error) as {code?: string, sqlMessage?: string}|null;
 
-  return 'ER_DUP_ENTRY' === (cause as {code?: string}|null)?.code;
+  return 'ER_DUP_ENTRY' === cause?.code
+    && new RegExp(`for key '(tm_source_codes_patches\\.)?${key}'$`).test(cause.sqlMessage ?? '');
 }
 
-function normalizeState(editorStateData: EditorStateParameters, previousState: EditorStateStored|null): EditorStateStored {
+function normalizeState(editorStateData: EditorStateParameters): EditorStateStored {
   return {
     sources: editorStateData.sources.map(source => ({
       name: source.name,
@@ -291,17 +306,13 @@ function normalizeState(editorStateData: EditorStateParameters, previousState: E
       active: !!source.active,
       source: source.source.split('\n'),
     })),
-    // A null (or missing) tests list means the task has no user tests, the ones of the previous
-    // state must then be left as they are
-    tests: undefined === editorStateData.tests || null === editorStateData.tests
-      ? previousState?.tests ?? null
-      : editorStateData.tests.map(test => ({
-        name: test.name,
-        input: test.input,
-        output: test.output,
-        active: !!test.active,
-        clientId: test.clientId ?? null,
-      })),
+    tests: editorStateData.tests.map(test => ({
+      name: test.name,
+      input: test.input,
+      output: test.output,
+      active: !!test.active,
+      clientId: test.clientId ?? null,
+    })),
   };
 }
 

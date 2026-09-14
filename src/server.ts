@@ -103,6 +103,9 @@ export async function init(): Promise<Server> {
     method: 'POST',
     path: '/tasks/{taskId}/editor-state',
     options: {
+      payload: {
+        maxBytes: 200 * 1024 // 200 KB
+      },
       handler: async (request, h) => {
         const editorStateData: EditorStateParameters = decode(editorStateDecoder)(request.payload);
 

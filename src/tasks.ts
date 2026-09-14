@@ -6,6 +6,7 @@ import * as D from "io-ts/Decoder";
 import {normalizeSourceCode, SourceCodeNormalized} from "./submissions";
 import appConfig from "./config";
 import {EditorStateNormalized, getEditorState} from "./editor_state";
+import {AccessDeniedError} from "./error_handler";
 
 export interface TaskNormalized {
   id: string,
@@ -187,6 +188,9 @@ export async function getTask(taskId: string, taskParameters: TaskQueryParameter
   let taskTokenData: PlatformTaskTokenData|null = null;
   if (taskParameters?.token) {
     taskTokenData = await extractPlatformTaskTokenData(taskParameters.token, taskParameters.platform, taskId);
+    if (taskId !== taskTokenData.taskId) {
+      throw new AccessDeniedError(`Task id mismatch between the requested task and provided task id from the token: ${taskTokenData.taskId}`);
+    }
     if (taskTokenData.payload.bAccessSolutions) {
       accessSolution = true;
     }
@@ -215,7 +219,13 @@ export async function getTask(taskId: string, taskParameters: TaskQueryParameter
     taskSourceCodes = await Db.execute<SourceCode[]>('SELECT * FROM tm_source_codes WHERE idTask = ? AND (`sType` = \'Task\' OR `sType` = \'Solution\')', [taskId]);
   }
 
-  const editorState = null !== taskTokenData ? await getEditorState(taskTokenData) : null;
+  let editorState = null;
+  try {
+    editorState = null !== taskTokenData ? await getEditorState(taskTokenData) : null;
+  } catch (e) {
+    // eslint-disable-next-line
+    console.error(e);
+  }
 
   return {
     ...normalizeTask(task),

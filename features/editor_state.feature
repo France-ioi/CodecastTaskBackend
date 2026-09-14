@@ -278,155 +278,6 @@ Feature: Save editor state
       | ID  | idUser | idPlatform | idTask | idPatch |
       | 100 | 1      | 1          | 1000   | 1       |
 
-  Scenario: Saving a state which only changes the active tab and the active test does not create a patch
-    When I send a POST request to "/tasks/1000/editor-state" with the following payload:
-      """
-      {
-        "token": "{{taskToken}}",
-        "platform": "codecast-test",
-        "sources": [
-          {
-            "name": "Code 1",
-            "source": "print('un')",
-            "language": "python",
-            "active": true
-          },
-          {
-            "name": "Code 2",
-            "source": "print('deux')",
-            "language": "python",
-            "active": false
-          }
-        ],
-        "tests": [
-          {
-            "name": "Test 1",
-            "input": "5",
-            "output": "25",
-            "active": true,
-            "clientId": "user-0"
-          },
-          {
-            "name": "Test 2",
-            "input": "6",
-            "output": "36",
-            "active": false,
-            "clientId": "user-1"
-          }
-        ]
-      }
-      """
-    Then the response status code should be 200
-    When I send a POST request to "/tasks/1000/editor-state" with the following payload:
-      """
-      {
-        "token": "{{taskToken}}",
-        "platform": "codecast-test",
-        "sources": [
-          {
-            "name": "Code 1",
-            "source": "print('un')",
-            "language": "python",
-            "active": false
-          },
-          {
-            "name": "Code 2",
-            "source": "print('deux')",
-            "language": "python",
-            "active": true
-          }
-        ],
-        "tests": [
-          {
-            "name": "Test 1",
-            "input": "5",
-            "output": "25",
-            "active": false,
-            "clientId": "user-0"
-          },
-          {
-            "name": "Test 2",
-            "input": "6",
-            "output": "36",
-            "active": true,
-            "clientId": "user-1"
-          }
-        ]
-      }
-      """
-    Then the response status code should be 200
-    And the table "tm_source_codes_patches" should be:
-      | ID  | idUser | idPlatform | idTask | idPatch |
-      | 100 | 1      | 1          | 1000   | 1       |
-
-  Scenario: Saving a state without tests keeps the tests of the previous state
-    When I send a POST request to "/tasks/1000/editor-state" with the following payload:
-      """
-      {
-        "token": "{{taskToken}}",
-        "platform": "codecast-test",
-        "sources": [
-          {
-            "name": "Code 1",
-            "source": "print('un')",
-            "language": "python",
-            "active": true
-          }
-        ],
-        "tests": [
-          {
-            "name": "Test 1",
-            "input": "5",
-            "output": "25",
-            "active": true,
-            "clientId": "user-0"
-          }
-        ]
-      }
-      """
-    Then the response status code should be 200
-    When I send a POST request to "/tasks/1000/editor-state" with the following payload:
-      """
-      {
-        "token": "{{taskToken}}",
-        "platform": "codecast-test",
-        "sources": [
-          {
-            "name": "Code 1",
-            "source": "print('deux')",
-            "language": "python",
-            "active": true
-          }
-        ],
-        "tests": null
-      }
-      """
-    Then the response status code should be 200
-    When I send a GET request to "/tasks/1000?token={{taskToken}}&platform=codecast-test"
-    Then the response status code should be 200
-    And the response body content at property path "editorState" should be the following JSON:
-      """
-      {
-        "sources": [
-          {
-            "name": "Code 1",
-            "source": "print('deux')",
-            "language": "python",
-            "active": true
-          }
-        ],
-        "tests": [
-          {
-            "name": "Test 1",
-            "input": "5",
-            "output": "25",
-            "active": true,
-            "clientId": "user-0"
-          }
-        ]
-      }
-      """
-
   Scenario: Getting a task returns the last saved editor state of the user of the token
     When I send a POST request to "/tasks/1000/editor-state" with the following payload:
       """
@@ -540,6 +391,63 @@ Feature: Save editor state
         }
       ]
       """
+
+  Scenario: The insert of a patch is retried with a new ID when the random ID is already taken
+    Given the database has the following table "tm_source_codes_patches":
+      | ID  | idUser | idPlatform | idTask | idPatch | sDate               |
+      | 100 | 2      | 1          | 1000   | 1       | 2024-04-10 12:00:00 |
+    When I send a POST request to "/tasks/1000/editor-state" with the following payload:
+      """
+      {
+        "token": "{{taskToken}}",
+        "platform": "codecast-test",
+        "sources": [
+          {
+            "name": "Code 1",
+            "source": "print('un')",
+            "language": "python",
+            "active": true
+          }
+        ],
+        "tests": []
+      }
+      """
+    Then the response status code should be 200
+    # ID 100 was drawn first and collided with the row of the other user
+    And the table "tm_source_codes_patches" should be:
+      | ID  | idUser | idPlatform | idTask | idPatch |
+      | 100 | 2      | 1          | 1000   | 1       |
+      | 101 | 1      | 1          | 1000   | 1       |
+
+  # The server logs the database error of the expected 500, which only clutters the test output
+  @silentErrors
+  Scenario: The save fails when the random ID collides too many times
+    Given the database has the following table "tm_source_codes_patches":
+      | ID  | idUser | idPlatform | idTask | idPatch | sDate               |
+      | 100 | 2      | 1          | 1000   | 1       | 2024-04-10 12:00:00 |
+      | 101 | 2      | 1          | 1000   | 2       | 2024-04-10 12:01:00 |
+    When I send a POST request to "/tasks/1000/editor-state" with the following payload:
+      """
+      {
+        "token": "{{taskToken}}",
+        "platform": "codecast-test",
+        "sources": [
+          {
+            "name": "Code 1",
+            "source": "print('un')",
+            "language": "python",
+            "active": true
+          }
+        ],
+        "tests": []
+      }
+      """
+    Then the response status code should be 500
+    # An ID collision does not consume the retries of the whole save, which would draw more IDs
+    And the table "tm_source_codes_patches" should be:
+      | ID  | idUser | idPlatform | idTask | idPatch |
+      | 100 | 2      | 1          | 1000   | 1       |
+      | 101 | 2      | 1          | 1000   | 2       |
 
   Scenario: Getting the history of a user who has never saved anything
     When I send a GET request to "/tasks/1000/editor-state/history?token={{taskToken}}&platform=codecast-test"
@@ -657,7 +565,8 @@ Feature: Save editor state
             "language": "python",
             "active": true
           }
-        ]
+        ],
+        "tests": []
       }
       """
     Then the response status code should be 400
