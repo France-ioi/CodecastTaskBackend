@@ -21,10 +21,11 @@
   },
   "scripts": {
     "dev": "NODE_ENV=development ts-node-dev --respawn src/main.ts",
-    "lint": "eslint features/**/*.ts src/**/*.ts",
+    "lint": "eslint features/**/*.ts src/**/*.ts tests/**/*.ts",
     "start": "NODE_ENV=production ts-node dist/main.js",
     "build": "tsc -p .",
-    "test": "NODE_ENV=test cucumber-js"
+    "test": "NODE_ENV=test cucumber-js",
+    "test:unit": "node --require ts-node/register --test 'tests/**/*.test.ts'"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^9.0.1",

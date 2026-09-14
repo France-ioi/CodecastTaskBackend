@@ -60,7 +60,7 @@ export function applyPatch(source: string, patch: string): string {
     }
 
     if (0 < operation) {
-      target += source.substr(cursor, length);
+      target += source.substring(cursor, cursor + length);
     }
     cursor += length;
   }
