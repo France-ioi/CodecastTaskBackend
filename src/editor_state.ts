@@ -341,12 +341,3 @@ function serializeState(state: EditorStateStored): string {
 function parseState(serializedState: string): EditorStateStored {
   return JSON.parse(serializedState) as EditorStateStored;
 }
-
-// Serialization of a state without which tab and which test are active, to compare two states while
-// ignoring what the user has merely selected
-function serializeStateWithoutSelection(state: EditorStateStored): string {
-  return JSON.stringify({
-    sources: state.sources.map(source => ({...source, active: false})),
-    tests: state.tests?.map(test => ({...test, active: false})) ?? null,
-  });
-}
