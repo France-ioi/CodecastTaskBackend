@@ -43,8 +43,11 @@ jobs:
             mkdir keys
             ssh-keygen -t ed25519 -f keys/git_sync -N ""
       - run:
-          name: Run tests
+          name: Run functional tests
           command: yarn run test
+      - run:
+          name: Run unit tests
+          command: yarn run test:unit
 
 workflows:
   testing:
