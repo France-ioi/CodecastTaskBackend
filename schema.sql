@@ -1424,8 +1424,6 @@ ALTER TABLE `tm_source_codes`
 --
 ALTER TABLE `tm_source_codes_patches`
   ADD PRIMARY KEY (`ID`),
-  ADD KEY `UserTask` (`idUser`,`idTask`,`idPlatform`),
-  ADD KEY `idPatch` (`idPatch`),
   ADD UNIQUE KEY `UserPlatformTaskPatch` (`idUser`,`idPlatform`,`idTask`,`idPatch`);
 
 --

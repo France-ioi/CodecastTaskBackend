@@ -116,7 +116,7 @@ interface EditorStateStored {
 }
 
 // A save can be retried this many times before giving up, see saveEditorState
-const maxSaveAttempts = 3;
+const maxSaveAttempts = 5;
 // The insert of a patch is retried with a new ID this many times before giving up
 const maxIdAttempts = 2;
 
@@ -139,11 +139,7 @@ export async function saveEditorState(taskId: string, editorStateData: EditorSta
 
       return;
     } catch (error) {
-      // Two saves of the same user on the same task racing compute the same idPatch, and the unique
-      // key makes the second insert fail. Read the chain again and retry from the row the other
-      // request inserted. The retry needs its own transaction: in REPEATABLE READ, reading the
-      // table again inside the current one would return the same snapshot and never see that row.
-      if (attempt >= maxSaveAttempts || !isDuplicateEntryError(error, 'UserPlatformTaskPatch')) {
+      if (attempt >= maxSaveAttempts || !isRetryableSaveError(error)) {
         throw error;
       }
     }
@@ -225,18 +221,18 @@ function getOwnerCriteriaParameters(taskTokenData: PlatformTaskTokenData): Recor
   };
 }
 
-async function findLastPatch(taskTokenData: PlatformTaskTokenData): Promise<SourceCodePatch|null> {
+async function findLastPatch(taskTokenData: PlatformTaskTokenData): Promise<Pick<SourceCodePatch, "fullState">|null> {
   const query = `SELECT fullState FROM tm_source_codes_patches WHERE ${ownerCriteria} ORDER BY idPatch DESC LIMIT 1`;
   const parameters = getOwnerCriteriaParameters(taskTokenData);
-  const patches = await Db.execute<SourceCodePatch[]>(query, parameters);
+  const patches = await Db.execute<Pick<SourceCodePatch, "fullState">[]>(query, parameters);
 
   return patches.length ? patches[0] : null;
 }
 
-async function findLastPatchForInsert(taskTokenData: PlatformTaskTokenData, connection: PoolConnection): Promise<SourceCodePatch|null> {
+async function findLastPatchForInsert(taskTokenData: PlatformTaskTokenData, connection: PoolConnection): Promise<Pick<SourceCodePatch, "ID" | "idPatch" | "fullState">|null> {
   const query = `SELECT ID, idPatch, fullState FROM tm_source_codes_patches WHERE ${ownerCriteria} ORDER BY idPatch DESC LIMIT 1 FOR UPDATE`;
   const parameters = getOwnerCriteriaParameters(taskTokenData);
-  const patches = await Db.executeInConnection<SourceCodePatch[]>(connection, query, parameters);
+  const patches = await Db.executeInConnection<Pick<SourceCodePatch, "ID" | "idPatch" | "fullState">[]>(connection, query, parameters);
 
   return patches.length ? patches[0] : null;
 }
@@ -291,11 +287,23 @@ async function insertEditorStatePatch(connection: PoolConnection, taskTokenData:
   }
 }
 
+function isRetryableSaveError(error: unknown): boolean {
+  const code = getDatabaseErrorCause(error)?.code;
+
+  return 'ER_LOCK_DEADLOCK' === code
+    || 'ER_LOCK_WAIT_TIMEOUT' === code
+    || isDuplicateEntryError(error, 'UserPlatformTaskPatch');
+}
+
 function isDuplicateEntryError(error: unknown, key: string): boolean {
-  const cause = (error instanceof Db.DatabaseError ? error.error : error) as {code?: string, sqlMessage?: string}|null;
+  const cause = getDatabaseErrorCause(error);
 
   return 'ER_DUP_ENTRY' === cause?.code
     && new RegExp(`for key '(tm_source_codes_patches\\.)?${key}'$`).test(cause.sqlMessage ?? '');
+}
+
+function getDatabaseErrorCause(error: unknown): {code?: string, sqlMessage?: string}|null {
+  return (error instanceof Db.DatabaseError ? error.error : error) as {code?: string, sqlMessage?: string}|null;
 }
 
 function normalizeState(editorStateData: EditorStateParameters): EditorStateStored {

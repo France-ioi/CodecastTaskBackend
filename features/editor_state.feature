@@ -608,3 +608,56 @@ Feature: Save editor state
     Then the response status code should be 400
     And the table "tm_source_codes_patches" should be:
       | ID |
+
+  Scenario: Save a large editor state that stays under the payload limit
+    Given "largeSource" is a string of 190000 characters
+    When I send a POST request to "/tasks/1000/editor-state" with the following payload:
+      """
+      {
+        "token": "{{taskToken}}",
+        "platform": "codecast-test",
+        "sources": [
+          {
+            "name": "Code 1",
+            "source": "{{largeSource}}",
+            "language": "python",
+            "active": true
+          }
+        ],
+        "tests": []
+      }
+      """
+    Then the response status code should be 200
+    And the table "tm_source_codes_patches" should be:
+      | ID  | idUser | idPlatform | idTask | idPatch |
+      | 100 | 1      | 1          | 1000   | 1       |
+
+  Scenario: Save an editor state larger than the payload limit of 200 KB
+    Given "tooLargeSource" is a string of 210000 characters
+    When I send a POST request to "/tasks/1000/editor-state" with the following payload:
+      """
+      {
+        "token": "{{taskToken}}",
+        "platform": "codecast-test",
+        "sources": [
+          {
+            "name": "Code 1",
+            "source": "{{tooLargeSource}}",
+            "language": "python",
+            "active": true
+          }
+        ],
+        "tests": []
+      }
+      """
+    Then the response status code should be 413
+    And the response body should be the following JSON:
+      """
+      {
+        "statusCode": 413,
+        "error": "Request Entity Too Large",
+        "message": "Payload content length greater than maximum allowed: 204800"
+      }
+      """
+    And the table "tm_source_codes_patches" should be:
+      | ID |
