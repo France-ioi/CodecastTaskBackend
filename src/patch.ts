@@ -14,6 +14,9 @@ type PatchOperation = number|string;
 
 /**
  * Builds the patch that rebuilds `target` from `source`.
+ *
+ * Note: use only on strings that come from JSON.stringify
+ * to avoid having lone Unicode surrogates that could break this function
  */
 export function createPatch(source: string, target: string): string {
   const operations: PatchOperation[] = [];
