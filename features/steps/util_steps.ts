@@ -21,3 +21,7 @@ Given(/^"([^"]*)" is a token signed by the platform with the following payload:$
   const parsedPayload = JSON.parse(payload) as Record<string, unknown>;
   this[tokenName] = await tokenGenerator.jwsSignPayload(parsedPayload);
 });
+
+Given(/^"([^"]*)" is a string of (\d+) characters$/, function (this: Record<string, unknown>, variableName: string, length: number) {
+  this[variableName] = 'a'.repeat(length);
+});

@@ -66,4 +66,12 @@ module.exports = {
       allowTemplateLiterals: false
     }],
   },
+  overrides: [
+    {
+      files: ['tests/**/*.ts'],
+      rules: {
+        '@typescript-eslint/no-floating-promises': 'off',
+      },
+    },
+  ],
 };
