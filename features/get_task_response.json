@@ -108,5 +108,6 @@
       "clientId": null
     }
   ],
-  "editorState": null
+  "editorState": null,
+  "editorStateReloadError": null
 }

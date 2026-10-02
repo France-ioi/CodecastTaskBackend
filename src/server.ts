@@ -28,8 +28,8 @@ import {addGitRoutes} from "./routes/git_routes";
 import {
   editorStateDecoder,
   EditorStateParameters,
-  editorStateQueryDecoder,
-  EditorStateQueryParameters,
+  editorStateHistoryQueryDecoder,
+  EditorStateHistoryQueryParameters,
   getEditorStateHistory,
   saveEditorState,
 } from './editor_state';
@@ -123,9 +123,9 @@ export async function init(): Promise<Server> {
     path: '/tasks/{taskId}/editor-state/history',
     options: {
       handler: async (request, h) => {
-        const editorStateQueryParameters: EditorStateQueryParameters = decode(editorStateQueryDecoder)(request.query);
+        const editorStateHistoryQueryParameters: EditorStateHistoryQueryParameters = decode(editorStateHistoryQueryDecoder)(request.query);
 
-        const history = await getEditorStateHistory(String(request.params.taskId), editorStateQueryParameters);
+        const history = await getEditorStateHistory(String(request.params.taskId), editorStateHistoryQueryParameters);
 
         return h.response(history);
       }

@@ -70,11 +70,14 @@ export interface TaskOutput extends TaskNormalized {
   subTasks: TaskSubtaskNormalized[],
   tests: TaskTestNormalized[],
   sourceCodes: SourceCodeNormalized[],
-  // Last saved state of the editor of the user of the token, null when there is no token or when
-  // this user has never saved anything on this task
   editorState: EditorStateNormalized|null,
+  editorStateReloadError: EditorStateReloadError|null,
   solution?: string,
 }
+
+// database_error: the saved state could not be read from the database, reloading later may work
+// invalid_state: the saved state was read but could not be decoded, reloading again will not help
+export type EditorStateReloadError = 'database_error'|'invalid_state';
 
 export const taskQueryDecoder = pipe(
   D.partial({
@@ -220,11 +223,13 @@ export async function getTask(taskId: string, taskParameters: TaskQueryParameter
   }
 
   let editorState = null;
+  let editorStateReloadError: EditorStateReloadError|null = null;
   try {
     editorState = null !== taskTokenData ? await getEditorState(taskTokenData) : null;
   } catch (e) {
     // eslint-disable-next-line
     console.error(e);
+    editorStateReloadError = e instanceof Db.DatabaseError ? 'database_error' : 'invalid_state';
   }
 
   return {
@@ -235,5 +240,6 @@ export async function getTask(taskId: string, taskParameters: TaskQueryParameter
     tests: taskTests.map(normalizeTaskTest),
     sourceCodes: taskSourceCodes.map(normalizeSourceCode),
     editorState,
+    editorStateReloadError,
   };
 }

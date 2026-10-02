@@ -775,14 +775,15 @@ DELIMITER ;
 
 CREATE TABLE `tm_source_codes_patches` (
   `ID` bigint NOT NULL,
-  `idUser` bigint NOT NULL,
+  `idAttempt` varchar(255) NOT NULL COMMENT 'idAttempt from the task token',
+  `idUser` bigint NOT NULL COMMENT 'user who made this save, only informative: users of the same team share the same chain',
   `idPlatform` bigint NOT NULL,
   `idTask` bigint NOT NULL,
-  `idPatch` int NOT NULL COMMENT 'sequence starting at 1 for each user/platform/task, computed by the application',
+  `idPatch` int NOT NULL COMMENT 'sequence starting at 1 for each attempt/platform/task, computed by the application',
   `sDate` datetime NOT NULL,
   `patch` mediumblob COMMENT 'compressed reverse patch rebuilding this state from the next one, NULL on the last patch and on the root of a chain',
   `fullState` mediumblob COMMENT 'compressed full state, kept only on the last patch, NULL on all the others'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COMMENT='History of the editor state. A chain of saves belongs to an attempt (idAttempt), a platform, and a task.';
 
 -- --------------------------------------------------------
 
@@ -1424,7 +1425,7 @@ ALTER TABLE `tm_source_codes`
 --
 ALTER TABLE `tm_source_codes_patches`
   ADD PRIMARY KEY (`ID`),
-  ADD UNIQUE KEY `UserPlatformTaskPatch` (`idUser`,`idPlatform`,`idTask`,`idPatch`);
+  ADD UNIQUE KEY `TaskPlatformAttemptPatch` (`idTask`,`idPlatform`,`idAttempt`,`idPatch`);
 
 --
 -- Indexes for table `tm_submissions`

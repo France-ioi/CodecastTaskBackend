@@ -55,6 +55,27 @@ export const editorStateQueryDecoder = pipe(
 );
 export type EditorStateQueryParameters = D.TypeOf<typeof editorStateQueryDecoder>;
 
+const defaultHistoryLimit = 100;
+const maxHistoryLimit = 1000;
+
+// The numbers come as strings since they come from the query string
+const positiveIntegerFromString = pipe(
+  D.string,
+  D.parse(value => (/^\d+$/.test(value) ? D.success(Number(value)) : D.failure(value, 'a positive integer'))),
+);
+
+export const editorStateHistoryQueryDecoder = pipe(
+  editorStateQueryDecoder,
+  D.intersect(D.partial({
+    limit: pipe(
+      positiveIntegerFromString,
+      D.refine((limit): limit is number => limit >= 1 && limit <= maxHistoryLimit, `an integer between 1 and ${maxHistoryLimit}`),
+    ),
+    earlierThanId: positiveIntegerFromString,
+  })),
+);
+export type EditorStateHistoryQueryParameters = D.TypeOf<typeof editorStateHistoryQueryDecoder>;
+
 // The editor state as it is exchanged with the client: the source of a tab is a single string
 export interface EditorSourceNormalized {
   name: string,
@@ -78,19 +99,19 @@ export interface EditorStateNormalized {
 }
 
 export interface EditorStatePatchOutput {
-  patchId: number,
+  // The idPatch of the save: it goes up by one at each save of the attempt
+  id: number,
   date: string,
-  // The reverse patch that rebuilds the state of this patch from the state of the patch after it.
-  // Null on the newest patch, whose state is sent in full, and on the root of a chain, whose own
-  // state can no longer be rebuilt
+  // The user who made this save, several users share a chain in team solving
+  idUser: string,
+  // The reverse patch that rebuilds the state of this save from the state of the save after it.
+  // Null on the newest save, whose state is sent in full
   patch: string|null,
 }
 
 export interface EditorStateHistoryOutput {
-  // The serialized state of the newest patch, as the server stored it, as the starting point of the
-  // chain. It is not rebuilt from the normalized state so that the client never has to produce the
-  // exact same bytes as the server for the patches to apply
   state: string|null,
+  // Newest first
   patches: EditorStatePatchOutput[],
 }
 
@@ -120,12 +141,11 @@ const maxSaveAttempts = 5;
 // The insert of a patch is retried with a new ID this many times before giving up
 const maxIdAttempts = 2;
 
-const ownerCriteria = 'idUser = :idUser AND idTask = :idTask AND idPlatform = :idPlatform';
+const ownerCriteria = 'idTask = :idTask AND idPlatform = :idPlatform AND idAttempt = :idAttempt';
 
 /**
  * Saves the current state of the editor tabs (source codes, and user tests when the task has any)
- * of a user for a task, as a new patch at the end of the chain of patches of this user for this
- * task.
+ * of an attempt of a task, as a new patch at the end of the chain of patches of this attempt
  */
 export async function saveEditorState(taskId: string, editorStateData: EditorStateParameters): Promise<void> {
   const taskTokenData = await getTaskTokenData(taskId, editorStateData.token, editorStateData.platform);
@@ -147,8 +167,8 @@ export async function saveEditorState(taskId: string, editorStateData: EditorSta
 }
 
 /**
- * Returns the last saved state of the editor of a user for a task, or null when this user has never
- * saved anything on it.
+ * Returns the last saved state of the editor of the attempt of the token, or null when nothing has
+ * been saved on this attempt yet.
  */
 export async function getEditorState(taskTokenData: PlatformTaskTokenData): Promise<EditorStateNormalized|null> {
   const lastPatch = await findLastPatch(taskTokenData);
@@ -160,32 +180,43 @@ export async function getEditorState(taskTokenData: PlatformTaskTokenData): Prom
 }
 
 /**
- * Returns the whole chain of patches of a user for a task, newest first, with the serialized state
- * of the newest one as the starting point. The client rebuilds the states from the newest to the
- * oldest by applying the patch of each patch to the state of the patch before it in the list.
+ * Returns a page of the chain of patches of the attempt of the token, newest first, with the
+ * serialized state of the newest save when the page starts with it. The server doesn't rebuild any
+ * state: the client walks the chain back from the newest state, fetching the next pages with
+ * earlierThanId as it needs them, and keeps what it fetched.
  */
-export async function getEditorStateHistory(taskId: string, queryParameters: EditorStateQueryParameters): Promise<EditorStateHistoryOutput> {
+export async function getEditorStateHistory(taskId: string, queryParameters: EditorStateHistoryQueryParameters): Promise<EditorStateHistoryOutput> {
   // Reading the history is allowed on a read-only task, so unlike a save it is not checked against
   // bSubmissionPossible / bAllowGrading
   const taskTokenData = await getTaskTokenData(taskId, queryParameters.token, queryParameters.platform);
 
-  const patches = await Db.execute<SourceCodePatch[]>(
-    `SELECT idPatch, sDate, patch, fullState FROM tm_source_codes_patches WHERE ${ownerCriteria} ORDER BY idPatch DESC LIMIT 50`,
-    getOwnerCriteriaParameters(taskTokenData),
+  const limit = queryParameters.limit ?? defaultHistoryLimit;
+  const earlierThanId = queryParameters.earlierThanId ?? null;
+
+  const patches = await Db.execute<Pick<SourceCodePatch, 'idPatch' | 'idUser' | 'sDate' | 'patch' | 'fullState'>[]>(
+    `SELECT idPatch, idUser, sDate, patch, fullState FROM tm_source_codes_patches
+      WHERE ${ownerCriteria}${null !== earlierThanId ? ' AND idPatch <= :earlierThanId' : ''} ORDER BY idPatch DESC LIMIT :limit`,
+    {...getOwnerCriteriaParameters(taskTokenData), earlierThanId, limit},
   );
 
-  // Only the newest patch still holds a state, the older ones were cleared by the saves that
-  // followed them
+  // Only the newest patch still holds a state, the older ones were cleared by the saves
+  // that followed them
   const headState = patches.length ? patches[0].fullState : null;
 
   return {
     state: null !== headState ? decompress(headState) : null,
     patches: patches.map(patch => ({
-      patchId: patch.idPatch,
-      date: patch.sDate,
+      id: patch.idPatch,
+      date: formatHistoryDate(patch.sDate),
+      idUser: String(patch.idUser),
       patch: null !== patch.patch ? decompress(patch.patch) : null,
     })),
   };
+}
+
+// RFC 3339 precise to the second
+function formatHistoryDate(date: string|Date): string {
+  return new Date(date).toISOString().replace(/\.\d{3}Z$/, 'Z');
 }
 
 async function getTaskTokenData(taskId: string, token: string|null|undefined, platform: string|null|undefined): Promise<PlatformTaskTokenData> {
@@ -215,24 +246,38 @@ function checkTaskTokenAllowsSaving(taskTokenData: PlatformTaskTokenData): void 
 
 function getOwnerCriteriaParameters(taskTokenData: PlatformTaskTokenData): Record<string, unknown> {
   return {
-    idUser: taskTokenData.payload.idUser,
     idTask: taskTokenData.taskId,
     idPlatform: taskTokenData.platform.ID,
+    idAttempt: getHistoryAttemptId(taskTokenData),
   };
 }
 
-async function findLastPatch(taskTokenData: PlatformTaskTokenData): Promise<Pick<SourceCodePatch, "fullState">|null> {
+/**
+ * The idAttempt of the token. The platforms that don't handle attempts (and the
+ * test mode) send none: the user then has a single attempt, identified by a value that can't be
+ * mistaken for an idAttempt of a platform
+ */
+function getHistoryAttemptId(taskTokenData: PlatformTaskTokenData): string {
+  const idAttempt = taskTokenData.payload.idAttempt;
+  if (undefined !== idAttempt && null !== idAttempt && '' !== String(idAttempt)) {
+    return String(idAttempt);
+  }
+
+  return `user:${String(taskTokenData.payload.idUser)}`;
+}
+
+async function findLastPatch(taskTokenData: PlatformTaskTokenData): Promise<Pick<SourceCodePatch, 'fullState'>|null> {
   const query = `SELECT fullState FROM tm_source_codes_patches WHERE ${ownerCriteria} ORDER BY idPatch DESC LIMIT 1`;
   const parameters = getOwnerCriteriaParameters(taskTokenData);
-  const patches = await Db.execute<Pick<SourceCodePatch, "fullState">[]>(query, parameters);
+  const patches = await Db.execute<Pick<SourceCodePatch, 'fullState'>[]>(query, parameters);
 
   return patches.length ? patches[0] : null;
 }
 
-async function findLastPatchForInsert(taskTokenData: PlatformTaskTokenData, connection: PoolConnection): Promise<Pick<SourceCodePatch, "ID" | "idPatch" | "fullState">|null> {
+async function findLastPatchForInsert(taskTokenData: PlatformTaskTokenData, connection: PoolConnection): Promise<Pick<SourceCodePatch, 'ID' | 'idPatch' | 'fullState'>|null> {
   const query = `SELECT ID, idPatch, fullState FROM tm_source_codes_patches WHERE ${ownerCriteria} ORDER BY idPatch DESC LIMIT 1 FOR UPDATE`;
   const parameters = getOwnerCriteriaParameters(taskTokenData);
-  const patches = await Db.executeInConnection<Pick<SourceCodePatch, "ID" | "idPatch" | "fullState">[]>(connection, query, parameters);
+  const patches = await Db.executeInConnection<Pick<SourceCodePatch, 'ID' | 'idPatch' | 'fullState'>[]>(connection, query, parameters);
 
   return patches.length ? patches[0] : null;
 }
@@ -240,12 +285,11 @@ async function findLastPatchForInsert(taskTokenData: PlatformTaskTokenData, conn
 async function insertEditorStatePatch(connection: PoolConnection, taskTokenData: PlatformTaskTokenData, editorStateData: EditorStateParameters): Promise<void> {
   const lastPatch = await findLastPatchForInsert(taskTokenData, connection);
   const previousSerializedState = lastPatch?.fullState ? decompress(lastPatch.fullState) : null;
-  const previousState = null !== previousSerializedState ? parseState(previousSerializedState) : null;
 
   const state = normalizeState(editorStateData);
   const serializedState = serializeState(state);
 
-  if (null !== previousState && serializedState === previousSerializedState) {
+  if (null !== previousSerializedState && serializedState === previousSerializedState) {
     return;
   }
 
@@ -253,13 +297,14 @@ async function insertEditorStatePatch(connection: PoolConnection, taskTokenData:
   // newer points at it
   const insertParameters = {
     ...getOwnerCriteriaParameters(taskTokenData),
+    idUser: taskTokenData.payload.idUser,
     idPatch: (lastPatch?.idPatch ?? 0) + 1,
     fullState: compress(serializedState),
   };
   for (let idAttempt = 1; ; idAttempt++) {
     try {
-      await Db.executeInConnection(connection, `INSERT INTO tm_source_codes_patches (ID, idUser, idTask, idPlatform, idPatch, sDate, patch, fullState)
-        VALUES (:id, :idUser, :idTask, :idPlatform, :idPatch, NOW(), NULL, :fullState)`, {
+      await Db.executeInConnection(connection, `INSERT INTO tm_source_codes_patches (ID, idAttempt, idUser, idTask, idPlatform, idPatch, sDate, patch, fullState)
+        VALUES (:id, :idAttempt, :idUser, :idTask, :idPlatform, :idPatch, NOW(), NULL, :fullState)`, {
         ...insertParameters,
         id: getRandomId(),
       });
@@ -292,7 +337,7 @@ function isRetryableSaveError(error: unknown): boolean {
 
   return 'ER_LOCK_DEADLOCK' === code
     || 'ER_LOCK_WAIT_TIMEOUT' === code
-    || isDuplicateEntryError(error, 'UserPlatformTaskPatch');
+    || isDuplicateEntryError(error, 'TaskPlatformAttemptPatch');
 }
 
 function isDuplicateEntryError(error: unknown, key: string): boolean {

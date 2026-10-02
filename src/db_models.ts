@@ -160,6 +160,7 @@ export interface SourceCode {
 
 export interface SourceCodePatch {
   ID: string,
+  idAttempt: string,
   idUser: string,
   idPlatform: string,
   idTask: string,
