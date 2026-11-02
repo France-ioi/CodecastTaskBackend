@@ -9,7 +9,7 @@ jobs:
     # You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
     # A list of available CircleCI docker Convenience Images are available here: https://circleci.com/developer/images/image/cimg/node
     docker:
-      - image: cimg/node:16.16
+      - image: cimg/node:22.23
       - image: cimg/mysql:8.0
         environment:
           MYSQL_ROOT_PASSWORD: codecast
@@ -43,8 +43,11 @@ jobs:
             mkdir keys
             ssh-keygen -t ed25519 -f keys/git_sync -N ""
       - run:
-          name: Run tests
+          name: Run functional tests
           command: yarn run test
+      - run:
+          name: Run unit tests
+          command: yarn run test:unit
 
 workflows:
   testing:

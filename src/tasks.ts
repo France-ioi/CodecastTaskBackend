@@ -5,6 +5,8 @@ import {pipe} from "fp-ts/function";
 import * as D from "io-ts/Decoder";
 import {normalizeSourceCode, SourceCodeNormalized} from "./submissions";
 import appConfig from "./config";
+import {EditorStateNormalized, getEditorState} from "./editor_state";
+import {AccessDeniedError} from "./error_handler";
 
 export interface TaskNormalized {
   id: string,
@@ -68,8 +70,14 @@ export interface TaskOutput extends TaskNormalized {
   subTasks: TaskSubtaskNormalized[],
   tests: TaskTestNormalized[],
   sourceCodes: SourceCodeNormalized[],
+  editorState: EditorStateNormalized|null,
+  editorStateReloadError: EditorStateReloadError|null,
   solution?: string,
 }
+
+// database_error: the saved state could not be read from the database, reloading later may work
+// invalid_state: the saved state was read but could not be decoded, reloading again will not help
+export type EditorStateReloadError = 'database_error'|'invalid_state';
 
 export const taskQueryDecoder = pipe(
   D.partial({
@@ -183,6 +191,9 @@ export async function getTask(taskId: string, taskParameters: TaskQueryParameter
   let taskTokenData: PlatformTaskTokenData|null = null;
   if (taskParameters?.token) {
     taskTokenData = await extractPlatformTaskTokenData(taskParameters.token, taskParameters.platform, taskId);
+    if (taskId !== taskTokenData.taskId) {
+      throw new AccessDeniedError(`Task id mismatch between the requested task and provided task id from the token: ${taskTokenData.taskId}`);
+    }
     if (taskTokenData.payload.bAccessSolutions) {
       accessSolution = true;
     }
@@ -211,6 +222,16 @@ export async function getTask(taskId: string, taskParameters: TaskQueryParameter
     taskSourceCodes = await Db.execute<SourceCode[]>('SELECT * FROM tm_source_codes WHERE idTask = ? AND (`sType` = \'Task\' OR `sType` = \'Solution\')', [taskId]);
   }
 
+  let editorState = null;
+  let editorStateReloadError: EditorStateReloadError|null = null;
+  try {
+    editorState = null !== taskTokenData ? await getEditorState(taskTokenData) : null;
+  } catch (e) {
+    // eslint-disable-next-line
+    console.error(e);
+    editorStateReloadError = e instanceof Db.DatabaseError ? 'database_error' : 'invalid_state';
+  }
+
   return {
     ...normalizeTask(task),
     limits: taskLimits.map(normalizeTaskLimit),
@@ -218,5 +239,7 @@ export async function getTask(taskId: string, taskParameters: TaskQueryParameter
     subTasks: taskSubtasks.map(normalizeTaskSubtask),
     tests: taskTests.map(normalizeTaskTest),
     sourceCodes: taskSourceCodes.map(normalizeSourceCode),
+    editorState,
+    editorStateReloadError,
   };
 }

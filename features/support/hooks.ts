@@ -1,5 +1,5 @@
 import {Server} from '@hapi/hapi';
-import {AfterAll, Before, BeforeAll} from '@cucumber/cucumber';
+import {After, AfterAll, Before, BeforeAll, Status} from '@cucumber/cucumber';
 import * as Db from '../../src/db';
 import {init} from '../../src/server';
 
@@ -24,6 +24,7 @@ const tablesToClear = [
   'tm_submissions_tests',
   'tm_platforms',
   'tm_source_codes',
+  'tm_source_codes_patches',
 ];
 
 let currentId = 1;
@@ -47,6 +48,31 @@ Before(async function () {
   this.currentDateTokenFormat = moment().format('DD-MM-YYYY');
 
   await cleanDatabase();
+});
+
+// Scenarios tagged @silentErrors expect the server to fail and log an error. Their console.error
+// output is held back, and only printed when the scenario fails, to help understanding why
+// eslint-disable-next-line no-console
+const originalConsoleError = console.error;
+let silencedErrors: unknown[][] = [];
+
+Before({tags: '@silentErrors'}, function () {
+  silencedErrors = [];
+  // eslint-disable-next-line no-console
+  console.error = (...data: unknown[]): void => {
+    silencedErrors.push(data);
+  };
+});
+
+After({tags: '@silentErrors'}, function ({result}) {
+  // eslint-disable-next-line no-console
+  console.error = originalConsoleError;
+  if (result?.status === Status.FAILED) {
+    for (const data of silencedErrors) {
+      originalConsoleError(...data);
+    }
+  }
+  silencedErrors = [];
 });
 
 AfterAll(async function () {

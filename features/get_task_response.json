@@ -107,5 +107,7 @@
       "taskId": "1000",
       "clientId": null
     }
-  ]
+  ],
+  "editorState": null,
+  "editorStateReloadError": null
 }
