@@ -37,7 +37,10 @@ export type EditorTest = D.TypeOf<typeof editorTestDecoder>;
 
 export const editorStateDecoder = pipe(
   D.struct({
-    sources: D.array(editorSourceDecoder),
+    sources: pipe(
+      D.array(editorSourceDecoder),
+      D.refine((sources): sources is EditorSource[] => 0 < sources.length, 'a non-empty array'),
+    ),
     tests: D.array(editorTestDecoder),
   }),
   D.intersect(D.partial({

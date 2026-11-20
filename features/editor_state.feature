@@ -843,6 +843,24 @@ Feature: Save editor state
     And the table "tm_source_codes_patches" should be:
       | ID |
 
+  Scenario: Save the editor state without any code tab
+    When I send a POST request to "/tasks/1000/editor-state" with the following payload:
+      """
+      {
+        "token": "{{taskToken}}",
+        "platform": "codecast-test",
+        "sources": [],
+        "tests": []
+      }
+      """
+    Then the response status code should be 400
+    And the response body content at property path "message" should be the following JSON:
+      """
+      "Error: required property \"sources\"\n└─ cannot decode [], should be a non-empty array"
+      """
+    And the table "tm_source_codes_patches" should be:
+      | ID |
+
   Scenario: Save a large editor state that stays under the payload limit
     Given "largeSource" is a string of 190000 characters
     When I send a POST request to "/tasks/1000/editor-state" with the following payload:
