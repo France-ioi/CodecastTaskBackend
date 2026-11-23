@@ -107,7 +107,13 @@ export async function init(): Promise<Server> {
         maxBytes: 200 * 1024 // 200 KB
       },
       handler: async (request, h) => {
-        const editorStateData: EditorStateParameters = decode(editorStateDecoder)(request.payload);
+        // When the tab is being closed, this request is sent with a beacon, as text/plain
+        // so that it is a simple CORS request with no preflight: Hapi then hands the raw payload over
+        // and we have to convert it back to JSON
+        const payload = 'string' === typeof request.payload || Buffer.isBuffer(request.payload)
+          ? JSON.parse(request.payload.toString())
+          : request.payload;
+        const editorStateData: EditorStateParameters = decode(editorStateDecoder)(payload);
 
         await saveEditorState(String(request.params.taskId), editorStateData);
 
