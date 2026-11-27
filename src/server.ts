@@ -22,7 +22,7 @@ import HAPIWebSocket from 'hapi-plugin-websocket';
 import Inert from '@hapi/inert';
 import {remoteExecutionProxyHandler} from './remote_execution_proxy';
 import appConfig from './config';
-import {decode} from './util';
+import {decode, parseJsonPayload} from './util';
 import {decodeAndExecuteRemoteCall} from './lib/remote_lib_executor';
 import {addGitRoutes} from "./routes/git_routes";
 import {
@@ -108,12 +108,9 @@ export async function init(): Promise<Server> {
       },
       handler: async (request, h) => {
         // When the tab is being closed, this request is sent with a beacon, as text/plain
-        // so that it is a simple CORS request with no preflight: Hapi then hands the raw payload over
-        // and we have to convert it back to JSON
-        const payload = 'string' === typeof request.payload || Buffer.isBuffer(request.payload)
-          ? JSON.parse(request.payload.toString())
-          : request.payload;
-        const editorStateData: EditorStateParameters = decode(editorStateDecoder)(payload);
+        // so that it is a simple CORS request with no preflight: Hapi then hands the raw string over
+        // and we have to parse it as JSON
+        const editorStateData: EditorStateParameters = decode(editorStateDecoder)(parseJsonPayload(request.payload));
 
         await saveEditorState(String(request.params.taskId), editorStateData);
 

@@ -843,6 +843,47 @@ Feature: Save editor state
     And the table "tm_source_codes_patches" should be:
       | ID |
 
+  Scenario: Save the editor state with a beacon, sent as text/plain
+    When I send a POST request to "/tasks/1000/editor-state" with the content type "text/plain;charset=UTF-8" and the following payload:
+      """
+      {
+        "token": "{{taskToken}}",
+        "platform": "codecast-test",
+        "sources": [
+          {
+            "name": "Code 1",
+            "source": "def resoudre(n):\n    return n",
+            "language": "python",
+            "active": true
+          }
+        ],
+        "tests": []
+      }
+      """
+    Then the response status code should be 200
+    And the response body should be the following JSON:
+      """
+      {
+        "success": true
+      }
+      """
+    And the table "tm_source_codes_patches" should be:
+      | ID  | idAttempt | idUser | idPlatform | idTask | idPatch |
+      | 100 | 1-0       | 1      | 1          | 1000   | 1       |
+
+  Scenario: Save the editor state with a beacon whose text/plain payload is not valid JSON
+    When I send a POST request to "/tasks/1000/editor-state" with the content type "text/plain;charset=UTF-8" and the following payload:
+      """
+      {"token": "{{taskToken}}", "platform": "codecast-test",
+      """
+    Then the response status code should be 400
+    And the response body content at property path "error" should be the following JSON:
+      """
+      "Incorrect input arguments."
+      """
+    And the table "tm_source_codes_patches" should be:
+      | ID |
+
   Scenario: Save the editor state without any code tab
     When I send a POST request to "/tasks/1000/editor-state" with the following payload:
       """

@@ -32,3 +32,19 @@ export function decode<T>(decoder: D.Decoder<unknown, T>) {
     decoded => decoded,
   ));
 }
+
+/**
+ * Parses a payload that Hapi handed over as a raw string (e.g. a text/plain body sent by navigator.sendBeacon)
+ * back to JSON. Other payloads have already been parsed by Hapi and are returned as is.
+ */
+export function parseJsonPayload(payload: unknown): unknown {
+  if ('string' !== typeof payload) {
+    return payload;
+  }
+
+  try {
+    return JSON.parse(payload) as unknown;
+  } catch (e) {
+    throw new InvalidInputError(`Invalid JSON payload: ${String(e)}`);
+  }
+}
