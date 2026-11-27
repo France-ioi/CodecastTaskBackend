@@ -46,6 +46,15 @@ When(/^I send a POST request to "([^"]*)" with the following payload:$/, async f
   });
 });
 
+When(/^I send a POST request to "([^"]*)" with the content type "([^"]*)" and the following payload:$/, async function (this: ServerStepsContext, url: string, contentType: string, payload: string) {
+  this.response = await testServer.inject({
+    method: 'POST',
+    url: injectVariables(this, url),
+    headers: {'content-type': contentType},
+    payload: injectVariables(this, payload),
+  });
+});
+
 Then(/^the response status code should be (\d+)$/, function (this: ServerStepsContext, errorCode) {
   if (this.response.statusCode !== errorCode) {
     // eslint-disable-next-line
